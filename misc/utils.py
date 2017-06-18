@@ -9,22 +9,42 @@ import misc.shell_utils as shell_utils
 
 logger = logging.getLogger(__name__)
 
-def raise_deprecation_warning(function, new_module):
+def raise_deprecation_warning(function, new_module, final_version=None,
+        old_module="misc"):
     """ Ths function raises a deprecation about a function that has been
-        moved to a new module.
+    moved to a new module.
 
-        Parameters
-        ----------
-        function : string
-            The name of the (existing) function
+    Parameters
+    ----------
+    function : string
+        The name of the (existing) function
 
-        new_module : string
-            The name of the new module containing the function
+    new_module : string
+        The name of the new module containing the function
+
+    old_module: string
+        The name of the old module for the function. Default: misc
+
+    final_version: string
+        The name of the last version for which the function will be available
+        in the old_module, or None.
+
+    Returns
+    -------
+    None, but prints a "warn" message. If final_version is not None, then the
+    message will include a bit about when the method will be removed from the
+    current module.
             
     """
     
     msg = ("[{}]: This function is deprecated. Please use the version in {} "
         "instead.".format(function, new_module))
+
+    if final_version is not None:
+        msg_2 = (" The function will be removed from the module {} in version "
+        "{}".format(, old_module, final_version))
+        msg = msg + msg_2
+        
     logger.warn(msg)
 
 
@@ -581,6 +601,8 @@ def dict_to_dataframe(dic, key_name='key', value_name='value'):
     df: pd.DataFrame
         a data frame in which each row corresponds to one entry in dic
     """
+    raise_deprecation_warning("dict_to_dataframe", "misc.pandas_utils",
+        "0.3.0", "misc")
     import pandas as pd
 
     df = pd.Series(dic, name=value_name)
@@ -603,20 +625,10 @@ def dataframe_to_dict(df, key_field, value_field):
                 frame, with the keys and values as indicated by the fields
         
     """
+    raise_deprecation_warning("dataframe_to_dict", "misc.pandas_utils",
+        "0.3.0", "misc")
     dic = dict(zip(df[key_field], df[value_field]))
     return dic
-
-def pandas_rows_to_list(rows):
-    return [f[1] for f in rows.iterrows()]
-
-def pandas_unique_values(data_frame, field):
-    import pandas as pd
-    return pd.unique(data_frame[field].ravel())
-
-def normalize_by_length(data_frame, field, length_field, new_field = None):
-    if new_field == None:
-        new_field = 'normalized_{}'.format(field)
-    data_frame[new_field] = data_frame[field] / (data_frame[length_field] + 1)
 
 def pandas_join_string_list(row, field, sep=";"):
     """ This function checks if the value for field in the row is a list. If so,
@@ -628,31 +640,10 @@ def pandas_join_string_list(row, field, sep=";"):
             field (string): the name of the field
             sep (string): the separator to use in joining the values
     """
+    raise_deprecation_warning("pandas_join_string_list", "misc.pandas_utils",
+        "0.3.0", "misc")
     s = wrap_string_in_list(row[field])
     return sep.join(s)
-
-def get_sorted_field_values(filename, field):
-    """ This function reads in the file using pandas. It then extracts the 
-    field, converts it to a numpy array and sorts the values.
-
-    Args:
-        filename (string):  The csv file from which to read
-        field (string):     The field to extract from the file
-
-    Returns:
-        np.array:           The values from the file, sorted
-
-    """
-
-    import pandas as pd
-    import numpy as np
-
-    field_values = pd.read_csv(filename, usecols=[field])
-    field_values = field_values[field]
-    array = np.array(field_values)
-    array.sort()
-    return array
-
 
 excel_extensions = ('xls', 'xlsx')
 hdf5_extensions = ('hdf', 'hdf5', 'h5', 'he5')
@@ -679,6 +670,8 @@ def _guess_df_filetype(filename):
         Imports:
             pandas
     """
+    raise_deprecation_warning("_guess_df_filetype", "misc.pandas_utils",
+        "0.3.0", "misc")
     import pandas as pd
 
     msg = "Attempting to guess the extension. Filename: {}".format(filename)
@@ -735,6 +728,8 @@ def read_df(filename, filetype='AUTO', sheet=None, **kwargs):
         Imports:
             pandas
     """
+    raise_deprecation_warning("read_df", "misc.pandas_utils",
+        "0.3.0", "misc")
     import pandas as pd
 
     # first, see if we want to guess the filetype
@@ -809,6 +804,8 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
         -------
         None, but the file is created
     """
+    raise_deprecation_warning("write_df", "misc.pandas_utils",
+        "0.3.0", "misc")
     import gzip
     import pandas as pd
     
@@ -872,6 +869,8 @@ def append_to_xlsx(df, xlsx, sheet='Sheet_1', **kwargs):
             pandas
             openpyxl
     """
+    raise_deprecation_warning("append_to_xlsx", "misc.pandas_utils",
+        "0.3.0", "misc")
     import os
     import pandas as pd
     import openpyxl
