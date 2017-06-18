@@ -50,7 +50,7 @@ def try_parse_float(string):
 def is_int(s):
     """ This function checks whether the provided string represents and integer.
 
-        This code was adapted from: http://stackoverflow.com/questions/1265665/python-check-if-a-string-represents-an-int-without-using-try-except
+        This code was adapted from: http://stackoverflow.com/questions/1265665/
 
         Args:
             s (string) : the string
@@ -65,8 +65,8 @@ def is_int(s):
 
 def check_keys_exist(d, keys):
     """ This function ensures the given keys are present in the dictionary. It
-        does not other validate the type, value, etc., of the keys or their values.
-        If a key is not present, a KeyError is raised.
+        does not other validate the type, value, etc., of the keys or their
+        values. If a key is not present, a KeyError is raised.
 
         The motivation behind this function is to verify that a config dictionary
         read in at the beginning of a program contains all of the required values.
@@ -188,7 +188,10 @@ def get_vars_to_save(to_save, to_remove=['parser', 'args']):
         if var_name.startswith('__'):
             to_remove.append(var_name)
 
-        elif isinstance(value, types.FunctionType) or isinstance(value, types.ModuleType):
+        elif (
+            isinstance(value, types.FunctionType) or 
+            isinstance(value, types.ModuleType)):
+            
             to_remove.append(var_name)
 
     for var_name in to_remove:
@@ -228,13 +231,14 @@ def get_config_argument(config, var_name, argument_name=None, default=None):
         variable is not present in the config dictionary.
 
         Args:
-            config (dict): a dictionary, presumably containing configuration options
+            config (dict): a dictionary, presumably containing configuration
+            options
 
             var_name (string): the name of the variable to look up
 
-            argument_name (string): if present, then the command line argument will
-                be "--<argument_name>". Otherwise, the command line switch will be:
-                "--<var_name.replace(_,-)"
+            argument_name (string): if present, then the command line argument
+            will be "--<argument_name>". Otherwise, the command line switch
+            will be: "--<var_name.replace(_,-)"
 
             default (string or list): if present, then this value is used if 
                 the variable is not in the dictionary
@@ -337,7 +341,7 @@ def check_gzip_file(filename, has_tar=False, raise_on_error=True, logger=logger)
 
         This function can also test that a tar insize the gzipped file is valid.
 
-        This code is adapted from: http://stackoverflow.com/questions/2001709/how-to-check-if-a-unix-tar-gz-file-is-a-valid-file-without-uncompressing
+        This code is adapted from: http://stackoverflow.com/questions/2001709/
 
         Args:
             filename (str): a path to the bam file
@@ -489,30 +493,37 @@ def get_basename(path):
     return os.path.splitext(os.path.basename(path))[0]
 
 def create_symlink(src, dst, remove=True, create=False, call=True):
-    """ This helper function creates or updates a symlink at dst which points to src.
-        That is, src is the "real" file, and dst will be the symlink. If a file is
-        already present at dst, it will be replaced.
+    """ Creates or updates a symlink at dst which points to src.
 
-        If call is false, then this function does nothing.
+    Parameters
+    ----------
+    src: string
+        the path to the original file
 
-        Parameters
-        ----------
-        src: string
-            the path to the original file
+    dst: string
+        the path to the symlink
 
-        dst: string
-            the path to the symlink
+    remove: bool
+        whether to remove any existing file at dst
 
-        remove: bool
-            whether to remove any existing file at dst
+    create: bool
+        whether to create the directory structure necessary for dst
 
-        create: bool
-            whether to create the directory structure necessary for dst
+    call: bool
+        whether to actually do anything
 
-        call: bool
-            whether to actually do anything
+    Returns
+    -------
+    None, but the symlink is created
+
+    Raises
+    ------
+    FileExistsError, if a file already exists at dst and the remove flag is
+        False
     """
     import logging
+
+    raise_deprecation_warning("misc.utils.create_symlink", "misc.shell_utils")
 
     if not call:
         return
@@ -551,22 +562,24 @@ def to_dense(data, row, dtype=float, length=-1):
     return d
 
 def dict_to_dataframe(dic, key_name='key', value_name='value'):
-    """ This function converts a dictionary into a two-column data frame using the given
-        column names. Each entry in the data frame corresponds to one row.
+    """ Convert a dictionary into a two-column data frame using the given
+    column names. Each entry in the data frame corresponds to one row.
 
-        Args:
-            dic (dictionary) : a dictionary
+    Parameters
+    ----------
+    dic: dictionary
+        a dictionary
 
-            key_name (string) : the name to use for the column for the keys
+    key_name: string
+        the name to use for the column for the keys
 
-            value_name (string) : the name to use for the column for the values
+    value_name: string
+        the name to use for the column for the values
 
-        Returns:
-            pd.DataFrame : a data frame in which each row corresponds to one entry
-                in the dictionary
-
-        Imports:
-            pandas
+    Returns
+    -------
+    df: pd.DataFrame
+        a data frame in which each row corresponds to one entry in dic
     """
     import pandas as pd
 
@@ -741,7 +754,8 @@ def read_df(filename, filetype='AUTO', sheet=None, **kwargs):
 
     return df
 
-def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1', do_not_compress=False, **kwargs):
+def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
+        do_not_compress=False, **kwargs):
     """ This function writes a data frame to a file of the specified type. 
         Unless otherwise specified, csv files are gzipped when written. By
         default, the filetype will be guessed based on the extension. The 
@@ -830,7 +844,8 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1', do_no
     elif filetype == 'hdf5':
         df.to_hdf(out, sheet, **kwargs)
     else:
-        msg = "Could not write the dataframe. Invalid filetype: {}".format(filetype)
+        msg = ("Could not write the dataframe. Invalid filetype: {}".format(
+            filetype))
         raise ValueError(msg)
 
 def append_to_xlsx(df, xlsx, sheet='Sheet_1', **kwargs):
@@ -1048,7 +1063,7 @@ def list_insert_list(l, to_insert, index):
         original list.
 
 
-        This function is adapted from: http://stackoverflow.com/questions/7376019/list-extend-to-index-inserting-list-elements-not-only-to-the-end/
+        This function is adapted from: http://stackoverflow.com/questions/7376019/
 
         Example:
 
@@ -1179,7 +1194,7 @@ def grouper(n, iterable):
         does not pad the last group.
 
         The code was directly take from stackoverflow:
-            http://stackoverflow.com/questions/3992735/python-generator-that-groups-another-iterable-into-groups-of-n
+            http://stackoverflow.com/questions/3992735/
 
     """
     import itertools
