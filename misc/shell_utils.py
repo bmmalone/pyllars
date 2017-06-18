@@ -1,5 +1,6 @@
 ###
-#   This module contains helper functions for interacting with the shell.
+# This module contains helper functions for interacting with the shell and
+# file system.
 ###
 
 import os
@@ -8,6 +9,57 @@ import sys
 
 import logging
 logger = logging.getLogger(__name__)
+
+def download_file(url, local_filename=None, chunk_size=1024, overwrite=False):
+    """ Download the file at the given URL to the specified local location.
+
+    This function is adapted from: https://stackoverflow.com/questions/16694907
+
+    Parameters
+    ----------
+    url: string
+        The location of the file to download, including the protocol
+
+    local_filename: string path
+        The *complete* path (including filename) to the local file. Default:
+        the current working directory, plus the filename of the downloaded file
+
+    chunk_size: int
+        The chunk size to use for donwload. Please see requests.iter_content
+        for more details. It is unlikely this value should be changed.
+
+    overwrite: bool
+        Whether to overwrite an existing file at local_filename
+
+    Returns
+    -------
+    local_filename: string
+        The name of the local file
+
+    Raises
+    ------
+    FileExistsError, if a file exists at local_filename and overwrite is
+        False.
+    """
+    if local_filename is None:
+        local_filename = url.split('/')[-1]
+    
+    # check on the local file
+    if os.path.exists(local_filename):
+        msg = ("[shell_utils.download_file]: The local file exists. {}".format(
+            local_filename))
+        if overwrite:
+            # we don't care, but write a message anyway
+            logger.warning(msg)
+        else:
+            raise FileExistsError(msg)
+
+    r = requests.get(url, stream=True)
+    with open(local_filename, 'wb') as f:
+        for chunk in r.iter_content(chunk_size=chunk_size): 
+            if chunk: # filter out keep-alive new chunks
+                f.write(chunk)
+    return local_filename
 
 def check_programs_exist(programs, raise_on_error=True, package_name=None, 
             logger=logger):
