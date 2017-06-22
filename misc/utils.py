@@ -42,7 +42,7 @@ def raise_deprecation_warning(function, new_module, final_version=None,
 
     if final_version is not None:
         msg_2 = (" The function will be removed from the module {} in version "
-        "{}".format(, old_module, final_version))
+        "{}".format(old_module, final_version))
         msg = msg + msg_2
         
     logger.warn(msg)
