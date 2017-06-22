@@ -92,6 +92,7 @@ def download_file(url, local_filename=None, chunk_size=1024, overwrite=False):
     FileExistsError, if a file exists at local_filename and overwrite is
         False.
     """
+    import requests
     if local_filename is None:
         local_filename = url.split('/')[-1]
     
