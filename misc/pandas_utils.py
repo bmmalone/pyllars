@@ -10,6 +10,9 @@
 import numpy as np
 import pandas as pd
 
+import logging
+logger = logging.getLogger(__name__)
+
 def dict_to_dataframe(dic, key_name='key', value_name='value'):
     """ Convert a dictionary into a two-column data frame using the given
     column names. Each entry in the data frame corresponds to one row.

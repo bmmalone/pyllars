@@ -4,7 +4,7 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [0.2.1] - 2017-06-18
+## [0.2.1] - 2017-07-01
 ### Added
 - A helper `shell_utils.download_file` to download external files and save them
   to a local location.
@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Removed
 - Deprecated shell interaction utilities from `misc.utils`
 - Unused pandas utilities
+
+### Fixed
+- Missing logger for `pandas_utils`. See 
+  [Issue #1](https://github.com/bmmalone/pymisc-utils/issues/1) for more
+  details.
 
 ## [0.2.0] - 2017-05-31
 This is a new version which moves the project from Bitbucket to GitHub.
