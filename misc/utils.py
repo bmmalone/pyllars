@@ -9,22 +9,42 @@ import misc.shell_utils as shell_utils
 
 logger = logging.getLogger(__name__)
 
-def raise_deprecation_warning(function, new_module):
+def raise_deprecation_warning(function, new_module, final_version=None,
+        old_module="misc"):
     """ Ths function raises a deprecation about a function that has been
-        moved to a new module.
+    moved to a new module.
 
-        Parameters
-        ----------
-        function : string
-            The name of the (existing) function
+    Parameters
+    ----------
+    function : string
+        The name of the (existing) function
 
-        new_module : string
-            The name of the new module containing the function
+    new_module : string
+        The name of the new module containing the function
+
+    old_module: string
+        The name of the old module for the function. Default: misc
+
+    final_version: string
+        The name of the last version for which the function will be available
+        in the old_module, or None.
+
+    Returns
+    -------
+    None, but prints a "warn" message. If final_version is not None, then the
+    message will include a bit about when the method will be removed from the
+    current module.
             
     """
     
     msg = ("[{}]: This function is deprecated. Please use the version in {} "
         "instead.".format(function, new_module))
+
+    if final_version is not None:
+        msg_2 = (" The function will be removed from the module {} in version "
+        "{}".format(old_module, final_version))
+        msg = msg + msg_2
+        
     logger.warn(msg)
 
 
@@ -50,7 +70,7 @@ def try_parse_float(string):
 def is_int(s):
     """ This function checks whether the provided string represents and integer.
 
-        This code was adapted from: http://stackoverflow.com/questions/1265665/python-check-if-a-string-represents-an-int-without-using-try-except
+        This code was adapted from: http://stackoverflow.com/questions/1265665/
 
         Args:
             s (string) : the string
@@ -65,8 +85,8 @@ def is_int(s):
 
 def check_keys_exist(d, keys):
     """ This function ensures the given keys are present in the dictionary. It
-        does not other validate the type, value, etc., of the keys or their values.
-        If a key is not present, a KeyError is raised.
+        does not other validate the type, value, etc., of the keys or their
+        values. If a key is not present, a KeyError is raised.
 
         The motivation behind this function is to verify that a config dictionary
         read in at the beginning of a program contains all of the required values.
@@ -188,7 +208,10 @@ def get_vars_to_save(to_save, to_remove=['parser', 'args']):
         if var_name.startswith('__'):
             to_remove.append(var_name)
 
-        elif isinstance(value, types.FunctionType) or isinstance(value, types.ModuleType):
+        elif (
+            isinstance(value, types.FunctionType) or 
+            isinstance(value, types.ModuleType)):
+            
             to_remove.append(var_name)
 
     for var_name in to_remove:
@@ -228,13 +251,14 @@ def get_config_argument(config, var_name, argument_name=None, default=None):
         variable is not present in the config dictionary.
 
         Args:
-            config (dict): a dictionary, presumably containing configuration options
+            config (dict): a dictionary, presumably containing configuration
+            options
 
             var_name (string): the name of the variable to look up
 
-            argument_name (string): if present, then the command line argument will
-                be "--<argument_name>". Otherwise, the command line switch will be:
-                "--<var_name.replace(_,-)"
+            argument_name (string): if present, then the command line argument
+            will be "--<argument_name>". Otherwise, the command line switch
+            will be: "--<var_name.replace(_,-)"
 
             default (string or list): if present, then this value is used if 
                 the variable is not in the dictionary
@@ -337,7 +361,7 @@ def check_gzip_file(filename, has_tar=False, raise_on_error=True, logger=logger)
 
         This function can also test that a tar insize the gzipped file is valid.
 
-        This code is adapted from: http://stackoverflow.com/questions/2001709/how-to-check-if-a-unix-tar-gz-file-is-a-valid-file-without-uncompressing
+        This code is adapted from: http://stackoverflow.com/questions/2001709/
 
         Args:
             filename (str): a path to the bam file
@@ -474,276 +498,6 @@ def count_lines(filename):
             pass
     return i + 1
 
-### Calling external programs utilites
-def check_programs_exist(programs, raise_on_error=True, package_name=None, 
-            logger=logger):
-
-    """ This function checks that all of the programs in the list cam be
-        called from python. After checking all of the programs, an exception
-        is raised if any of them are not callable. Optionally, only a warning
-        is raised. The name of the package from which the programs are
-        available can also be included in the message.
-
-        Internally, this program uses shutil.which, so see the documentation
-        for more information about the semantics of calling.
-
-        Arguments:
-            programs (list of string): a list of programs to check
-
-        Returns:
-            list of string: a list of all programs which are not found
-
-        Raises:
-            EnvironmentError: if any programs are not callable, then
-                an error is raised listing all uncallable programs.
-    """
-    import shutil
-    
-    raise_deprecation_warning("utils.check_programs_exist", "misc.shell_utils")
-
-    missing_programs = []
-    for program in programs:
-        exe_path = shutil.which(program)
-
-        if exe_path is None:
-            missing_programs.append(program)
-
-    if len(missing_programs) > 0:
-        missing_programs = ' '.join(missing_programs)
-        msg = "The following programs were not found: " + missing_programs
-
-        if package_name is not None:
-            msg = msg + ("\nPlease ensure the {} package is installed."
-                .format(package_name))
-
-        if raise_on_error:
-            raise EnvironmentError(msg)
-        else:
-            logger.warning(msg)
-
-    return missing_programs
-
-
-def check_call_step(cmd, current_step = -1, init_step = -1, call=True, 
-        raise_on_error=True):
-    
-    raise_deprecation_warning("utils.check_call_step", "misc.shell_utils")
-
-    logging.info(cmd)
-    ret_code = 0
-
-    if current_step >= init_step:
-        if call:
-            #logging.info(cmd)
-            logging.info("calling")
-            ret_code = subprocess.call(cmd, shell=True)
-
-            if raise_on_error and (ret_code != 0):
-                raise subprocess.CalledProcessError(ret_code, cmd)
-        else:
-            msg = "skipping due to --do-not-call flag"
-            logging.info(msg)
-    else:
-        msg = "skipping due to --init-step; {}, {}".format(current_step, init_step)
-        logging.info(msg)
-
-    return ret_code
-
-
-
-def check_call(cmd, call=True, raise_on_error=True):
-    
-    raise_deprecation_warning("utils.check_call", "misc.shell_utils")
-
-    return check_call_step(cmd, call=call, raise_on_error=raise_on_error)
-
-def check_output_step(cmd, current_step = 0, init_step = 0, raise_on_error=True):
-    raise_deprecation_warning("utils.check_output_step", "misc.shell_utils")
-
-    logging.info(cmd)
-    if current_step >= init_step:
-        logging.info("calling")
-
-        try:
-            out = subprocess.check_output(cmd, shell=True)
-        except subprocess.CalledProcessError as exc:
-            if raise_on_error:
-                raise exc
-        return out.decode()
-
-def check_output(cmd, call=True, raise_on_error=True):
-    raise_deprecation_warning("utils.check_output", "misc.shell_utils")
-    current_step = 1
-    init_step = 1
-    if not call:
-        init_step = 2
-    return check_output_step(cmd, current_step, init_step, 
-        raise_on_error=raise_on_error)
-
-def call_if_not_exists(cmd, out_files, in_files=[], overwrite=False, call=True,
-            raise_on_error=True, file_checkers=None, num_attempts=1):
-
-    """ This function checks if out_file exists. If it does not, or if overwrite
-        is true, then the command is executed, according to the call flag.
-        Otherwise, a warning is issued stating that the file already exists
-        and that the cmd will be skipped.
-
-        Additionally, a list of input files can be given. If given, they must
-        all exist before the call will be executed. Otherwise, a warning is 
-        issued and the call is not made.
-
-        However, if call is False, the check for input files is still made,
-        but the function will continue rather than quitting. The command will
-        be printed to the screen.
-
-        The return code from the called program is returned.
-
-        By default, if the called program returns a non-zero exit code, an
-        exception is raised.
-
-        Furthermore, a dictionary can be given which maps from a file name to
-        a function which check the integrity of that file. If any of these
-        function calls return False, then the relevant file(s) will be deleted
-        and the call made again. The number of attempts to succeed is given as
-        a parameter to the function.
-
-        Args:
-            cmd (string): the command to execute
-
-            out_files (string or list of strings): path to the files whose existence 
-                to check. If they do not exist, then the path to them will be 
-                created, if necessary.
-
-            overwrite (bool): whether to overwrite the file (i.e., execute the 
-                command, even if the file exists)
-
-            call (bool): whether to call the command, regardless of whether the
-                file exists
-
-            raise_on_error (bool): whether to raise an exception on non-zero 
-                return codes
-
-            file_checkers (dict-like): a mapping from a file name to a function
-                which is used to verify that file. The function should return
-                True to indicate the file is okay or False if it is corrupt. The
-                functions must also accept "raise_on_error" and "logger" 
-                keyword arguments.
-
-            num_attempts (int): the number of times to attempt to create the
-                output files such that all of the verifications return True.
-
-        Returns:
-            int: the return code from the called program
-
-        Warnings:
-            warnings.warn if the out_file already exists and overwrite is False
-            warnings.warn if the in_files do not exist
-
-        Raises:
-            subprocess.CalledProcessError: if the called program returns a
-                non-zero exit code and raise_on_error is True
-                
-            OSError: if the maximum number of attempts is exceeded and the 
-                file_checkers do not all return true and raise_on_error is True
-
-        Imports:
-            os
-            shlex
-    """
-    raise_deprecation_warning("utils.call_if_not_exists", "misc.shell_utils")
-
-    import os
-    import shlex
-
-    ret_code = 0
-
-    # check if the input files exist
-    missing_in_files = []
-    for in_f in in_files:
-        # we need to use shlex to ensure that we remove surrounding quotes in
-        # case the file name has a space, and we are using the quotes to pass
-        # it through shell
-        in_f = shlex.split(in_f)[0]
-
-        if not os.path.exists(in_f):
-            missing_in_files.append(in_f)
-
-    if len(missing_in_files) > 0:
-        msg = "Some input files {} are missing. Skipping call: \n{}".format(missing_in_files, cmd)
-        logger.warn(msg)
-        return ret_code
-
-        # This is here to create a directory structue using "do_not_call". In
-        # hindsight, that does not seem the best way to do this, so it has been
-        # removed.
-        #if call:
-        #    return
-
-
-    # make sure we are working with a list
-    if isinstance(out_files, str):
-        out_files = [out_files]
-
-    # check if the output files exist
-    all_out_exists = all([os.path.exists(of) for of in out_files])
-
-    all_valid = True
-    if overwrite or not all_out_exists:
-        attempt = 0
-        while attempt < num_attempts:
-            attempt += 1
-
-            # create necessary paths
-            [os.makedirs(os.path.dirname(x), exist_ok=True) for x in out_files]
-            
-            # make the call
-            ret_code = check_call(cmd, call=call, raise_on_error=raise_on_error)
-
-            # do not check the files if we are not calling anything
-            if (not call) or (file_checkers is None):
-                break
-
-            # now check the files
-            all_valid = True
-            for filename, checker_function in file_checkers.items():
-                msg = "Checking file for validity: {}".format(filename)
-                logger.debug(msg)
-
-                is_valid = checker_function(filename, logger=logger, 
-                                raise_on_error=False)
-
-                # if the file is not valid, then rename it
-                if not is_valid:
-                    all_valid = False
-                    invalid_filename = "{}.invalid".format(filename)
-                    msg = "Rename invalid file: {} to {}".format(filename, invalid_filename)
-                    logger.warning(msg)
-
-                    os.rename(filename, invalid_filename)
-
-            # if they were all valid, then we are done
-            if all_valid:
-                break
-
-
-    else:
-        msg = "All output files {} already exist. Skipping call: \n{}".format(out_files, cmd)
-        logger.warn(msg)
-
-    # now, check if we succeeded in creating the output files
-    if not all_valid:
-        msg = ("Exceeded maximum number of attempts for cmd. The output files do "
-            "not appear to be valid: {}".format(cmd))
-
-        if raise_on_error:
-            raise OSError(msg)
-        else:
-            logger.critical(msg)
-
-    return ret_code
-
-
-
 ### Path utilities
 
 def abspath(*fn):
@@ -759,30 +513,37 @@ def get_basename(path):
     return os.path.splitext(os.path.basename(path))[0]
 
 def create_symlink(src, dst, remove=True, create=False, call=True):
-    """ This helper function creates or updates a symlink at dst which points to src.
-        That is, src is the "real" file, and dst will be the symlink. If a file is
-        already present at dst, it will be replaced.
+    """ Creates or updates a symlink at dst which points to src.
 
-        If call is false, then this function does nothing.
+    Parameters
+    ----------
+    src: string
+        the path to the original file
 
-        Parameters
-        ----------
-        src: string
-            the path to the original file
+    dst: string
+        the path to the symlink
 
-        dst: string
-            the path to the symlink
+    remove: bool
+        whether to remove any existing file at dst
 
-        remove: bool
-            whether to remove any existing file at dst
+    create: bool
+        whether to create the directory structure necessary for dst
 
-        create: bool
-            whether to create the directory structure necessary for dst
+    call: bool
+        whether to actually do anything
 
-        call: bool
-            whether to actually do anything
+    Returns
+    -------
+    None, but the symlink is created
+
+    Raises
+    ------
+    FileExistsError, if a file already exists at dst and the remove flag is
+        False
     """
     import logging
+
+    raise_deprecation_warning("misc.utils.create_symlink", "misc.shell_utils")
 
     if not call:
         return
@@ -821,23 +582,27 @@ def to_dense(data, row, dtype=float, length=-1):
     return d
 
 def dict_to_dataframe(dic, key_name='key', value_name='value'):
-    """ This function converts a dictionary into a two-column data frame using the given
-        column names. Each entry in the data frame corresponds to one row.
+    """ Convert a dictionary into a two-column data frame using the given
+    column names. Each entry in the data frame corresponds to one row.
 
-        Args:
-            dic (dictionary) : a dictionary
+    Parameters
+    ----------
+    dic: dictionary
+        a dictionary
 
-            key_name (string) : the name to use for the column for the keys
+    key_name: string
+        the name to use for the column for the keys
 
-            value_name (string) : the name to use for the column for the values
+    value_name: string
+        the name to use for the column for the values
 
-        Returns:
-            pd.DataFrame : a data frame in which each row corresponds to one entry
-                in the dictionary
-
-        Imports:
-            pandas
+    Returns
+    -------
+    df: pd.DataFrame
+        a data frame in which each row corresponds to one entry in dic
     """
+    raise_deprecation_warning("dict_to_dataframe", "misc.pandas_utils",
+        "0.3.0", "misc")
     import pandas as pd
 
     df = pd.Series(dic, name=value_name)
@@ -860,20 +625,10 @@ def dataframe_to_dict(df, key_field, value_field):
                 frame, with the keys and values as indicated by the fields
         
     """
+    raise_deprecation_warning("dataframe_to_dict", "misc.pandas_utils",
+        "0.3.0", "misc")
     dic = dict(zip(df[key_field], df[value_field]))
     return dic
-
-def pandas_rows_to_list(rows):
-    return [f[1] for f in rows.iterrows()]
-
-def pandas_unique_values(data_frame, field):
-    import pandas as pd
-    return pd.unique(data_frame[field].ravel())
-
-def normalize_by_length(data_frame, field, length_field, new_field = None):
-    if new_field == None:
-        new_field = 'normalized_{}'.format(field)
-    data_frame[new_field] = data_frame[field] / (data_frame[length_field] + 1)
 
 def pandas_join_string_list(row, field, sep=";"):
     """ This function checks if the value for field in the row is a list. If so,
@@ -885,31 +640,10 @@ def pandas_join_string_list(row, field, sep=";"):
             field (string): the name of the field
             sep (string): the separator to use in joining the values
     """
+    raise_deprecation_warning("pandas_join_string_list", "misc.pandas_utils",
+        "0.3.0", "misc")
     s = wrap_string_in_list(row[field])
     return sep.join(s)
-
-def get_sorted_field_values(filename, field):
-    """ This function reads in the file using pandas. It then extracts the 
-    field, converts it to a numpy array and sorts the values.
-
-    Args:
-        filename (string):  The csv file from which to read
-        field (string):     The field to extract from the file
-
-    Returns:
-        np.array:           The values from the file, sorted
-
-    """
-
-    import pandas as pd
-    import numpy as np
-
-    field_values = pd.read_csv(filename, usecols=[field])
-    field_values = field_values[field]
-    array = np.array(field_values)
-    array.sort()
-    return array
-
 
 excel_extensions = ('xls', 'xlsx')
 hdf5_extensions = ('hdf', 'hdf5', 'h5', 'he5')
@@ -936,6 +670,8 @@ def _guess_df_filetype(filename):
         Imports:
             pandas
     """
+    raise_deprecation_warning("_guess_df_filetype", "misc.pandas_utils",
+        "0.3.0", "misc")
     import pandas as pd
 
     msg = "Attempting to guess the extension. Filename: {}".format(filename)
@@ -992,6 +728,8 @@ def read_df(filename, filetype='AUTO', sheet=None, **kwargs):
         Imports:
             pandas
     """
+    raise_deprecation_warning("read_df", "misc.pandas_utils",
+        "0.3.0", "misc")
     import pandas as pd
 
     # first, see if we want to guess the filetype
@@ -1011,7 +749,8 @@ def read_df(filename, filetype='AUTO', sheet=None, **kwargs):
 
     return df
 
-def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1', do_not_compress=False, **kwargs):
+def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
+        do_not_compress=False, **kwargs):
     """ This function writes a data frame to a file of the specified type. 
         Unless otherwise specified, csv files are gzipped when written. By
         default, the filetype will be guessed based on the extension. The 
@@ -1065,6 +804,8 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1', do_no
         -------
         None, but the file is created
     """
+    raise_deprecation_warning("write_df", "misc.pandas_utils",
+        "0.3.0", "misc")
     import gzip
     import pandas as pd
     
@@ -1100,7 +841,8 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1', do_no
     elif filetype == 'hdf5':
         df.to_hdf(out, sheet, **kwargs)
     else:
-        msg = "Could not write the dataframe. Invalid filetype: {}".format(filetype)
+        msg = ("Could not write the dataframe. Invalid filetype: {}".format(
+            filetype))
         raise ValueError(msg)
 
 def append_to_xlsx(df, xlsx, sheet='Sheet_1', **kwargs):
@@ -1127,6 +869,8 @@ def append_to_xlsx(df, xlsx, sheet='Sheet_1', **kwargs):
             pandas
             openpyxl
     """
+    raise_deprecation_warning("append_to_xlsx", "misc.pandas_utils",
+        "0.3.0", "misc")
     import os
     import pandas as pd
     import openpyxl
@@ -1318,7 +1062,7 @@ def list_insert_list(l, to_insert, index):
         original list.
 
 
-        This function is adapted from: http://stackoverflow.com/questions/7376019/list-extend-to-index-inserting-list-elements-not-only-to-the-end/
+        This function is adapted from: http://stackoverflow.com/questions/7376019/
 
         Example:
 
@@ -1449,7 +1193,7 @@ def grouper(n, iterable):
         does not pad the last group.
 
         The code was directly take from stackoverflow:
-            http://stackoverflow.com/questions/3992735/python-generator-that-groups-another-iterable-into-groups-of-n
+            http://stackoverflow.com/questions/3992735/
 
     """
     import itertools
