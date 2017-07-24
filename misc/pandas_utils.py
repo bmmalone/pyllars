@@ -60,6 +60,7 @@ def dataframe_to_dict(df, key_field, value_field):
 
 excel_extensions = ('xls', 'xlsx')
 hdf5_extensions = ('hdf', 'hdf5', 'h5', 'he5')
+parquet_extensions = ('parq', )
 
 def _guess_df_filetype(filename):
     """ This function attempts to guess the filetype given a filename. It is
@@ -68,6 +69,7 @@ def _guess_df_filetype(filename):
 
             excel: xls, xlsx
             hdf5: hdf, hdf5, h5, he5
+            parquet: parq
             csv: all other extensions
 
         Additionally, if filename is a pd.ExcelWriter object, then the guessed
@@ -94,6 +96,8 @@ def _guess_df_filetype(filename):
         filetype = 'excel'
     elif filename.endswith(hdf5_extensions):
         filetype= 'hdf5'
+    elif filename.endswith(parquet_extensions):
+        filetype= 'parquet'
     else:
         filetype = 'csv'
 
@@ -110,6 +114,7 @@ def read_df(filename, filetype='AUTO', sheet=None, **kwargs):
 
             excel: xls, xlsx
             hdf5: hdf, hdf5, h5, he5
+            parquet: parq
             csv: all other extensions
 
         N.B. In principle, matlab data files are hdf5, so this function should
@@ -136,10 +141,9 @@ def read_df(filename, filetype='AUTO', sheet=None, **kwargs):
             ValueError: if the filetype is not 'AUTO' or one of the values
                 mentioned above ('excel', 'hdf5', 'csv')
 
-        Imports:
-            pandas
     """
     import pandas as pd
+    import fastparquet
 
     # first, see if we want to guess the filetype
     if filetype == 'AUTO':
@@ -152,6 +156,9 @@ def read_df(filename, filetype='AUTO', sheet=None, **kwargs):
         df = pd.read_excel(filename, sheetname=sheet, **kwargs)
     elif filetype == 'hdf5':
         df = pd.read_hdf(filename, key=sheet, **kwargs)
+    elif filetype == "parquet":
+        pf = fastparquet.ParquetFile(filename, **kwargs)
+        df = pf.to_pandas()
     else:
         msg = "Could not read dataframe. Invalid filetype: {}".format(filetype)
         raise ValueError(msg)
@@ -167,6 +174,7 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
 
             excel: xls, xlsx
             hdf5: hdf, hdf5, h5, he5
+            parquet: parq
             csv: all other extensions (e.g., "gz" or "bed")
 
         Additionally, the filetype can be specified as 'excel_writer'. In this
@@ -215,6 +223,7 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
     """
     import gzip
     import pandas as pd
+    import fastparquet
     
     # first, see if we want to guess the filetype
     if filetype == 'AUTO':
@@ -247,6 +256,12 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
 
     elif filetype == 'hdf5':
         df.to_hdf(out, sheet, **kwargs)
+
+    elif filetype == 'parquet':
+        if not do_not_compress:
+            kwargs['compression'] = 'GZIP'
+        fastparquet.write(out, df, **kwargs)
+
     else:
         msg = ("Could not write the dataframe. Invalid filetype: {}".format(
             filetype))
