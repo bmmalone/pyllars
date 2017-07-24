@@ -7,8 +7,15 @@
 #   hold various types of records.
 ###
 
+import gzip
+import os
+import shutil
+
 import numpy as np
 import pandas as pd
+
+import openpyxl
+import fastparquet
 
 import logging
 logger = logging.getLogger(__name__)
@@ -33,8 +40,6 @@ def dict_to_dataframe(dic, key_name='key', value_name='value'):
     df: pd.DataFrame
         a data frame in which each row corresponds to one entry in dic
     """
-    import pandas as pd
-
     df = pd.Series(dic, name=value_name)
     df.index.name = key_name
     df = df.reset_index()
@@ -85,8 +90,6 @@ def _guess_df_filetype(filename):
         Imports:
             pandas
     """
-    import pandas as pd
-
     msg = "Attempting to guess the extension. Filename: {}".format(filename)
     logger.debug(msg)
 
@@ -142,9 +145,6 @@ def read_df(filename, filetype='AUTO', sheet=None, **kwargs):
                 mentioned above ('excel', 'hdf5', 'csv')
 
     """
-    import pandas as pd
-    import fastparquet
-
     # first, see if we want to guess the filetype
     if filetype == 'AUTO':
         filetype = _guess_df_filetype(filename)
@@ -221,9 +221,6 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
         -------
         None, but the file is created
     """
-    import gzip
-    import pandas as pd
-    import fastparquet
     
     # first, see if we want to guess the filetype
     if filetype == 'AUTO':
@@ -260,6 +257,16 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
     elif filetype == 'parquet':
         if not do_not_compress:
             kwargs['compression'] = 'GZIP'
+
+        # if a parquet "file" exists, delete it
+        if os.path.exists(out):
+            # it could be either a folder or a file
+            if os.path.isfile(out):
+                # delete file
+                os.remove(out)
+            else:
+                # delete directory
+                shutil.rmtree(out)
         fastparquet.write(out, df, **kwargs)
 
     else:
@@ -291,9 +298,6 @@ def append_to_xlsx(df, xlsx, sheet='Sheet_1', **kwargs):
             pandas
             openpyxl
     """
-    import os
-    import pandas as pd
-    import openpyxl
 
     # check if the file already exists
     if os.path.exists(xlsx):
