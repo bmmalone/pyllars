@@ -4,6 +4,10 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.2.2] - 2017-07-24
+### Added
+- A helper for controlling dask clusters
+
 ## [0.2.1] - 2017-07-01
 ### Added
 - A helper `shell_utils.download_file` to download external files and save them
