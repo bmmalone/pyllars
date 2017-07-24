@@ -16,7 +16,7 @@ def connect(args):
 
     If a local cluster is started, it will use a number of worker processes
     equal to args.num_cpus. Each process will use args.num_threads_per_cpu
-    threads.
+    threads. The scheduler for the local cluster will listen to a random port.
 
     Parameters
     ----------
