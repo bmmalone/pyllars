@@ -103,7 +103,6 @@ def permute_matrix(m, is_flat=False, shape=None):
 
     return permuted_m
 
-
 def calculate_univariate_gaussian_kl(mean_p_var_p, mean_q_var_q):
     """ This function calculates the (asymmetric) KL-divergence between
         the univariate Gaussian distributions p and q.
@@ -132,6 +131,27 @@ def calculate_univariate_gaussian_kl(mean_p_var_p, mean_q_var_q):
     t_3 = np.log(2*var_p)
     kl = t_1 - 0.5 + np.exp(t_2 - t_3)
     return kl
+
+
+def remove_negatives(x): 
+    """ Remove all negative and NaN values from x
+
+    Parameters
+    ----------
+    x: np.array
+        An array
+
+    Returns
+    -------
+    non_negative_x: np.array
+        A copy of x which does not contain any negative (or NaN) values. The
+        shape of non_negative_x depends on the number of negative/NaN values
+        in x.
+    """
+    x = x[x >= 0]
+    return x
+
+
 
 def is_monotonic(x, increasing=True):
     """ This function checks whether a given list is monotonically increasing
