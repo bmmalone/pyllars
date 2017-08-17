@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [0.2.3] - In progress
 ### Added
 - Helper to remove negative values from an np.array
+- Helper to collect sklearn classification metrics
 
 ### Updated
 - Support for parquet files in `pandas_utils`
