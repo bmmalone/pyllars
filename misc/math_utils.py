@@ -748,7 +748,8 @@ def l1_distance(p, q):
     return np.sum(diff)
 
 
-def collect_classification_metrics(y_probas_pred, y_true, threshold=0.5):
+def collect_binary_classification_metrics(y_probas_pred, y_true, threshold=0.5,
+        pos_label=1):
     """ Collect various classification performance metrics for the predictions
 
     Parameters
@@ -761,6 +762,9 @@ def collect_classification_metrics(y_probas_pred, y_true, threshold=0.5):
 
     threshold: float in (0,1]
         The threshold to choose "positive" predictions
+
+    pos_label: str or int
+        The "positive" class for some metrics
 
     Returns
     -------
@@ -780,19 +784,37 @@ def collect_classification_metrics(y_probas_pred, y_true, threshold=0.5):
          "hinge_loss":  sklearn.metrics.hinge_loss(y_true, y_score),
          "matthews_corrcoef":  sklearn.metrics.matthews_corrcoef(y_true, y_pred),
          "accuracy":  sklearn.metrics.accuracy_score(y_true, y_pred),
-         "f1_score":  sklearn.metrics.f1_score(y_true, y_pred),
+         "binary_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
+            average='binary', pos_label=pos_label),
+         "micro_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
+            average='micro', pos_label=pos_label),
+         "macro_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
+            average='macro', pos_label=pos_label),
          "hamming_loss":  sklearn.metrics.hamming_loss(y_true, y_pred),
-         "jaccard_similarity_score":  sklearn.metrics.jaccard_similarity_score(y_true, y_pred),
+         "jaccard_similarity_score":  sklearn.metrics.jaccard_similarity_score(
+            y_true, y_pred),
          "log_loss":  sklearn.metrics.log_loss(y_true, y_probas_pred),
-         "micro_prediction":  sklearn.metrics.precision_score(y_true, y_pred, average='micro'),
-         "macro_prediction":  sklearn.metrics.precision_score(y_true, y_pred, average='macro'),
-         "micro_recall":  sklearn.metrics.recall_score(y_true, y_pred, average='micro'),
-         "macro_recall":  sklearn.metrics.recall_score(y_true, y_pred, average='macro'),
+         "micro_precision":  sklearn.metrics.precision_score(y_true, y_pred,
+            average='micro', pos_label=pos_label),
+         "binary_precision":  sklearn.metrics.precision_score(y_true, y_pred,
+            average='binary', pos_label=pos_label),
+         "macro_precision":  sklearn.metrics.precision_score(y_true, y_pred,
+            average='macro', pos_label=pos_label),
+         "micro_recall":  sklearn.metrics.recall_score(y_true, y_pred,
+            average='micro', pos_label=pos_label),
+         "macro_recall":  sklearn.metrics.recall_score(y_true, y_pred,
+            average='macro', pos_label=pos_label),
+         "binary_recall":  sklearn.metrics.recall_score(y_true, y_pred,
+            average='binary', pos_label=pos_label),
          "zero_one_loss":  sklearn.metrics.zero_one_loss(y_true, y_pred),
-         "micro_average_precision":  sklearn.metrics.average_precision_score(y_true, y_score, average='micro'),
-         "macro_average_precision":  sklearn.metrics.average_precision_score(y_true, y_score, average='macro'),
-         "micro_roc_auc_score":  sklearn.metrics.roc_auc_score(y_true, y_score, average='micro'),
-         "macro_roc_auc_score":  sklearn.metrics.roc_auc_score(y_true, y_score, average='macro')
+         "micro_average_precision":  sklearn.metrics.average_precision_score(
+            y_true, y_score, average='micro'),
+         "macro_average_precision":  sklearn.metrics.average_precision_score(
+            y_true, y_score, average='macro'),
+         "micro_roc_auc_score":  sklearn.metrics.roc_auc_score(y_true, y_score,
+            average='micro'),
+         "macro_roc_auc_score":  sklearn.metrics.roc_auc_score(y_true, y_score,
+            average='macro')
     }
 
     return ret
