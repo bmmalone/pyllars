@@ -18,6 +18,7 @@
 from enum import Enum
 import numpy as np
 import scipy.stats
+import sklearn
 
 import logging
 logger = logging.getLogger(__name__)
