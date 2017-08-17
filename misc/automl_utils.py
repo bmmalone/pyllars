@@ -56,6 +56,7 @@ all_preprocessors = fp._preprocessors.keys()
 all_regressors = r._regressors.keys()
 
 from autosklearn.regression import AutoSklearnRegressor
+from autosklearn.classification import AutoSklearnClassifier
 
 pipeline_steps = [
     'one_hot_encoding', 
@@ -93,6 +94,18 @@ pipeline_step_names_map = {
     "<class 'sklearn.linear_model.bayes.ARDRegression'>": "Bayesian ridge regression",
     "<class 'sklearn.svm.classes.LinearSVR'>": "linear support vector regression"
 }
+
+
+def _validate_aml(aml):
+    """ Check that aml looks like a valid ensemble
+    """
+
+    if len(aml) < 2:
+        msg = ("aml must be a list-like with at least two elements. Presumably, "
+            "it is either read from a pickle file using read_automl or created "
+            "by calling extract_automl_results on a fit AutoSklearnXXX model")
+        raise ValueError(msg)
+
 
 def get_aml_estimator(aml_model_pipeline, pipeline_step='regressor'):
     """ This function extracts the estimator (stored at the specified step in
@@ -152,7 +165,7 @@ def extract_automl_results(automl, estimtor_named_step='regressor'):
     ]
     
     aml_estimators = [
-        get_aml_estimator(m) for m in aml_pipelines
+        get_aml_estimator(m, estimtor_named_step) for m in aml_pipelines
     ]
 
     return (nonzero_weights, aml_pipelines, aml_estimators)
@@ -221,22 +234,12 @@ def read_automl(in_file):
     automl = AutoML(automl)
     return automl
 
-def automl_predict(X_test, aml):
-    """ This function uses the fitted automl object (read back in from a pickle
-        file using read_automl or extracted from a fit AutoSklearnXXX model) to 
-        make predictions on the given test dataset.
-
-        Imports:
-            numpy
+def automl_predict_regression(X_test, aml):
+    """ Predict the values using the fitted automl object
     """
     import numpy as np
 
-    if len(aml) < 2:
-        msg = ("aml must be a list-like with at least two elements. Presumably, "
-            "it is either read from a pickle file using read_automl or created "
-            "by calling extract_automl_results on a fit AutoSklearnXXX model")
-        raise ValueError(msg)
-
+    _validate_aml(aml)
     (weights, pipelines) = (aml[0], aml[1])
 
     y_pred = np.array([w*p.predict(X_test) 
@@ -244,6 +247,37 @@ def automl_predict(X_test, aml):
 
     y_pred = y_pred.sum(axis=0)
     return y_pred
+
+def automl_predict_classification(X_test, aml):
+    """ Predict the class using the fitted automl object and weighted majority
+    voting
+    """
+
+    # first, get the weighted predictions from each member of the ensemble
+    y_pred = automl_predict_proba(X_test, aml)
+
+    # now take the majority vote
+    y_pred = y_pred.argmax(axis=1)
+
+    return y_pred
+
+
+def automl_predict_proba(X_test, aml):
+    """ Predict the class probabilities using the fitted automl object
+    """
+    import numpy as np
+
+    _validate_aml(aml)
+    (weights, pipelines) = (aml[0], aml[1])
+
+    y_pred = np.array([w*p.predict_proba(X_test) 
+                            for w,p in zip(weights, pipelines)])
+
+    y_pred = y_pred.sum(axis=0)
+    return y_pred
+
+
+
 
 class AutoSklearnWrapper(object):
     """ A wrapper for an autosklearn wrapper to easily integrate it within a
@@ -254,6 +288,53 @@ class AutoSklearnWrapper(object):
     def __init__(self, aml=None, autosklearn_model=None):
         self.aml = aml
         self.autosklearn_model = autosklearn_model
+        self.estimator_named_step = None
+
+    def create_classifier(self, args, **kwargs):        
+        """ Create an AutoSklearnClassifier and use it as the autosklearn_model.
+
+        The parameters can either be passed via an argparse.Namespace or using
+        keyword arguments. The keyword arguments take precedence over args. The
+        following keywords are used:
+
+            * total_training_time
+            * iteration_time_limit
+            * ensemble_size
+            * ensemble_nbest
+            * seed
+            * estimators
+            * tmp
+
+        Parameters
+        ----------
+        args: Namespace
+            An argparse.Namepsace-like object which  presumably comes from
+            parsing the add_automl_options arguments.
+
+        kwargs: key=value pairs
+            Additional options for creating the autosklearn classifier
+        Returns
+        -------
+        self
+        """
+
+        args_dict = args.__dict__
+        args_dict.update(kwargs)
+
+        classifier = AutoSklearnClassifier(
+            time_left_for_this_task=args_dict.get('total_training_time', None),
+            per_run_time_limit=args_dict.get('iteration_time_limit', None),
+            ensemble_size=args_dict.get('ensemble_size', None),
+            ensemble_nbest=args_dict.get('ensemble_nbest', None),
+            seed=args_dict.get('seed', None),
+            include_estimators=args_dict.get('estimators', None),
+            tmp_folder=args_dict.get('tmp', None)
+        )
+
+        self.autosklearn_model = classifier
+        self.estimator_named_step = "classifier"
+        return self
+
 
     def create_regressor(self, args, **kwargs):        
         """ Create an AutoSklearnRegressor and use it as the autosklearn_model.
@@ -297,22 +378,50 @@ class AutoSklearnWrapper(object):
         )
 
         self.autosklearn_model = regressor
+        self.estimator_named_step = "regressor"
         return self
 
     def predict(self, X_test):
         """ Use the automl ensemble to predict on the given test set.
         """
+        
+        predict_f = automl_predict_classification
+        if self.estimator_named_step == "regressor":
+            predict_f = automl_predict_regression        
+
         if self.aml is not None:
-            return automl_predict(X_test, self.aml)
+            return predict_f(X_test, self.aml)
         elif self.autosklearn_model is not None:
             vals = extract_automl_results(self.autosklearn_model)
             (weights, pipelines, estimators) = vals
             self.aml = (weights, pipelines)
-            return automl_predict(X_test, self.aml)
+            return predict_f(X_test, self.aml)
         else:
             msg = ("[AutoML]: cannot predict without setting aml or "
                 "autosklearn_model")
             raise ValueError(msg)
+
+    def predict_proba(self, X_test):
+        """ Use the automl ensemble to estimate class probabilities
+        """
+
+        if self.estimator_named_step == "regressor":
+            msg = ("[AutoML]: cannot use predict_proba for regression "
+                "problems")
+            raise ValueError(msg)
+
+        if self.aml is not None:
+            return automl_predict_proba(X_test, self.aml)
+        elif self.autosklearn_model is not None:
+            vals = extract_automl_results(self.autosklearn_model)
+            (weights, pipelines, estimators) = vals
+            self.aml = (weights, pipelines)
+            return automl_predict_proba(X_test, self.aml)
+        else:
+            msg = ("[AutoML]: cannot predict without setting aml or "
+                "autosklearn_model")
+            raise ValueError(msg)
+
 
 
     def fit(self, X_train, y):
@@ -322,7 +431,8 @@ class AutoSklearnWrapper(object):
             raise ValueError(msg)
 
         self.autosklearn_model.fit(X_train, y)
-        vals = extract_automl_results(self.autosklearn_model)
+        vals = extract_automl_results(self.autosklearn_model,
+            self.estimator_named_step)
         (weights, pipelines, estimators) = vals
         self.aml = (weights, pipelines)
 
@@ -332,13 +442,16 @@ class AutoSklearnWrapper(object):
         """ This returns everything to be pickled. """
         state = {}
         if self.autosklearn_model is not None:
-            vals = extract_automl_results(self.autosklearn_model)
+            vals = extract_automl_results(self.autosklearn_model,
+                self.estimator_named_step)
             (weights, pipelines, estimators) = vals
             state['weights'] = weights
             state['pipelines'] = pipelines
+            state['estimator_named_step'] = self.estimator_named_step
         elif self.aml is not None:
             state['weights'] = self.aml[0]
             state['pipelines'] = self.aml[1]
+            state['estimator_named_step'] = self.estimator_named_step
         else:
             msg = ("[AutoML]: cannot pickle without setting aml or "
                 "autosklearn_model")
@@ -348,6 +461,7 @@ class AutoSklearnWrapper(object):
     def __setstate__(self, state):
         """ This re-creates the object after pickling. """
         self.aml = (state['weights'], state['pipelines'])
+        self.estimator_named_step = state['estimator_named_step']
         self.autosklearn_model = None
 
         

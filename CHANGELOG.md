@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [0.2.4] - In progress
 ### Added
 - Helper to collect sklearn classification metrics
+- Classification helpers to `automl_utils`
 
 ## [0.2.3] - 2017-07-27
 ### Added
