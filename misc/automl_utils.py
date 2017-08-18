@@ -112,6 +112,7 @@ def get_aml_estimator(aml_model_pipeline, pipeline_step='regressor'):
         the pipeline.
     """
     
+    print(aml_model_pipeline)
     aml_model_model = aml_model_pipeline.named_steps[pipeline_step]
     
     # this is from the old development branch
@@ -159,6 +160,9 @@ def extract_automl_results(automl, estimtor_named_step='regressor'):
     aml_models = [
         models[tuple(m)] for m in nonzero_model_identifiers
     ]
+
+    for m in aml_models:
+        print("model: ", m)
     
     aml_pipelines = [
         get_aml_pipeline(m) for m in aml_models
@@ -556,6 +560,90 @@ def get_automl_options_string(args):
     s = "{} {}".format(estimators, s)
 
     return s
+
+###
+#   Utilities to help with OpenBLAS
+###
+def add_blas_options(parser, default_num_blas_cpus=1):
+    """ Add options to the parser to control the number of BLAS threads
+    """
+    parser.add_argument('--num-blas-threads', help="The number of threads to "
+        "use for parallelizing BLAS. The total number of CPUs will be "
+        "\"num_cpus * num_blas_cpus\". Currently, this flag only affects "
+        "OpenBLAS and MKL.", type=int, default=default_num_blas_cpus)
+
+    parser.add_argument('--do-not-update-env', help="By default, num-blas-threads "
+        "requires that relevant environment variables are updated. Likewise, "
+        "if num-cpus is greater than one, it is necessary to turn off python "
+        "assertions due to an issue with multiprocessing. If this flag is "
+        "present, then the script assumes those updates are already handled. "
+        "Otherwise, the relevant environment variables are set, and a new "
+        "processes is spawned with this flag and otherwise the same "
+        "arguments. This flag is not inended for external users.",
+        action='store_true')
+
+def spawn_for_blas(args):
+    """ Based on the BLAS command line arguments, update the environment and
+    spawn a new version of the process
+
+    Parameters
+    ----------
+    args: argparse.Namespace
+        A namespace containing num_cpus, num_blas_threads and do_not_update_env
+
+    Returns
+    -------
+    spawned: bool
+        A flag indicating whether a new process was spawned. Presumably, if it
+        was, the calling context should quit
+    """
+    import os
+    import sys
+    import shlex
+
+    import misc.shell_utils as shell_utils
+
+    spawned = False
+    if not args.do_not_update_env:
+
+        ###
+        #
+        # There is a lot going on with settings these environment variables.
+        # please see the following references:
+        #
+        #   Turning off assertions so we can parallelize sklearn across
+        #   multiple CPUs for different solvers/folds
+        #       https://github.com/celery/celery/issues/1709
+        #
+        #   Controlling OpenBLAS threads
+        #       https://github.com/automl/auto-sklearn/issues/166
+        #
+        #   Other environment variables controlling thread usage
+        #       http://stackoverflow.com/questions/30791550
+        #
+        ###
+        
+        # we only need to turn off the assertions if we parallelize across cpus
+        if args.num_cpus > 1:
+            os.environ['PYTHONOPTIMIZE'] = "1"
+
+        # openblas
+        os.environ['OPENBLAS_NUM_THREADS'] = str(args.num_blas_threads)
+        
+        # mkl blas
+        os.environ['MKL_NUM_THREADS'] = str(args.num_blas_threads)
+
+        # other stuff from the SO post
+        os.environ['OMP_NUM_THREADS'] = str(args.num_blas_threads)
+        os.environ['NUMEXPR_NUM_THREADS'] = str(args.num_blas_threads)
+
+        cmd = ' '.join(shlex.quote(a) for a in sys.argv)
+        cmd += " --do-not-update-env"
+        shell_utils.check_call(cmd)
+        spawned = True
+
+    return spawned
+
 
 ###
 #   Utilities to help with the autofolio package:
