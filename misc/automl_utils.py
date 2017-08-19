@@ -5,11 +5,16 @@
 import logging
 logger = logging.getLogger(__name__)
 
+import misc.utils as utils
+
+import numpy as np
+import sklearn.preprocessing
 
 imputer_strategies = [
     'mean', 
     'median', 
-    'most_frequent'
+    'most_frequent',
+    'zero_fill'
 ]
 
 def check_imputer_strategy(imputer_strategy, raise_error=True, error_prefix=""):
@@ -46,6 +51,32 @@ def check_imputer_strategy(imputer_strategy, raise_error=True, error_prefix=""):
 
     return True
 
+def get_imputer(imputer_strategy):
+    """ Get the imputer for use in an sklearn pipeline
+
+    Parameters
+    ----------
+    imputer_strategy: str
+        The name of the strategy to use. This must be one of the imputer
+        strategies. check_imputer_strategy can be used to verify the string.
+
+    Returns
+    -------
+    imputer: sklearn.transformer
+        A transformer with the specified strategy
+    """
+
+    imputer = None
+    if imputer_strategy == 'zero_fill':
+        imputer = sklearn.preprocessing.FunctionTransformer(
+            np.nan_to_num,
+            validate=False
+        )
+
+    else:
+        imputer = sklearn.preprocessing.Imputer(strategy=imputer_strategy)
+
+    return imputer
 
 import autosklearn.pipeline.components.classification as c
 import autosklearn.pipeline.components.feature_preprocessing as fp
@@ -112,7 +143,13 @@ def get_aml_estimator(aml_model_pipeline, pipeline_step='regressor'):
         the pipeline.
     """
     
-    print(aml_model_pipeline)
+    dummy_type = "autosklearn.evaluation.abstract_evaluator.MyDummyClassifier"
+    dummy_type = utils.get_type(dummy_type)
+
+    aml_type = type(aml_model_pipeline)
+    if aml_type == dummy_type:
+        return None
+
     aml_model_model = aml_model_pipeline.named_steps[pipeline_step]
     
     # this is from the old development branch
@@ -161,9 +198,6 @@ def extract_automl_results(automl, estimtor_named_step='regressor'):
         models[tuple(m)] for m in nonzero_model_identifiers
     ]
 
-    for m in aml_models:
-        print("model: ", m)
-    
     aml_pipelines = [
         get_aml_pipeline(m) for m in aml_models
     ]
@@ -496,7 +530,7 @@ def add_automl_options(parser,
     """
     automl_options = parser.add_argument_group("auto-sklearn options")
 
-    automl_options.add_argument('-o', '--out', help="The output folder", 
+    automl_options.add_argument('--out', help="The output folder", 
         default=default_out)
     automl_options.add_argument('--tmp', help="If specified, this will be used "
         "as the temp directory rather than the default", default=default_tmp)
@@ -567,12 +601,14 @@ def get_automl_options_string(args):
 def add_blas_options(parser, default_num_blas_cpus=1):
     """ Add options to the parser to control the number of BLAS threads
     """
-    parser.add_argument('--num-blas-threads', help="The number of threads to "
+    blas_options = parser.add_argument_group("blas options")
+
+    blas_options.add_argument('--num-blas-threads', help="The number of threads to "
         "use for parallelizing BLAS. The total number of CPUs will be "
         "\"num_cpus * num_blas_cpus\". Currently, this flag only affects "
         "OpenBLAS and MKL.", type=int, default=default_num_blas_cpus)
 
-    parser.add_argument('--do-not-update-env', help="By default, num-blas-threads "
+    blas_options.add_argument('--do-not-update-env', help="By default, num-blas-threads "
         "requires that relevant environment variables are updated. Likewise, "
         "if num-cpus is greater than one, it is necessary to turn off python "
         "assertions due to an issue with multiprocessing. If this flag is "
