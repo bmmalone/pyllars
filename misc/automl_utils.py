@@ -323,10 +323,20 @@ class AutoSklearnWrapper(object):
     usage while auto-sklearn is still under development.
     """
 
-    def __init__(self, aml=None, autosklearn_model=None):
+    def __init__(self,
+            aml=None,
+            autosklearn_model=None,
+            estimator_named_step=None,
+            args=None):
+
+        msg = ("[AutoML]: initializing a wrapper. aml: {}. autosklearn: {}".
+            format(aml, autosklearn_model))
+        logger.debug(msg)
+
+        self.args = args
         self.aml = aml
         self.autosklearn_model = autosklearn_model
-        self.estimator_named_step = None
+        self.estimator_named_step = estimator_named_step
 
     def create_classifier(self, args, **kwargs):        
         """ Create an AutoSklearnClassifier and use it as the autosklearn_model.
@@ -427,17 +437,11 @@ class AutoSklearnWrapper(object):
         if self.estimator_named_step == "regressor":
             predict_f = automl_predict_regression        
 
-        if self.aml is not None:
-            return predict_f(X_test, self.aml)
-        elif self.autosklearn_model is not None:
-            vals = extract_automl_results(self.autosklearn_model)
-            (weights, pipelines, estimators) = vals
-            self.aml = (weights, pipelines)
-            return predict_f(X_test, self.aml)
-        else:
-            msg = ("[AutoML]: cannot predict without setting aml or "
-                "autosklearn_model")
+        if self.aml is None:
+            msg = ("[AutoML]: cannot predict without setting or fitting aml")
             raise ValueError(msg)
+        
+        return predict_f(X_test, self.aml)
 
     def predict_proba(self, X_test):
         """ Use the automl ensemble to estimate class probabilities
@@ -448,45 +452,116 @@ class AutoSklearnWrapper(object):
                 "problems")
             raise ValueError(msg)
 
-        if self.aml is not None:
-            return automl_predict_proba(X_test, self.aml)
-        elif self.autosklearn_model is not None:
-            vals = extract_automl_results(self.autosklearn_model)
-            (weights, pipelines, estimators) = vals
-            self.aml = (weights, pipelines)
-            return automl_predict_proba(X_test, self.aml)
-        else:
-            msg = ("[AutoML]: cannot predict without setting aml or "
-                "autosklearn_model")
+        if self.aml is None:
+            msg = ("[AutoML]: cannot predict without setting or fitting aml")
             raise ValueError(msg)
+            
+        return automl_predict_proba(X_test, self.aml)
 
 
 
     def fit(self, X_train, y):
         """ Fit the autosklearn model. """
+
+        # check if we have either args or a learner
+        
+
+        if self.args is not None:
+            if self.estimator_named_step == 'regressor':
+                msg = "[AutoML]: creating an autosklearn regressor model"
+                logger.debug(msg)
+
+                self.create_regressor(self.args)
+            else:
+                msg = "[AutoML]: creating an autosklearn classifier model"
+                logger.debug(msg)
+
+                self.create_classifier(self.args)
+
         if self.autosklearn_model is None:
-            msg = "[AutoML]: cannot fit with having an autosklearn_model"
+            msg = "[AutoML]: cannot fit without having an autosklearn_model"
             raise ValueError(msg)
+
+        msg = "[AutoML]: fitting a wrapper"
+        logger.debug(msg)
 
         self.autosklearn_model.fit(X_train, y)
         vals = extract_automl_results(self.autosklearn_model,
             self.estimator_named_step)
         (weights, pipelines, estimators) = vals
         self.aml = (weights, pipelines)
+        
+        # since we have the ensemble, we can get rid of the BO model
+        self.autosklearn_model = None
 
         return self
 
+    def get_params(self, deep=True):
+        msg = "[AutoML]: get_params"
+        logger.debug(msg)
+
+        params = {
+            'autosklearn_model': self.autosklearn_model,
+            'aml': self.aml,
+            'estimator_named_step': self.estimator_named_step,
+            'args': self.args
+        }
+        return params
+
+    def set_params(self, **parameters):
+        msg = "[AutoML]: set_params"
+        logger.debug(msg)
+
+        if 'args' in parameters:
+            self.args = parameters.pop('args')
+
+        if 'autosklearn_model' in parameters:
+            self.autosklearn_model = parameters.pop('autosklearn_model')
+
+        if 'aml' in parameters:
+            self.aml = parameters.pop('aml')
+
+        if 'estimator_named_step' in parameters:
+            self.estimator_named_step = parameters.pop('estimator_named_step')
+
+        return self
+
+
     def __getstate__(self):
         """ This returns everything to be pickled. """
+        import sys
+        caller_name = sys._getframe(1).f_code.co_name
+
+        msg = "[AutoML]: calling __getstate__. caller: {}".format(caller_name)
+        logger.debug(msg)
+        
         state = {}
+        state['args'] = self.args
+        state['autosklearn_model'] = self.autosklearn_model
+        state['aml'] = self.aml
+        state['estimator_named_step'] = self.estimator_named_step
+
+        return state
+
+    def getstate_old(self):
+
         if self.autosklearn_model is not None:
+            # I believe it is possible to reach here without having yet
+            # fit the model
+
+            # I believe this is because parallel training first uses joblib
+            # to pickle the model and pass it to the other processes
+
             vals = extract_automl_results(self.autosklearn_model,
                 self.estimator_named_step)
             (weights, pipelines, estimators) = vals
+
+            state['autosklearn_model'] = self.autosklearn_model
             state['weights'] = weights
             state['pipelines'] = pipelines
             state['estimator_named_step'] = self.estimator_named_step
         elif self.aml is not None:
+            state['autosklearn_model'] = self.autosklearn_model
             state['weights'] = self.aml[0]
             state['pipelines'] = self.aml[1]
             state['estimator_named_step'] = self.estimator_named_step
@@ -498,9 +573,14 @@ class AutoSklearnWrapper(object):
 
     def __setstate__(self, state):
         """ This re-creates the object after pickling. """
-        self.aml = (state['weights'], state['pipelines'])
+        msg = "[AutoML]: __setstate__"
+        logger.debug(msg)
+
+        self.args = state['args']
+        self.autosklearn_model = state['autosklearn_model']
         self.estimator_named_step = state['estimator_named_step']
-        self.autosklearn_model = None
+        self.aml = state['aml']
+        #self.aml = (state['weights'], state['pipelines'])
 
         
 
