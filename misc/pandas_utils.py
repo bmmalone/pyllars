@@ -158,7 +158,10 @@ def read_df(filename, filetype='AUTO', sheet=None, **kwargs):
         df = pd.read_hdf(filename, key=sheet, **kwargs)
     elif filetype == "parquet":
         pf = fastparquet.ParquetFile(filename, **kwargs)
-        df = pf.to_pandas()
+
+        # multi-indices are not yet supported, so we always have to turn
+        # off indices to avoid a NotImplementedError
+        df = pf.to_pandas(index=False)
     else:
         msg = "Could not read dataframe. Invalid filetype: {}".format(filetype)
         raise ValueError(msg)

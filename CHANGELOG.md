@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Helper to collect sklearn classification metrics
 - Classification helpers to `automl_utils`
 
+### Fixed
+- Parquet reader to handle (ignore) multi-indexes
+
 ## [0.2.3] - 2017-07-27
 ### Added
 - Helper to remove negative values from an np.array
