@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Helper to collect sklearn classification metrics
 - Classification helpers to `automl_utils`
 
+### Updated
+- `AutoSklearnWrapper` to clearly used autosklearn only during training;
+    otherwise, it behaves as a normal ensemble.
+
 ### Fixed
 - Parquet reader to handle (ignore) multi-indexes
 

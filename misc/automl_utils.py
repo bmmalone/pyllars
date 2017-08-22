@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 import misc.utils as utils
 
+import joblib
 import numpy as np
 import sklearn.preprocessing
 
@@ -51,7 +52,7 @@ def check_imputer_strategy(imputer_strategy, raise_error=True, error_prefix=""):
 
     return True
 
-def get_imputer(imputer_strategy):
+def get_imputer(imputer_strategy, verify=False):
     """ Get the imputer for use in an sklearn pipeline
 
     Parameters
@@ -60,11 +61,18 @@ def get_imputer(imputer_strategy):
         The name of the strategy to use. This must be one of the imputer
         strategies. check_imputer_strategy can be used to verify the string.
 
+    verify: bool
+        If true, check_imputer_strategy will be called before creating the
+        imputer
+
     Returns
     -------
     imputer: sklearn.transformer
         A transformer with the specified strategy
     """
+
+    if verify:
+        check_imputer_strategy(imputer_strategy)
 
     imputer = None
     if imputer_strategy == 'zero_fill':
@@ -89,12 +97,33 @@ all_regressors = r._regressors.keys()
 from autosklearn.regression import AutoSklearnRegressor
 from autosklearn.classification import AutoSklearnClassifier
 
-pipeline_steps = [
+DUMMY_PIPELINE_TYPES= {
+    utils.get_type("autosklearn.evaluation.abstract_evaluator.MyDummyClassifier"),
+    utils.get_type("autosklearn.evaluation.abstract_evaluator.MyDummyRegressor"),   
+    utils.get_type("autosklearn.evaluation.abstract_evaluator.DummyClassifier"),
+    utils.get_type("autosklearn.evaluation.abstract_evaluator.DummyRegressor"),   
+}
+
+ESTIMATOR_NAMED_STEPS = {
+    'regressor',
+    'classifier'
+}
+
+regression_pipeline_steps = [
     'one_hot_encoding', 
     'imputation', 
     'rescaling', 
     'preprocessor', 
     'regressor'
+]
+
+classificaation_pipeline_steps = [
+    'one_hot_encoding',
+    'imputation',
+    'rescaling',
+    'balancing',
+    'preprocessor',
+    'classifier'
 ]
 
 pipeline_step_names_map = {
@@ -127,41 +156,55 @@ pipeline_step_names_map = {
 }
 
 
-def _validate_aml(aml):
-    """ Check that aml looks like a valid ensemble
+def _validate_fit_asl_wrapper(asl_wrapper):
+    """ Check that the AutoSklearnWrapper contains a valid ensemble
     """
+    if len(asl_wrapper.ensemble_) != 2:
+        msg = ("[asl_wrapper]: the ensemble_ must be a list-like with two "
+            "elements. Presumably, it is either read from a pickle file using "
+            "read_asl_wrapper or extracted from a fit autosklearn object.")
+        raise ValueError(msg)
 
-    if len(aml) < 2:
-        msg = ("aml must be a list-like with at least two elements. Presumably, "
-            "it is either read from a pickle file using read_automl or created "
-            "by calling extract_automl_results on a fit AutoSklearnXXX model")
+    if len(asl_wrapper.ensemble_[0]) != len(asl_wrapper.ensemble_[1]):
+        msg = ("[asl_wrapper]: the ensemble_[0] and ensemble_[1] list-likes "
+            "must be the same length.")
+        raise ValueError(msg)
+
+    if asl_wrapper.estimator_named_step not in ESTIMATOR_NAMED_STEPS:
+        s = sorted([e for e in ESTIMATOR_NAMED_STEPS])
+        msg = ("[asl_wrapper]: the estimator named step must be one of: {}".
+            format(s))
+        raise ValueError(msg)
+
+    if asl_wrapper.autosklearn_optimizer is not None:
+        msg = ("[asl_wrapper]: the fit wrapper should not include the "
+            "autosklearn optimizer")
         raise ValueError(msg)
 
 
-def get_aml_estimator(aml_model_pipeline, pipeline_step='regressor'):
-    """ This function extracts the estimator (stored at the specified step in
-        the pipeline.
+def _get_asl_estimator(asl_pipeline, pipeline_step='regressor'):
+    """ Extract the concrete estimator (RandomForest, etc.) from the asl
+    pipeline.
+
+    In case the pipeline is one of the DUMMY_PIPELINE_TYPES, then the asl
+    pipeline is actually the estimator, and it is returned as-is.
     """
-    
-    dummy_type = "autosklearn.evaluation.abstract_evaluator.MyDummyClassifier"
-    dummy_type = utils.get_type(dummy_type)
+    asl_pipeline_type = type(asl_pipeline)
+    if asl_pipeline_type in DUMMY_PIPELINE_TYPES:
+        return asl_pipeline
 
-    aml_type = type(aml_model_pipeline)
-    if aml_type == dummy_type:
-        return None
-
-    aml_model_model = aml_model_pipeline.named_steps[pipeline_step]
+    asl_model = asl_pipeline.named_steps[pipeline_step]
     
     # this is from the old development branch
     #aml_model_estimator = aml_model_model.estimator
 
     # for the 0.1.3 branch, grab the "choice" estimator
-    aml_model_estimator = aml_model_model.choice.estimator
+    asl_estimator = asl_model.choice.estimator
 
-    return aml_model_estimator
+    return asl_estimator
 
-def get_aml_pipeline(aml_model):
-    """ This function extracts the pipeline object from an aml_model.
+def _get_asl_pipeline(aml_model):
+    """ Extract the pipeline object from an autosklearn_optimizer model.
     """
     # this is from the old development branch
     # the model *contained* a pipeline
@@ -170,20 +213,18 @@ def get_aml_pipeline(aml_model):
     # this is the updated 0.1.3 branch
 
     # that is, the model simply *is* a pipeline now
-    aml_model_pipeline = aml_model
-    return aml_model_pipeline
+    asl_pipeline = aml_model
+    return asl_pipeline
 
-def extract_automl_results(automl, estimtor_named_step='regressor'):
-    """ This returns the nonzero weights, associated pipelines and estimators
-        from a fitted "automl" object (i.e., an AutoSklearnRegressor or an
-        AutoSklearnClassifier).
-
-        Imports:
-            numpy
+def _extract_autosklearn_ensemble(autosklearn_optimizer,
+        estimtor_named_step='regressor'):
+    """ Extract the nonzero weights, associated pipelines and estimators from
+    a fit autosklearn optimizer (i.e., an AutoSklearnRegressor or an
+    AutoSklearnClassifier).
     """
     import numpy as np
 
-    aml = automl._automl._automl
+    aml = autosklearn_optimizer._automl._automl
     models = aml.models_
 
     e = aml.ensemble_
@@ -194,19 +235,19 @@ def extract_automl_results(automl, estimtor_named_step='regressor'):
     nonzero_weights = weights[nonzero_weight_indices]
     nonzero_model_identifiers = model_identifiers[nonzero_weight_indices]
     
-    aml_models = [
+    asl_models = [
         models[tuple(m)] for m in nonzero_model_identifiers
     ]
 
-    aml_pipelines = [
-        get_aml_pipeline(m) for m in aml_models
+    asl_pipelines = [
+        _get_asl_pipeline(m) for m in asl_models
     ]
     
-    aml_estimators = [
-        get_aml_estimator(m, estimtor_named_step) for m in aml_pipelines
+    asl_estimators = [
+        _get_asl_estimator(p, estimtor_named_step) for p in asl_pipelines
     ]
 
-    return (nonzero_weights, aml_pipelines, aml_estimators)
+    return (nonzero_weights, asl_pipelines, asl_estimators)
 
 def filter_model_types(aml, model_types):
     """ Remove all models of the specified type from the ensemble.
@@ -229,7 +270,6 @@ def filter_model_types(aml, model_types):
 
         The weights are renormalized.
     """
-    import numpy as np
 
     (weights, pipelines) = (np.array(aml[0]), np.array(aml[1]))
     estimator_types = [
@@ -245,101 +285,35 @@ def filter_model_types(aml, model_types):
     
     return (weights, pipelines[to_filter])
 
-def write_automl(automl, out_file, estimator_named_step='regressor'):
-    """ This function extracts the necessary bits to reconstruct a fitted
-        "automl" object. It then writes that to a pickle file.
-
-        Imports:
-            pickle
-    """
-    import pickle
-
-    (weights, pipelines, estimators) = extract_automl_results(automl)
-    
-    with open(out_file, 'wb') as out:
-        pickle.dump((weights, pipelines), out)
-
-def read_automl(in_file):
-    """ This function reads back in the weights, pipelines, and estimators
-        written to disk with write_automl.
-
-        Imports:
-            pickle
-    """
-    import pickle
-
-    automl = pickle.load(open(in_file, 'rb'))
-    automl = AutoML(automl)
-    return automl
-
-def automl_predict_regression(X_test, aml):
-    """ Predict the values using the fitted automl object
-    """
-    import numpy as np
-
-    _validate_aml(aml)
-    (weights, pipelines) = (aml[0], aml[1])
-
-    y_pred = np.array([w*p.predict(X_test) 
-                            for w,p in zip(weights, pipelines)])
-
-    y_pred = y_pred.sum(axis=0)
-    return y_pred
-
-def automl_predict_classification(X_test, aml):
-    """ Predict the class using the fitted automl object and weighted majority
-    voting
-    """
-
-    # first, get the weighted predictions from each member of the ensemble
-    y_pred = automl_predict_proba(X_test, aml)
-
-    # now take the majority vote
-    y_pred = y_pred.argmax(axis=1)
-
-    return y_pred
-
-
-def automl_predict_proba(X_test, aml):
-    """ Predict the class probabilities using the fitted automl object
-    """
-    import numpy as np
-
-    _validate_aml(aml)
-    (weights, pipelines) = (aml[0], aml[1])
-
-    y_pred = np.array([w*p.predict_proba(X_test) 
-                            for w,p in zip(weights, pipelines)])
-
-    y_pred = y_pred.sum(axis=0)
-    return y_pred
-
-
-
-
 class AutoSklearnWrapper(object):
-    """ A wrapper for an autosklearn wrapper to easily integrate it within a
-    larger sklearn.Pipeline. The purpose of this class is largely to buffer
-    usage while auto-sklearn is still under development.
+    """ A wrapper for an autosklearn optimizer to easily integrate it within a
+    larger sklearn.Pipeline. The purpose of this class is largely to minimize
+    the amount of time the autosklearn.AutoSklearnXXX objects are present. They
+    include many functions related to the Bayesian optimization which are not
+    relevant after the parameters of the ensemble have been fit. Thus, outside
+    of the fit method, there is no need to keep it around.
     """
 
     def __init__(self,
-            aml=None,
-            autosklearn_model=None,
+            ensemble=None,
+            autosklearn_optimizer=None,
             estimator_named_step=None,
-            args=None):
+            args=None,
+            **kwargs):
 
-        msg = ("[AutoML]: initializing a wrapper. aml: {}. autosklearn: {}".
-            format(aml, autosklearn_model))
+        msg = ("[asl_wrapper]: initializing a wrapper. ensemble: {}. "
+            "autosklearn: {}".format(ensemble, autosklearn_optimizer))
         logger.debug(msg)
 
         self.args = args
-        self.aml = aml
-        self.autosklearn_model = autosklearn_model
+        self.kwargs = kwargs
+        self.ensemble_ = ensemble
+        self.autosklearn_optimizer = autosklearn_optimizer
         self.estimator_named_step = estimator_named_step
 
-    def create_classifier(self, args, **kwargs):        
-        """ Create an AutoSklearnClassifier and use it as the autosklearn_model.
+    def create_classification_optimizer(self, args, **kwargs):        
+        """ Create an AutoSklearnClassifier and use it as the autosklearn
+        optimizer.
 
         The parameters can either be passed via an argparse.Namespace or using
         keyword arguments. The keyword arguments take precedence over args. The
@@ -369,7 +343,7 @@ class AutoSklearnWrapper(object):
         args_dict = args.__dict__
         args_dict.update(kwargs)
 
-        classifier = AutoSklearnClassifier(
+        asl_classification_optimizer = AutoSklearnClassifier(
             time_left_for_this_task=args_dict.get('total_training_time', None),
             per_run_time_limit=args_dict.get('iteration_time_limit', None),
             ensemble_size=args_dict.get('ensemble_size', None),
@@ -379,13 +353,14 @@ class AutoSklearnWrapper(object):
             tmp_folder=args_dict.get('tmp', None)
         )
 
-        self.autosklearn_model = classifier
+        self.autosklearn_optimizer = asl_classification_optimizer
         self.estimator_named_step = "classifier"
         return self
 
 
-    def create_regressor(self, args, **kwargs):        
-        """ Create an AutoSklearnRegressor and use it as the autosklearn_model.
+    def create_regression_optimizer(self, args, **kwargs):        
+        """ Create an AutoSklearnRegressor and use it as the autosklearn
+        optimizer.
 
         The parameters can either be passed via an argparse.Namespace or using
         keyword arguments. The keyword arguments take precedence over args. The
@@ -407,6 +382,7 @@ class AutoSklearnWrapper(object):
 
         kwargs: key=value pairs
             Additional options for creating the autosklearn regressor
+
         Returns
         -------
         self
@@ -415,7 +391,7 @@ class AutoSklearnWrapper(object):
         args_dict = args.__dict__
         args_dict.update(kwargs)
 
-        regressor = AutoSklearnRegressor(
+        asl_regression_optimizer = AutoSklearnRegressor(
             time_left_for_this_task=args_dict.get('total_training_time', None),
             per_run_time_limit=args_dict.get('iteration_time_limit', None),
             ensemble_size=args_dict.get('ensemble_size', None),
@@ -425,101 +401,154 @@ class AutoSklearnWrapper(object):
             tmp_folder=args_dict.get('tmp', None)
         )
 
-        self.autosklearn_model = regressor
+        self.autosklearn_optimizer = asl_regression_optimizer
         self.estimator_named_step = "regressor"
         return self
 
-    def predict(self, X_test):
-        """ Use the automl ensemble to predict on the given test set.
-        """
-        
-        predict_f = automl_predict_classification
-        if self.estimator_named_step == "regressor":
-            predict_f = automl_predict_regression        
+    def fit(self, X_train, y):
+        """ Optimize the ensemble parameters with autosklearn """
 
-        if self.aml is None:
-            msg = ("[AutoML]: cannot predict without setting or fitting aml")
+        # check if we have either args or a learner
+        if self.args is not None:
+            if self.autosklearn_optimizer is not None:
+                msg = ("[asl_wrapper]: have both args and an autosklearn "
+                    "optimizer. Please set only one or the other.")
+                raise ValueError(msg)
+
+            if self.estimator_named_step == 'regressor':
+                msg = ("[asl_wrapper]: creating an autosklearn regression "
+                    "optimizer")
+                logger.debug(msg)
+
+                self.create_regression_optimizer(self.args, **self.kwargs)
+            else:
+                msg = ("[asl_wrapper]: creating an autosklearn classification "
+                    "optimizer")
+                logger.debug(msg)
+
+                self.create_classification_optimizer(self.args, **self.kwargs)
+
+        elif self.autosklearn_optimizer is None:
+            msg = ("[asl_wrapper]: have neither args nor an autosklearn "
+                "optimizer. Please set one or the other (but not both).")
             raise ValueError(msg)
+
+        msg = "[asl_wrapper]: fitting a wrapper"
+        logger.debug(msg)
+
+        self.autosklearn_optimizer.fit(X_train, y)
         
-        return predict_f(X_test, self.aml)
+        vals = _extract_autosklearn_ensemble(
+            self.autosklearn_optimizer,
+            self.estimator_named_step
+        )
+
+        (weights, pipelines, estimators) = vals
+        self.ensemble_ = (weights, pipelines)
+        
+        # since we have the ensemble, we can get rid of the Bayesian optimizer
+        self.autosklearn_optimizer = None
+
+        return self
+
+
+    def _predict_regression(self, X_test):
+        """ Predict the values using the fitted ensemble
+        """
+        _validate_fit_asl_wrapper(self)
+        (weights, pipelines) = self.ensemble_
+
+        y_pred = np.array([w*p.predict(X_test) 
+                                for w,p in zip(weights, pipelines)])
+
+        y_pred = y_pred.sum(axis=0)
+        return y_pred
+
+    def _predict_classification(self, X_test):
+        """ Predict the class using the fitted ensemble and weighted majority
+        voting
+        """
+
+        # first, get the weighted predictions from each member of the ensemble
+        y_pred = self.predict_proba(X_test)
+
+        # now take the majority vote
+        y_pred = y_pred.argmax(axis=1)
+
+        return y_pred        
+
+    def predict(self, X_test):
+        """ Use the fit ensemble to predict on the given test set.
+        """
+        _validate_fit_asl_wrapper(self)
+        
+        predict_f = self._predict_classification
+        if self.estimator_named_step == "regressor":
+            predict_f = self._predict_regression        
+        
+        return predict_f(X_test, self)
 
     def predict_proba(self, X_test):
         """ Use the automl ensemble to estimate class probabilities
         """
-
         if self.estimator_named_step == "regressor":
-            msg = ("[AutoML]: cannot use predict_proba for regression "
+            msg = ("[asl_wrapper]: cannot use predict_proba for regression "
                 "problems")
             raise ValueError(msg)
 
-        if self.aml is None:
-            msg = ("[AutoML]: cannot predict without setting or fitting aml")
-            raise ValueError(msg)
-            
-        return automl_predict_proba(X_test, self.aml)
+        _validate_fit_asl_wrapper(self)
+        (weights, pipelines) = self.ensemble_
 
+        y_pred = np.array([w*p.predict_proba(X_test) 
+                                for w,p in zip(weights, pipelines)])
 
+        y_pred = y_pred.sum(axis=0)
+        return y_pred
 
-    def fit(self, X_train, y):
-        """ Fit the autosklearn model. """
+    def get_estimators(self):
+        """ Extract the concrete estimators from the ensemble (RandomForest,
+        etc.) as a list
 
-        # check if we have either args or a learner
-        
-
-        if self.args is not None:
-            if self.estimator_named_step == 'regressor':
-                msg = "[AutoML]: creating an autosklearn regressor model"
-                logger.debug(msg)
-
-                self.create_regressor(self.args)
-            else:
-                msg = "[AutoML]: creating an autosklearn classifier model"
-                logger.debug(msg)
-
-                self.create_classifier(self.args)
-
-        if self.autosklearn_model is None:
-            msg = "[AutoML]: cannot fit without having an autosklearn_model"
-            raise ValueError(msg)
-
-        msg = "[AutoML]: fitting a wrapper"
-        logger.debug(msg)
-
-        self.autosklearn_model.fit(X_train, y)
-        vals = extract_automl_results(self.autosklearn_model,
-            self.estimator_named_step)
-        (weights, pipelines, estimators) = vals
-        self.aml = (weights, pipelines)
-        
-        # since we have the ensemble, we can get rid of the BO model
-        self.autosklearn_model = None
-
-        return self
+        N.B. Predictions use the entire pipelines in the ensemble
+        (preprocessors, etc.). This is primarily a convenience method for
+        inspecting the learned estimators.
+        """
+        _validate_fit_asl_wrapper(self)
+        pipelines = self.ensemble_[1]
+        estimators = [
+            _get_asl_estimator(p, self.estimator_named_step) for p in pipelines 
+        ]
+        return estimators
 
     def get_params(self, deep=True):
-        msg = "[AutoML]: get_params"
+        msg = "[asl_wrapper]: get_params"
         logger.debug(msg)
 
         params = {
-            'autosklearn_model': self.autosklearn_model,
-            'aml': self.aml,
+            'autosklearn_optimizer': self.autosklearn_optimizer,
+            'ensemble_': self.ensemble_,
             'estimator_named_step': self.estimator_named_step,
-            'args': self.args
+            'args': self.args,
+            'kwargs': self.kwargs
         }
         return params
 
     def set_params(self, **parameters):
-        msg = "[AutoML]: set_params"
+        msg = "[asl_wrapper]: set_params"
         logger.debug(msg)
 
         if 'args' in parameters:
             self.args = parameters.pop('args')
 
-        if 'autosklearn_model' in parameters:
-            self.autosklearn_model = parameters.pop('autosklearn_model')
+        if 'kwargs' in parameters:
+            self.kwargs = parameters.pop('kwargs')
 
-        if 'aml' in parameters:
-            self.aml = parameters.pop('aml')
+
+        if 'autosklearn_optimizer' in parameters:
+            self.autosklearn_optimizer = parameters.pop('autosklearn_optimizer')
+
+        if 'ensemble_' in parameters:
+            self.ensemble_ = parameters.pop('ensemble_')
 
         if 'estimator_named_step' in parameters:
             self.estimator_named_step = parameters.pop('estimator_named_step')
@@ -528,61 +557,44 @@ class AutoSklearnWrapper(object):
 
 
     def __getstate__(self):
-        """ This returns everything to be pickled. """
+        """ Returns everything to be pickled """
         import sys
         caller_name = sys._getframe(1).f_code.co_name
 
-        msg = "[AutoML]: calling __getstate__. caller: {}".format(caller_name)
+        msg = "[asl_wrapper]: calling __getstate__. caller: {}".format(caller_name)
         logger.debug(msg)
         
         state = {}
         state['args'] = self.args
-        state['autosklearn_model'] = self.autosklearn_model
-        state['aml'] = self.aml
+        state['kwargs'] = self.kwargs
+        state['autosklearn_optimizer'] = self.autosklearn_optimizer
+        state['ensemble_'] = self.ensemble_
         state['estimator_named_step'] = self.estimator_named_step
 
         return state
 
-    def getstate_old(self):
-
-        if self.autosklearn_model is not None:
-            # I believe it is possible to reach here without having yet
-            # fit the model
-
-            # I believe this is because parallel training first uses joblib
-            # to pickle the model and pass it to the other processes
-
-            vals = extract_automl_results(self.autosklearn_model,
-                self.estimator_named_step)
-            (weights, pipelines, estimators) = vals
-
-            state['autosklearn_model'] = self.autosklearn_model
-            state['weights'] = weights
-            state['pipelines'] = pipelines
-            state['estimator_named_step'] = self.estimator_named_step
-        elif self.aml is not None:
-            state['autosklearn_model'] = self.autosklearn_model
-            state['weights'] = self.aml[0]
-            state['pipelines'] = self.aml[1]
-            state['estimator_named_step'] = self.estimator_named_step
-        else:
-            msg = ("[AutoML]: cannot pickle without setting aml or "
-                "autosklearn_model")
-            raise ValueError(msg)
-        return state
-
     def __setstate__(self, state):
-        """ This re-creates the object after pickling. """
-        msg = "[AutoML]: __setstate__"
+        """ Re-creates the object after pickling """
+        msg = "[asl_wrapper]: __setstate__"
         logger.debug(msg)
 
         self.args = state['args']
-        self.autosklearn_model = state['autosklearn_model']
+        self.kwargs = state['kwargs']
+        self.autosklearn_optimizer = state['autosklearn_optimizer']
         self.estimator_named_step = state['estimator_named_step']
-        self.aml = state['aml']
-        #self.aml = (state['weights'], state['pipelines'])
+        self.ensemble_ = state['ensemble_']
 
-        
+    def write(self, out_file):
+        """ Validate that the wrapper has been fit and then write it to disk
+        """
+        _validate_fit_asl_wrapper(self)
+        joblib.dump(self, out_file)
+
+    @classmethod
+    def read(cls, in_file):
+        """ Read back in an asl_wrapper which was written to disk """
+        asl_wrapper = joblib.load(in_file)
+        return asl_wrapper
 
 def add_automl_options(parser,
     default_out = ".",
