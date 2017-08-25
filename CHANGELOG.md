@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Helper to collect sklearn classification metrics
 - Classification helpers to `automl_utils`
+- Utilities for working with the mimic dataset
 
 ### Updated
 - `AutoSklearnWrapper` to clearly used autosklearn only during training;
