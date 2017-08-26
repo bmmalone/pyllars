@@ -405,7 +405,7 @@ class AutoSklearnWrapper(object):
         self.estimator_named_step = "regressor"
         return self
 
-    def fit(self, X_train, y):
+    def fit(self, X_train, y, metric=None):
         """ Optimize the ensemble parameters with autosklearn """
 
         # check if we have either args or a learner
