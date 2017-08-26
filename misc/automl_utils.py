@@ -648,6 +648,30 @@ def add_automl_options(parser,
     automl_options.add_argument('--ensemble-nbest', help="The number of models to use "
         "for prediction.", type=int, default=default_ensemble_nbest)
 
+def add_automl_values_to_args(args,
+        out = ".",
+        tmp = None,
+        estimators = None,
+        seed = 8675309,
+        total_training_time = 3600,
+        iteration_time_limit = 360,
+        ensemble_size = 50,
+        ensemble_nbest = 50):
+        
+    """ Add the automl options to the given argparse namespace
+
+    This function is mostly intended as a helper for use in ipython notebooks.
+    """
+    args.out = out
+    args.tmp = tmp
+    args.estimators = estimators
+    args.seed = seed
+    args.total_training_time = total_training_time
+    args.iteration_time_limit = iteration_time_limit
+    args.ensemble_size = ensemble_size
+    args.ensemble_nbest = ensemble_nbest
+
+
 def get_automl_options_string(args):
     """ This function creates a string suitable for passing to another script
         of the automl command line options.
