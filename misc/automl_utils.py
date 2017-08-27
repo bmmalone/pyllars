@@ -11,6 +11,8 @@ import joblib
 import numpy as np
 import sklearn.preprocessing
 
+import statsmodels.stats.weightstats
+
 imputer_strategies = [
     'mean', 
     'median', 
@@ -405,7 +407,7 @@ class AutoSklearnWrapper(object):
         self.estimator_named_step = "regressor"
         return self
 
-    def fit(self, X_train, y, metric=None):
+    def fit(self, X_train, y, metric=None, encode_y=True):
         """ Optimize the ensemble parameters with autosklearn """
 
         # check if we have either args or a learner
@@ -428,6 +430,21 @@ class AutoSklearnWrapper(object):
 
                 self.create_classification_optimizer(self.args, **self.kwargs)
 
+                # sometimes, it seems we need to encode labels to keep them
+                # around.
+                if encode_y:
+                    # In some cases, members of the ensemble drop some of the
+                    # labels. Make sure we can reconstruct those
+                    self.le = sklearn.preprocessing.LabelEncoder()
+                    self.le_ = self.le.fit(y)
+                    y = self.le_.transform(y)
+                else:
+                    # we still need to keep around the number of classes
+                    # we assume y is a data frame which gives this value.
+                    self.le = sklearn.preprocessing.LabelEncoder()
+                    self.le_ = self.le
+                    self.le_.classes = np.unique(y.columns)
+
         elif self.autosklearn_optimizer is None:
             msg = ("[asl_wrapper]: have neither args nor an autosklearn "
                 "optimizer. Please set one or the other (but not both).")
@@ -436,7 +453,7 @@ class AutoSklearnWrapper(object):
         msg = "[asl_wrapper]: fitting a wrapper"
         logger.debug(msg)
 
-        self.autosklearn_optimizer.fit(X_train, y)
+        self.autosklearn_optimizer.fit(X_train, y, metric=metric)
         
         vals = _extract_autosklearn_ensemble(
             self.autosklearn_optimizer,
@@ -448,6 +465,10 @@ class AutoSklearnWrapper(object):
         
         # since we have the ensemble, we can get rid of the Bayesian optimizer
         self.autosklearn_optimizer = None
+
+        # also, print the unique classes:
+        #for e in estimators:
+        #    print("estimator:", e, "unique class labels:", e.classes_)
 
         return self
 
@@ -499,11 +520,64 @@ class AutoSklearnWrapper(object):
         _validate_fit_asl_wrapper(self)
         (weights, pipelines) = self.ensemble_
 
-        y_pred = np.array([w*p.predict_proba(X_test) 
-                                for w,p in zip(weights, pipelines)])
+        res_shape = (X_test.shape[0], len(self.le_.classes_))
+        res = np.zeros(shape=res_shape)
 
-        y_pred = y_pred.sum(axis=0)
-        return y_pred
+        for w,p in zip(weights, pipelines):
+
+            # get the weighted class probabilities
+            y_pred = w*p.predict_proba(X_test)
+            
+            # and make sure we are looking in the correct columns
+            e = _get_asl_estimator(p, pipeline_step='classifier')
+            p_classes = e.classes_
+            res[:,p_classes] += y_pred
+
+        return res
+
+    def predict_dist(self, X_test, weighted=True):
+        """ Use the ensemble to predict a normal distribution for each instance
+
+        This method uses statsmodels.stats.weightstats.DescrStatsW to handle
+        weights.
+
+        Parameters
+        ----------
+        X_test: np.array
+            The observations
+
+        weighted: bool
+            Whether to weight the predictions of the ensemble members
+
+        Returns
+        -------
+        y_pred_mean: np.array
+            The (weighted) predicted mean estimate
+
+        y_pred_std: np.array
+            The (weighted) standard deviation of the estimates
+        """
+
+        if self.estimator_named_step != "regressor":
+            msg = ("[asl_wrapper]: predict_dist can only be used for "
+                "regression problems")
+            raise ValueError(msg)
+
+        _validate_fit_asl_wrapper(self)
+        (weights, pipelines) = self.ensemble_
+
+        # make the predictions
+        y_pred = np.array([p.predict(X_test) for p in pipelines])
+
+        # extract summary statistics
+
+        # the weighting does not work properly with single-member "ensembles"
+        if weighted and len(weights) > 1:
+            s = statsmodels.stats.weightstats.DescrStatsW(y_pred, weights=weights)
+        else:
+            s = statsmodels.stats.weightstats.DescrStatsW(y_pred)
+
+        return (s.mean, s.std)
 
     def get_estimators(self):
         """ Extract the concrete estimators from the ensemble (RandomForest,
