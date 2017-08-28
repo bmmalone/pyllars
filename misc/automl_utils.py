@@ -1,5 +1,5 @@
 ###
-#   These are helpers related to auto-sklearn and AutoFolio
+#   These are helpers related to auto-sklearn, AutoFolio, ASlib, etc.
 ###
 
 import logging
@@ -11,6 +11,7 @@ import joblib
 import numpy as np
 import sklearn.preprocessing
 
+import networkx as nx
 import statsmodels.stats.weightstats
 
 imputer_strategies = [
@@ -923,3 +924,39 @@ def load_autofolio(fn:str):
 
     return autofolio_model
 
+###
+#   Utilities to help with the ASlib package:
+#
+#       https://github.com/mlindauer/ASlibScenario
+###
+
+def extract_feature_step_dependency_graph(scenario):
+    """ Create a graph encoding dependencies among the feature steps
+
+    Specifically, an edge in the graph from A to B implies B requires A. Root
+    nodes have no dependencies.
+
+    Parameters
+    ----------
+    scenario: ASlibScenario
+        The ASlib scenario
+
+    Returns
+    -------
+    dependency_graph: networkx.DiGraph
+        A directed graph in which each node corresponds to a feature step and
+        edges encode the dependencies among the steps
+    """
+    # build the feature_group graph
+    dependency_graph = nx.DiGraph()
+    dependency_graph.add_nodes_from(scenario.feature_steps)
+
+    # an edge from A -> B implies B requires A
+    for feature_step in scenario.feature_steps:
+        f = scenario.feature_group_dict[feature_step]
+        
+        if 'requires' in f:
+            for requirement in f['requires']:
+                dependency_graph.add_edge(requirement, feature_step)
+
+    return dependency_graph

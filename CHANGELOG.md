@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Helper to collect sklearn classification metrics
 - Classification helpers to `automl_utils`
 - Utilities for working with the mimic dataset
+- Helpers for working with [`ASlibScenario`s](https://github.com/mlindauer/ASlibScenario)
 
 ### Updated
 - `AutoSklearnWrapper` to clearly used autosklearn only during training;
