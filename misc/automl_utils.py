@@ -5,14 +5,21 @@
 import logging
 logger = logging.getLogger(__name__)
 
-import misc.utils as utils
+# system imports
+import os
 
+# pydata imports
 import joblib
 import numpy as np
 import sklearn.preprocessing
 
+# widely-used package imports
 import networkx as nx
 import statsmodels.stats.weightstats
+
+# less-used imports
+from aslib_scenario.aslib_scenario import ASlibScenario
+import misc.utils as utils
 
 imputer_strategies = [
     'mean', 
@@ -960,3 +967,114 @@ def extract_feature_step_dependency_graph(scenario):
                 dependency_graph.add_edge(requirement, feature_step)
 
     return dependency_graph
+
+def load_scenario(scenario_path):
+    """ Load the ASlibScenario in the given path
+
+    This is a convenience function that can be more easily used in list
+    comprehensions, etc.
+
+    Parameters
+    ----------
+    scenario_path: path-like
+        The location of the scenario directory
+
+    Returns
+    -------
+    scenario_name: string
+        The name of the scenario (namely, `scenario.scenario`)
+
+    scenario: ASlibScenario
+        The actual scenario
+    """
+    scenario = ASlibScenario()
+    scenario.read_scenario(scenario_path)
+    return scenario.scenario, scenario
+
+
+def load_all_scenarios(scenarios_dir):
+    """ Load all scenarios in scenarios_dir into a dictionary
+
+    In particular, this function assumes all subdirectories within
+    scenarios_dir are ASlibScenarios
+
+    Parameters
+    ----------
+    scenarios_dir: path-like
+        The location of the scenarios
+
+    Returns
+    -------
+    scenarios: dictionary of string -> ASlibScenario
+        A dictionary where the key is the name of the scenario and the value
+        is the corresponding ASlibScenario
+    """
+        
+    # first, just grab everything in the directory
+    scenarios = [
+        os.path.join(scenarios_dir, o) for o in os.listdir(scenarios_dir)
+    ]
+
+    # only keep the subdirectories
+    scenarios = sorted([
+        t for t in scenarios if os.path.isdir(t)
+    ])
+
+    # load the scenarios
+    scenarios = [
+        load_scenario(s) for s in scenarios
+    ]
+    
+    # the list was already (key,value) pairs, so create the dictionary
+    scenarios = dict(scenarios)
+
+    return scenarios
+
+def create_cv_splits(scenario):
+    """ Create cross-validation splits for the scenario and save to file
+
+    In particular, this is useful if a scenario does not already include cv
+    splits, and cv splits will be used in multiple locations.
+
+    Parameters
+    ----------
+    scenario: ASlibScenario
+        The scenario
+
+    Returns
+    -------
+    None, but new cv splits will be assigned to the instances and the file
+    scenario.dir_.cv.arff will be (over)written.
+    """
+    import arff
+
+    # first, make sure the cv splits exist
+    if scenario.cv_data is None:
+        scenario.create_cv_splits()
+
+    # format the cv splits for the arff file
+    scenario.cv_data.index.name = 'instance_id'
+    cv_data = scenario.cv_data.reset_index()
+    cv_data['repetition'] = 1
+    cv_data['fold'] = cv_data['fold'].astype(int)
+
+    # and put the fields in the correct order
+    fields = ['instance_id', 'repetition', 'fold']
+    cv_data_np = cv_data[fields].values
+
+    # create the yaml-like dict for writing
+    cv_dataset = {
+        'description': "CV_{}".format(scenario.scenario),
+        'relation': "CV_{}".format(scenario.scenario),
+        'attributes': [
+            ('instance_id', 'STRING'),
+            ('repetition', 'NUMERIC'),
+            ('fold', 'NUMERIC')
+        ],
+        'data': cv_data_np
+    }
+
+    # and write the file
+    cv_loc = os.path.join(scenario.dir_, "cv.arff")
+    with open(cv_loc, 'w') as f:
+        arff.dump(cv_dataset, f)
