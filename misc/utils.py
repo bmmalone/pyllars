@@ -1,5 +1,7 @@
 import logging
+logger = logging.getLogger(__name__)
 
+import itertools
 import os
 import shutil
 import subprocess
@@ -7,7 +9,6 @@ import sys
 
 import misc.shell_utils as shell_utils
 
-logger = logging.getLogger(__name__)
 
 def raise_deprecation_warning(function, new_module, final_version=None,
         old_module="misc"):
@@ -1196,8 +1197,6 @@ def grouper(n, iterable):
             http://stackoverflow.com/questions/3992735/
 
     """
-    import itertools
-
     iterable = iter(iterable)
     return iter(lambda: list(itertools.islice(iterable, n)), [])
 
@@ -1210,6 +1209,13 @@ def nth(iterable, n, default=None):
     N.B. This returns the *base-0* nth item in the iterator. For example, 
     nth(range(10), 1) returns 1.
     """
-    import itertools
-
     return next(itertools.islice(iterable, n, None), default)
+
+
+def dict_product(dicts):
+    """ Create an iterator from a GridSearchCV-like dictionary
+
+    This code is directly take from stackoverflow:
+        http://stackoverflow.com/a/40623158/621449
+    """
+    return (dict(zip(dicts, x)) for x in itertools.product(*dicts.values()))
