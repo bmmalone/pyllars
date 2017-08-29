@@ -937,6 +937,34 @@ def load_autofolio(fn:str):
 #       https://github.com/mlindauer/ASlibScenario
 ###
 
+def _get_feature_step_dependencies(scenario, feature_step):
+    fg = scenario.feature_group_dict[feature_step]
+    return set(fg.get('requires', []))
+    
+def check_all_dependencies(scenario, feature_steps):
+    """ Ensure all dependencies all included for all feature sets
+    
+    Parameters
+    ----------
+    scenario: ASlibScenario
+        The ASlib scenario
+        
+    feature_steps: list-like of strings
+        A list of feature sets
+        
+    Returns
+    -------
+    dependencies_met: bool
+        True if all dependencies for all feature sets are included,
+        False otherwise
+    """
+    feature_steps = set(feature_steps)
+    for feature_step in feature_steps:
+        dependencies = _get_feature_step_dependencies(scenario, feature_step)
+        if not dependencies.issubset(feature_steps):
+            return False
+    return True
+
 def extract_feature_step_dependency_graph(scenario):
     """ Create a graph encoding dependencies among the feature steps
 
@@ -960,13 +988,35 @@ def extract_feature_step_dependency_graph(scenario):
 
     # an edge from A -> B implies B requires A
     for feature_step in scenario.feature_steps:
-        f = scenario.feature_group_dict[feature_step]
+        dependencies = _get_feature_step_dependencies(scenario, feature_step)
         
-        if 'requires' in f:
-            for requirement in f['requires']:
-                dependency_graph.add_edge(requirement, feature_step)
+        for dependency in dependencies:
+            dependency_graph.add_edge(dependency, feature_step)
 
     return dependency_graph
+
+def extract_feature_names(scenario, feature_steps):
+    """ Extract the names of features for the specified feature steps
+
+    Parameters
+    ----------
+    scenario: ASlibScenario
+        The ASlib scenario
+
+    feature_steps: list-like of strings
+        The names of the feature steps
+
+    Returns
+    -------
+    feature_names: list of strings
+        The names of all features in the given steps
+    """
+    feature_names = [
+        scenario.feature_group_dict[f]['provides']
+            for f in feature_steps
+    ]
+    feature_names = utils.flatten_lists(feature_names)
+    return feature_names
 
 def load_scenario(scenario_path):
     """ Load the ASlibScenario in the given path
