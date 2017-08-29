@@ -1018,7 +1018,7 @@ def extract_feature_names(scenario, feature_steps):
     feature_names = utils.flatten_lists(feature_names)
     return feature_names
 
-def load_scenario(scenario_path):
+def load_scenario(scenario_path, return_name=True):
     """ Load the ASlibScenario in the given path
 
     This is a convenience function that can be more easily used in list
@@ -1029,17 +1029,24 @@ def load_scenario(scenario_path):
     scenario_path: path-like
         The location of the scenario directory
 
+    return_name: bool
+        Whether to return the name of the scenario
     Returns
     -------
     scenario_name: string
-        The name of the scenario (namely, `scenario.scenario`)
+        The name of the scenario (namely, `scenario.scenario`). This is only
+        present if return_name is True
 
     scenario: ASlibScenario
         The actual scenario
     """
     scenario = ASlibScenario()
     scenario.read_scenario(scenario_path)
-    return scenario.scenario, scenario
+
+    if return_name:
+        return scenario.scenario, scenario
+    else:
+        return scenario
 
 
 def load_all_scenarios(scenarios_dir):
