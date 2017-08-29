@@ -1,6 +1,9 @@
 import numpy as np
 import sklearn.base
 
+import logging
+logger = logging.getLogger(__name__)
+
 class NaNStandardScaler(sklearn.base.TransformerMixin):
     
     def __init__(self):
@@ -30,4 +33,14 @@ class NaNStandardScaler(sklearn.base.TransformerMixin):
         X[:,self.col_ignore_] = 0
 
         X = ((X - self.col_mean_) / self.col_std_)
+
+        num_nan = np.isnan(X).sum()
+        num_inf = np.isinf(X).sum()
+
+        msg = "[NaNStandardScaler.transform]: num_nans: {}".format(num_nan)
+        logger.debug(msg)
+        
+        msg = "[NaNStandardScaler.transform]: num_infs: {}".format(num_inf)
+        logger.debug(msg)
+
         return X
