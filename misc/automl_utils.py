@@ -107,6 +107,16 @@ all_regressors = r._regressors.keys()
 from autosklearn.regression import AutoSklearnRegressor
 from autosklearn.classification import AutoSklearnClassifier
 
+ASL_REGRESSION_PIPELINE_TYPES = {
+    utils.get_type("autosklearn.pipeline.regression.SimpleRegressionPipeline")
+}
+
+ASL_CLASSIFICATION_PIPELINE_TYPES = {
+    utils.get_type("autosklearn.pipeline.classification.SimpleClassificationPipeline")
+}
+
+ASL_PIPELINE_TYPES = ASL_REGRESSION_PIPELINE_TYPES | ASL_CLASSIFICATION_PIPELINE_TYPES
+
 DUMMY_CLASSIFIER_TYPES = {
     utils.get_type("autosklearn.evaluation.abstract_evaluator.MyDummyClassifier"),
     utils.get_type("autosklearn.evaluation.abstract_evaluator.DummyClassifier"),
@@ -208,6 +218,9 @@ def get_simple_pipeline(asl_pipeline, as_array=False):
     * In case the pipeline is actually one of the DUMMY_PIPELINE_TYPES, it will
       be returned without a pipeline wrapper.
 
+    * If asl_pipeline is not one of ASL_PIPELINE_TYPES, then a simple clone
+      is created and returned.
+
     Parameters
     ----------
     asl_pipeline: autosklearn.Pipeline
@@ -223,6 +236,13 @@ def get_simple_pipeline(asl_pipeline, as_array=False):
         A pipeline containing clones of the elements from the auto-sklearn
         pipeline, but in a "normal" sklearn pipeline
     """
+    if type(asl_pipeline) not in ASL_PIPELINE_TYPES:
+        msg = "[automl_utils]: asl_pipeline is not an auto-sklearn pipeline"
+        logger.debug(msg)
+
+        pipeline = sklearn.base.clone(asl_pipeline)
+        return pipeline
+
     simple_pipeline = []
 
     # if it is one of the dummy classifiers, then just wrap it and return it

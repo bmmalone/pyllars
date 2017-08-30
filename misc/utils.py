@@ -510,6 +510,14 @@ def add_home_dir(*fn):
 def listdir_full(path):
     return [os.path.join(path, f) for f in os.listdir(path)]
 
+def list_subdirs(path):
+    """ List all subdirectories directly under path
+    """
+    subdirs = [
+        d for d in listdir_full(path) if os.path.isdir(d)
+    ]
+    return subdirs
+
 def get_basename(path):
     return os.path.splitext(os.path.basename(path))[0]
 
