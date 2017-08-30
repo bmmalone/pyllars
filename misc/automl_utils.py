@@ -165,6 +165,117 @@ pipeline_step_names_map = {
     "<class 'sklearn.svm.classes.LinearSVR'>": "linear support vector regression"
 }
 
+# the names of the actual "element" (estimator, etc.) for steps in
+# autosklearn pipelines
+pipeline_step_element_names = {
+    "one_hot_encoding": None,
+    "imputation": None,
+    "rescaling": 'preprocessor',
+    "preprocessor": 'preprocessor',
+    "regressor": 'estimator',
+    "classifier": 'estimator',
+    "balancing": None
+}
+
+# pipeline types which do not do anything and can be ignored
+passthrough_types = {
+    utils.get_type("autosklearn.pipeline.components.data_preprocessing.rescaling.none.NoRescalingComponent"),
+    int
+}
+
+def get_simple_pipeline(asl_pipeline, as_array=False):
+    """ Extract the "meat" elements from an auto-sklearn pipeline to create
+    a "normal" sklearn pipeline.
+
+    N.B. The new pipeline is a clone.
+
+    Parameters
+    ----------
+    asl_pipeline: autosklearn.Pipeline
+        The pipeline learned by auto-sklearn
+
+    Returns
+    -------
+    sklearn_pipeline: sklearn.pipeline.Pipeline
+        A pipeline containing clones of the elements from the auto-sklearn
+        pipeline, but in a "normal" sklearn pipeline
+    """
+    simple_pipeline = []
+
+    for step, element in asl_pipeline.steps:
+        attr = pipeline_step_element_names[step]
+
+        if (attr is not None): # and (type(element) not in base_types):
+
+            choice = element.choice
+            
+            if type(choice) in passthrough_types:
+                continue
+            
+            choice = choice.__getattribute__(attr)
+
+            if type(choice) in passthrough_types:
+                continue
+
+            choice = sklearn.base.clone(choice)
+
+            # check if this has a "prefit" attribute
+            if hasattr(choice, 'prefit'):
+                # if so and it is true
+                choice.prefit = False                    
+        else:
+            choice = element
+
+
+        simple_pipeline.append([step, choice])
+        
+    if not as_array:
+        simple_pipeline = sklearn.pipeline.Pipeline(simple_pipeline)
+    return simple_pipeline
+
+def retrain_asl_wrapper(asl_wrapper, X_train, y_train):
+    """ Retrain the ensemble in the asl_wrapper using the new training data
+
+    The relative weights of the members of the ensemble will remaining
+    unchanged. If some member cannot be retrained for some reason, it is
+    discarded (and a warning message is logged).
+
+    Parameters
+    ----------
+    asl_wrapper: AutoSklearnWrapper 
+        The (fit) wrapper
+
+    {X,y}_train: data matrices
+        Data matrics of the same type used to originally train the wrapper
+
+    Returns
+    -------
+    weights: np.array of floats
+        The weights of members of the ensemble
+
+    pipelines: np.array of sklearn pipelines
+        The updated pipelines which could be retrained
+    """
+
+    new_weights = []
+    new_ensemble = []
+
+    it = zip(asl_wrapper.ensemble_[0], asl_wrapper.ensemble_[1])
+    for (weight, asl_pipeline) in it:
+        p = get_simple_pipeline(asl_pipeline)
+
+        try:
+            p.fit(X_train, y_train)
+            new_weights.append(weight)
+            new_ensemble.append(p)
+        except Exception as ex:
+            msg = "Failed to fit a pipeline. Error: {}".format(str(ex))
+            logger.warning(msg)
+
+    new_weights = np.array(new_weights) / np.sum(new_weights)
+    new_ensemble = [new_weights, new_ensemble]
+    
+    return new_ensemble
 
 def _validate_fit_asl_wrapper(asl_wrapper):
     """ Check that the AutoSklearnWrapper contains a valid ensemble
