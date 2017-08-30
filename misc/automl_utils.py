@@ -107,12 +107,26 @@ all_regressors = r._regressors.keys()
 from autosklearn.regression import AutoSklearnRegressor
 from autosklearn.classification import AutoSklearnClassifier
 
-DUMMY_PIPELINE_TYPES= {
+DUMMY_CLASSIFIER_TYPES = {
     utils.get_type("autosklearn.evaluation.abstract_evaluator.MyDummyClassifier"),
-    utils.get_type("autosklearn.evaluation.abstract_evaluator.MyDummyRegressor"),   
     utils.get_type("autosklearn.evaluation.abstract_evaluator.DummyClassifier"),
-    utils.get_type("autosklearn.evaluation.abstract_evaluator.DummyRegressor"),   
 }
+
+DUMMY_REGRESSOR_TYPES = {
+    utils.get_type("autosklearn.evaluation.abstract_evaluator.MyDummyRegressor"),   
+    utils.get_type("autosklearn.evaluation.abstract_evaluator.DummyRegressor"),  
+}
+
+DUMMY_PIPELINE_TYPES= DUMMY_CLASSIFIER_TYPES | DUMMY_REGRESSOR_TYPES
+
+CLASSIFIER_CHOICE_TYPES = {
+    utils.get_type("autosklearn.pipeline.components.classification.ClassifierChoice"),
+}
+REGRESSOR_CHOICE_TYPES = {
+    utils.get_type("autosklearn.pipeline.components.regression.RegressorChoice"),
+}
+
+ESTIMATOR_CHOICE_TYPES = REGRESSOR_CHOICE_TYPES | CLASSIFIER_CHOICE_TYPES
 
 ESTIMATOR_NAMED_STEPS = {
     'regressor',
@@ -187,12 +201,21 @@ def get_simple_pipeline(asl_pipeline, as_array=False):
     """ Extract the "meat" elements from an auto-sklearn pipeline to create
     a "normal" sklearn pipeline.
 
-    N.B. The new pipeline is a clone.
+    N.B.
+    
+    * The new pipeline is based on clones.
+
+    * In case the pipeline is actually one of the DUMMY_PIPELINE_TYPES, it will
+      be returned without a pipeline wrapper.
 
     Parameters
     ----------
     asl_pipeline: autosklearn.Pipeline
         The pipeline learned by auto-sklearn
+
+    as_array: bool
+        Whether to return the selected steps as a list of 2-tuples of an
+        sklearn.pipeline.Pipeline
 
     Returns
     -------
@@ -201,6 +224,20 @@ def get_simple_pipeline(asl_pipeline, as_array=False):
         pipeline, but in a "normal" sklearn pipeline
     """
     simple_pipeline = []
+
+    # if it is one of the dummy classifiers, then just wrap it and return it
+    if type(asl_pipeline) in DUMMY_PIPELINE_TYPES:
+        return asl_pipeline
+
+        dummy_estimator_name = 'regressor'
+        if type(asl_pipeline) in DUMMY_CLASSIFIER_TYPES:
+            dummy_estimator_name = 'classifier'
+
+        simple_pipeline = [(dummy_estimator_name, asl_pipeline)] # list of 2-tuples
+
+        if not as_array:
+            simple_pipeline = sklearn.pipeline.Pipeline(simple_pipeline)
+        return simple_pipeline
 
     for step, element in asl_pipeline.steps:
         attr = pipeline_step_element_names[step]
@@ -320,9 +357,12 @@ def _get_asl_estimator(asl_pipeline, pipeline_step='regressor'):
     #aml_model_estimator = aml_model_model.estimator
 
     # for the 0.1.3 branch, grab the "choice" estimator
-    asl_estimator = asl_model.choice.estimator
 
-    return asl_estimator
+    # this may be either a "choice" type or an actual model
+    if type(asl_model) in ESTIMATOR_CHOICE_TYPES:
+        asl_model = asl_model.choice.estimator
+
+    return asl_model
 
 def _get_asl_pipeline(aml_model):
     """ Extract the pipeline object from an autosklearn_optimizer model.
@@ -714,9 +754,6 @@ class AutoSklearnWrapper(object):
         return estimators
 
     def get_params(self, deep=True):
-        msg = "[asl_wrapper]: get_params"
-        logger.debug(msg)
-
         params = {
             'autosklearn_optimizer': self.autosklearn_optimizer,
             'ensemble_': self.ensemble_,
@@ -727,9 +764,6 @@ class AutoSklearnWrapper(object):
         return params
 
     def set_params(self, **parameters):
-        msg = "[asl_wrapper]: set_params"
-        logger.debug(msg)
-
         if 'args' in parameters:
             self.args = parameters.pop('args')
 
@@ -751,12 +785,6 @@ class AutoSklearnWrapper(object):
 
     def __getstate__(self):
         """ Returns everything to be pickled """
-        import sys
-        caller_name = sys._getframe(1).f_code.co_name
-
-        msg = "[asl_wrapper]: calling __getstate__. caller: {}".format(caller_name)
-        logger.debug(msg)
-        
         state = {}
         state['args'] = self.args
         state['kwargs'] = self.kwargs
@@ -768,9 +796,6 @@ class AutoSklearnWrapper(object):
 
     def __setstate__(self, state):
         """ Re-creates the object after pickling """
-        msg = "[asl_wrapper]: __setstate__"
-        logger.debug(msg)
-
         self.args = state['args']
         self.kwargs = state['kwargs']
         self.autosklearn_optimizer = state['autosklearn_optimizer']
