@@ -816,6 +816,14 @@ def add_blas_options(parser, default_num_blas_cpus=1):
         "arguments. This flag is not inended for external users.",
         action='store_true')
 
+def get_blas_options_string(args):
+    """  Create a string suitable for passing to another script of the BLAS
+    command line options
+    """
+    s = "--num-blas-threads {}".format(args.num_blas_threads)
+    return s
+
+
 def spawn_for_blas(args):
     """ Based on the BLAS command line arguments, update the environment and
     spawn a new version of the process
