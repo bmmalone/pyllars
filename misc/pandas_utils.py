@@ -17,6 +17,8 @@ import pandas as pd
 import openpyxl
 import fastparquet
 
+import misc.utils as utils
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -232,7 +234,7 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
     # check if we want to and can create the path
     if create_path:
         if filetype != 'excel_writer':
-            ensure_path_to_file_exists(out)
+            utils.ensure_path_to_file_exists(out)
         else:
             msg = ("[utils.write_df]: create_path was passed as True, but the "
                 "filetype is 'excel_writer'. This combination does not work. "
