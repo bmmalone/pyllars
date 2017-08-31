@@ -4,6 +4,29 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.2.4] - In progress
+### Added
+- Helper to collect sklearn classification metrics
+- Classification helpers to `automl_utils`
+- Utilities for working with the mimic dataset
+- Helpers for working with [`ASlibScenario`s](https://github.com/mlindauer/ASlibScenario)
+- Helper for listing subdirectories in `utils`
+- Brief description of all modules to the readme
+
+### Updated
+- `AutoSklearnWrapper` to clearly used autosklearn only during training;
+    otherwise, it behaves as a normal ensemble.
+
+### Removed
+- `external_sparse_pickle_list`
+- `visualize-roc`
+
+### Fixed
+- Parquet reader to handle (ignore) multi-indexes
+
+### Deprecated
+- All classes in `column_selector`
+
 ## [0.2.3] - 2017-07-27
 ### Added
 - Helper to remove negative values from an np.array

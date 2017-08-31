@@ -5,7 +5,6 @@ stan_console_scripts = [
 ]
 
 other_console_scripts = [
-    'visualize-roc=misc.visualize_roc:main',
     'call-sbatch=misc.call_sbatch:main',
     'scancel-range=misc.scancel_range:main',
     'test-gzip=misc.test_gzip:main',
@@ -19,11 +18,11 @@ def readme():
         return f.read()
 
 setup(name='misc',
-        version='0.2.3',
+        version='0.2.4',
         description="This package contains python3 utilities I find useful.",
         long_description=readme(),
         keywords="utilities",
-        url="",
+        url="https://github.com/bmmalone/pymisc-utils",
         author="Brandon Malone",
         author_email="bmmalone@gmail.com",
         license='MIT',
@@ -32,20 +31,22 @@ setup(name='misc',
             'cython',
             'numpy',
             'scipy',
+            'statsmodels',
             'matplotlib',
             'pandas',
+            'fastparquet',
+            'networkx',
             'docopt',
             'tqdm',
             'joblib',
             'xlrd',
             'openpyxl',
-            'graphviz'
+            'graphviz',
+            'tables',
+            'paramiko',
+            'spur',
+            'pystan'
         ],
-        extras_require = {
-            'hdf5': ['tables'],
-            'ssh': ['paramiko', 'spur'],
-            'stan': ['pystan'],
-        },
         include_package_data=True,
         test_suite='nose.collector',
         tests_require=['nose'],

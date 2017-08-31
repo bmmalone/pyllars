@@ -1,5 +1,7 @@
 import logging
+logger = logging.getLogger(__name__)
 
+import itertools
 import os
 import shutil
 import subprocess
@@ -7,7 +9,6 @@ import sys
 
 import misc.shell_utils as shell_utils
 
-logger = logging.getLogger(__name__)
 
 def raise_deprecation_warning(function, new_module, final_version=None,
         old_module="misc"):
@@ -508,6 +509,14 @@ def add_home_dir(*fn):
 
 def listdir_full(path):
     return [os.path.join(path, f) for f in os.listdir(path)]
+
+def list_subdirs(path):
+    """ List all subdirectories directly under path
+    """
+    subdirs = [
+        d for d in listdir_full(path) if os.path.isdir(d)
+    ]
+    return subdirs
 
 def get_basename(path):
     return os.path.splitext(os.path.basename(path))[0]
@@ -1196,8 +1205,6 @@ def grouper(n, iterable):
             http://stackoverflow.com/questions/3992735/
 
     """
-    import itertools
-
     iterable = iter(iterable)
     return iter(lambda: list(itertools.islice(iterable, n)), [])
 
@@ -1210,6 +1217,13 @@ def nth(iterable, n, default=None):
     N.B. This returns the *base-0* nth item in the iterator. For example, 
     nth(range(10), 1) returns 1.
     """
-    import itertools
-
     return next(itertools.islice(iterable, n, None), default)
+
+
+def dict_product(dicts):
+    """ Create an iterator from a GridSearchCV-like dictionary
+
+    This code is directly take from stackoverflow:
+        http://stackoverflow.com/a/40623158/621449
+    """
+    return (dict(zip(dicts, x)) for x in itertools.product(*dicts.values()))

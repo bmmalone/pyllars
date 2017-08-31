@@ -17,6 +17,8 @@ import pandas as pd
 import openpyxl
 import fastparquet
 
+import misc.utils as utils
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -158,7 +160,10 @@ def read_df(filename, filetype='AUTO', sheet=None, **kwargs):
         df = pd.read_hdf(filename, key=sheet, **kwargs)
     elif filetype == "parquet":
         pf = fastparquet.ParquetFile(filename, **kwargs)
-        df = pf.to_pandas()
+
+        # multi-indices are not yet supported, so we always have to turn
+        # off indices to avoid a NotImplementedError
+        df = pf.to_pandas(index=False)
     else:
         msg = "Could not read dataframe. Invalid filetype: {}".format(filetype)
         raise ValueError(msg)
@@ -229,7 +234,7 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
     # check if we want to and can create the path
     if create_path:
         if filetype != 'excel_writer':
-            ensure_path_to_file_exists(out)
+            utils.ensure_path_to_file_exists(out)
         else:
             msg = ("[utils.write_df]: create_path was passed as True, but the "
                 "filetype is 'excel_writer'. This combination does not work. "
