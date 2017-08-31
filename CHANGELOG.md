@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 - Parquet reader to handle (ignore) multi-indexes
 
+### Deprecated
+- All classes in `column_selector`
+
 ## [0.2.3] - 2017-07-27
 ### Added
 - Helper to remove negative values from an np.array

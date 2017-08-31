@@ -1,4 +1,7 @@
+from misc.deprecated_decorator import deprecated
 
+@deprecated("[ColumnSelector]: this class is deprecated and will be removed "
+    "in version 0.3.0. Please use the implementation in the mlxtend package.")
 class ColumnSelector(object):
     """ 
     A feature selector for scikit-learn's Pipeline class that returns
@@ -24,6 +27,8 @@ class ColumnSelector(object):
     def fit(self, X, y=None):
         return self
 
+@deprecated("[ColumnTransformer]: this class is deprecated and will be removed "
+    "in version 0.3.0. Please use the implementation in the mlxtend package.")
 class ColumnTransformer(object):
     """ A transformer for an sklearn Pipeline which applies a function to a
     specified set of columns from a pandas data frame.
