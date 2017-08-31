@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Utilities for working with the mimic dataset
 - Helpers for working with [`ASlibScenario`s](https://github.com/mlindauer/ASlibScenario)
 - Helper for listing subdirectories in `utils`
+- Brief description of all modules to the readme
 
 ### Updated
 - `AutoSklearnWrapper` to clearly used autosklearn only during training;
