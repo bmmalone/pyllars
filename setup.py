@@ -18,11 +18,11 @@ def readme():
         return f.read()
 
 setup(name='misc',
-        version='0.2.3',
+        version='0.2.4',
         description="This package contains python3 utilities I find useful.",
         long_description=readme(),
         keywords="utilities",
-        url="",
+        url="https://github.com/bmmalone/pymisc-utils",
         author="Brandon Malone",
         author_email="bmmalone@gmail.com",
         license='MIT',
