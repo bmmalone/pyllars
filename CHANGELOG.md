@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `AutoSklearnWrapper` to clearly used autosklearn only during training;
     otherwise, it behaves as a normal ensemble.
 
+### Removed
+- `external_sparse_pickle_list`
+- `visualize-roc`
+
 ### Fixed
 - Parquet reader to handle (ignore) multi-indexes
 

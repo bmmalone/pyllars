@@ -5,7 +5,6 @@ stan_console_scripts = [
 ]
 
 other_console_scripts = [
-    'visualize-roc=misc.visualize_roc:main',
     'call-sbatch=misc.call_sbatch:main',
     'scancel-range=misc.scancel_range:main',
     'test-gzip=misc.test_gzip:main',
@@ -42,13 +41,12 @@ setup(name='misc',
             'joblib',
             'xlrd',
             'openpyxl',
-            'graphviz'
+            'graphviz',
+            'tables',
+            'paramiko',
+            'spur',
+            'pystan'
         ],
-        extras_require = {
-            'hdf5': ['tables'],
-            'ssh': ['paramiko', 'spur'],
-            'stan': ['pystan'],
-        },
         include_package_data=True,
         test_suite='nose.collector',
         tests_require=['nose'],
