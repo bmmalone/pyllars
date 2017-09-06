@@ -153,14 +153,18 @@ ICU_MORTALITY_DESCRIPTOR_FIELDS = {
 
 ICU_MORTALITY_GENDER_MAP = {
     0: 'female',
-    1: 'male'
+    1: 'male',
+    None: np.nan,
+    np.nan: np.nan
 }
 
 ICU_MORTALITY_ICU_TYPE_MAP = {
     1: "coronary_care_unit", 
     2: "cardiac_surgery_recovery_unit",
     3: "medical_icu",
-    4: "surgical_icu"
+    4: "surgical_icu",
+    None: np.nan,
+    np.nan: np.nan
 }
 
 
@@ -244,9 +248,9 @@ def _get_icu_mortality_record_descriptor(record_file_df):
 
     # now, fix the data types
     record_descriptor = {
-        "EPISODE_ID": int(record_descriptor['RecordID']),
-        "ICU_TYPE": ICU_MORTALITY_ICU_TYPE_MAP[record_descriptor['ICUType']],
-        "GENDER": ICU_MORTALITY_GENDER_MAP[record_descriptor['Gender']],
+        "EPISODE_ID": int(record_descriptor.get('RecordID', 0)),
+        "ICU_TYPE": ICU_MORTALITY_ICU_TYPE_MAP[record_descriptor.get('ICUType')],
+        "GENDER": ICU_MORTALITY_GENDER_MAP[record_descriptor.get('Gender')],
         "AGE": record_descriptor.get('Age'),
         "HEIGHT": record_descriptor.get('Height'),
         "WEIGHT": record_descriptor.get('Weight')
@@ -307,6 +311,7 @@ def get_icu_mortality_record(icu_mortality_base, record_id, wide=True):
     """
     record_file = "{}.txt".format(record_id)
     record_file = os.path.join(icu_mortality_base, "set-a", record_file)
+
     observations = pd.read_csv(record_file)
 
     # from documentation:
