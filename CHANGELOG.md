@@ -4,6 +4,11 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.2.5] - In progress
+### Added
+- Utilities for working with the [Computing in Cardiology Challenge 2012
+    dataset](https://physionet.org/challenge/2012/)
+
 ## [0.2.4] - 2017-08-31
 ### Added
 - Helper to collect sklearn classification metrics
