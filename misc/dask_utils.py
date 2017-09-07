@@ -41,7 +41,7 @@ def connect(args):
 
     if args.cluster_location == "LOCAL":
         
-        msg = "Starting local dask cluster"
+        msg = "[dask_utils]: starting local dask cluster"
         logger.info(msg)
 
         cluster = DaskCluster(
@@ -53,11 +53,17 @@ def connect(args):
         client = DaskClient(cluster)
 
     else:
-        msg = "Attempting to connect to dask cluster: {}"
+        msg = "[dask_utils]: attempting to connect to dask cluster: {}"
         msg = msg.format(args.cluster_location)
         logger.info(msg)
 
         client = DaskClient(address=args.cluster_location)
+
+
+        if args.client_restart:
+            msg = "[dask_utils]: restarting client"
+            logger.info(msg)
+            client.restart()
 
     return client, cluster
         
@@ -94,8 +100,13 @@ def add_dask_options(parser, num_cpus=1, num_threads_per_cpu=1,
         "for a local cluster will be (args.num_cpus * "
         "args.num_threads_per_cpu).", type=int, default=num_threads_per_cpu)
 
+    dask_options.add_argument('--client-restart', help="If this flag is "
+        "given, then the \"restart\" function will be called on the client "
+        "after establishing the connection to the cluster",
+        action='store_true')
+
 def add_dask_values_to_args(args, num_cpus=1, num_threads_per_cpu=1,
-        cluster_location="LOCAL"):
+        cluster_location="LOCAL", client_restart=False):
 
     """ Add the options for a dask cluster to the given argparse namespace
 
@@ -104,6 +115,7 @@ def add_dask_values_to_args(args, num_cpus=1, num_threads_per_cpu=1,
     args.num_cpus = num_cpus
     args.num_threads_per_cpu = num_threads_per_cpu
     args.cluster_location = cluster_location
+    args.client_restart = client_restart
 
 def get_joblib_parallel_backend_context_manager(args):
     """ Get the appropriate context manager for joblib
@@ -111,6 +123,11 @@ def get_joblib_parallel_backend_context_manager(args):
 
     from joblib import parallel_backend
     import distributed.joblib
+
+    # first, check if we asked to restart the client
+    if args.client_restart:
+        # connect handles the call to restart
+        client, cluster = connect(args)
 
     if args.cluster_location == "LOCAL":
         backend_args = ['multiprocessing']
