@@ -686,7 +686,7 @@ class AutoSklearnWrapper(object):
         if self.estimator_named_step == "regressor":
             predict_f = self._predict_regression        
         
-        return predict_f(X_test, self)
+        return predict_f(X_test)
 
     def predict_proba(self, X_test):
         """ Use the automl ensemble to estimate class probabilities
