@@ -154,6 +154,7 @@ ICU_MORTALITY_DESCRIPTOR_FIELDS = {
 ICU_MORTALITY_GENDER_MAP = {
     0: 'female',
     1: 'male',
+    2: np.nan,
     None: np.nan,
     np.nan: np.nan
 }
@@ -246,6 +247,10 @@ def _get_icu_mortality_record_descriptor(record_file_df):
     record_descriptor = record_file_df[m_descriptors]
     record_descriptor = pd_utils.dataframe_to_dict(record_descriptor, "Parameter", "Value")
 
+    # handle Gender as a special case
+    if np.isnan(record_descriptor.get('Gender')):
+        record_descriptor['Gender'] = 2
+
     # now, fix the data types
     record_descriptor = {
         "EPISODE_ID": int(record_descriptor.get('RecordID', 0)),
@@ -334,6 +339,13 @@ def get_icu_mortality_record(icu_mortality_base, record_id, wide=True):
     # first, discard the descriptor fields
     m_d = observations['Parameter'].isin(ICU_MORTALITY_DESCRIPTOR_FIELDS)
     observations = observations[~m_d]
+
+    # It is possible we actually do not have any observations besides the
+    # descriptors
+    if len(observations) == 0:
+        msg = "Did not have any observations for record: {}".format(record_id)
+        raise ValueError(msg)
+
     observations['Time'] = observations['Time'].apply(parse_timedelta)
 
     # rename the columns to match the MIMIC columns a bit better
