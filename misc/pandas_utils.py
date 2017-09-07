@@ -263,6 +263,15 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
         if not do_not_compress:
             kwargs['compression'] = 'GZIP'
 
+        # handle "index=False" kwarg
+        if 'index' in kwargs:
+            index = kwargs.pop('index')
+
+            # if index is true, then no need to do anything
+            # that is the default
+            if not index:
+                kwargs['write_index'] = False
+
         # if a parquet "file" exists, delete it
         if os.path.exists(out):
             # it could be either a folder or a file
