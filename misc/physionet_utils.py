@@ -139,10 +139,10 @@ def get_procedure_icds(mimic_base, to_pandas=True):
 ###
 # CinC 2012: https://physionet.org/challenge/2012/
 #
-#   "icu_mortality"
+#   "cinc_2012"
 ###
 
-ICU_MORTALITY_DESCRIPTOR_FIELDS = {
+CinC_2012_DESCRIPTOR_FIELDS = {
     'RecordID',
     'Age',
     'Gender',
@@ -151,7 +151,7 @@ ICU_MORTALITY_DESCRIPTOR_FIELDS = {
     'Weight'
 }
 
-ICU_MORTALITY_GENDER_MAP = {
+CinC_2012_GENDER_MAP = {
     0: 'female',
     1: 'male',
     2: np.nan,
@@ -159,7 +159,7 @@ ICU_MORTALITY_GENDER_MAP = {
     np.nan: np.nan
 }
 
-ICU_MORTALITY_ICU_TYPE_MAP = {
+CinC_2012_ICU_TYPE_MAP = {
     1: "coronary_care_unit", 
     2: "cardiac_surgery_recovery_unit",
     3: "medical_icu",
@@ -169,15 +169,15 @@ ICU_MORTALITY_ICU_TYPE_MAP = {
 }
 
 
-def get_icu_mortality_outcomes(icu_mortality_base, to_pandas=True):
+def get_cinc_2012_outcomes(cinc_2012_base, to_pandas=True):
     """ Load the Outcomes-a.txt file.
 
     N.B. This file is assumed to be named "Outcomes-a.txt" and located
-    directly in the icu_mortality_base directory
+    directly in the cinc_2012_base directory
 
     Parameters
     ----------
-    icu_mortality_base: path-like
+    cinc_2012_base: path-like
         The path to the main folder for this CinC challenge
 
     to_pandas: bool
@@ -185,21 +185,21 @@ def get_icu_mortality_outcomes(icu_mortality_base, to_pandas=True):
 
     Returns
     -------
-    icu_mortality_outcomes: pd.DataFrame or dd.DataFrame
+    cinc_2012_base: pd.DataFrame or dd.DataFrame
         The "Outcomes-a" table as either a pandas or dask data frame,
         depending on the value of to_pandas. It comtains the following columns:
 
-            * EPISODE_ID: string, a key into the record table
+            * HADM_ID: string, a key into the record table
             * SAPS-I: integer, the SAPS-I score
             * SOFA: integer, the SOFA score
-            * EPISODE_ELAPSED_TIME: pd.timedelta, time in the hospital, in days
+            * ADMISSION_ELAPSED_TIME: pd.timedelta, time in the hospital, in days
             * SURVIVAL: time between ICU admission and observed death.
                 If the patient survived (or the death was not recorded), then
                 the value is np.nan.
             * EXPIRED: bool, whether the patient died in the hospital
     """
 
-    outcomes_df = os.path.join(icu_mortality_base, "Outcomes-a.txt")
+    outcomes_df = os.path.join(cinc_2012_base, "Outcomes-a.txt")
 
     if to_pandas:
         outcomes_df = pd_utils.read_df(outcomes_df)
@@ -207,8 +207,8 @@ def get_icu_mortality_outcomes(icu_mortality_base, to_pandas=True):
         outcomes_df = dd.read_csv(outcomes_df)
 
     new_columns = {
-        'RecordID': 'EPISODE_ID',
-        'Length_of_stay': 'EPISODE_ELAPSED_TIME',
+        'RecordID': 'HADM_ID',
+        'Length_of_stay': 'ADMISSION_ELAPSED_TIME',
         'Survival': 'SURVIVAL',
         'In-hospital_death': 'EXPIRED'
     }
@@ -224,19 +224,19 @@ def get_icu_mortality_outcomes(icu_mortality_base, to_pandas=True):
     outcomes_df['SURVIVAL'] = s
 
     # and the time of the episode to a timedelta
-    e = pd.to_timedelta(outcomes_df['EPISODE_ELAPSED_TIME'], unit='d')
-    outcomes_df['EPISODE_ELAPSED_TIME'] = e
+    e = pd.to_timedelta(outcomes_df['ADMISSION_ELAPSED_TIME'], unit='d')
+    outcomes_df['ADMISSION_ELAPSED_TIME'] = e
 
     return outcomes_df
 
-def _get_icu_mortality_record_descriptor(record_file_df):
+def _get_cinc_2012_record_descriptor(record_file_df):
     """ Given the record file data frame, use the first six rows to extract
     the descriptor information. See the documentation (https://physionet.org/challenge/2012/,
     "General descriptors") for more details.
     """
 
     # first, only look for the specified fields
-    m_icu_fields = record_file_df['Parameter'].isin(ICU_MORTALITY_DESCRIPTOR_FIELDS)
+    m_icu_fields = record_file_df['Parameter'].isin(CinC_2012_DESCRIPTOR_FIELDS)
 
     # and at time "00:00"
     m_time = record_file_df['Time'] == "00:00"
@@ -253,9 +253,9 @@ def _get_icu_mortality_record_descriptor(record_file_df):
 
     # now, fix the data types
     record_descriptor = {
-        "EPISODE_ID": int(record_descriptor.get('RecordID', 0)),
-        "ICU_TYPE": ICU_MORTALITY_ICU_TYPE_MAP[record_descriptor.get('ICUType')],
-        "GENDER": ICU_MORTALITY_GENDER_MAP[record_descriptor.get('Gender')],
+        "HADM_ID": int(record_descriptor.get('RecordID', 0)),
+        "ICU_TYPE": CinC_2012_ICU_TYPE_MAP[record_descriptor.get('ICUType')],
+        "GENDER": CinC_2012_GENDER_MAP[record_descriptor.get('Gender')],
         "AGE": record_descriptor.get('Age'),
         "HEIGHT": record_descriptor.get('Height'),
         "WEIGHT": record_descriptor.get('Weight')
@@ -263,15 +263,15 @@ def _get_icu_mortality_record_descriptor(record_file_df):
 
     return record_descriptor
 
-def get_icu_mortality_record(icu_mortality_base, record_id, wide=True):
+def get_cinc_2012_record(cinc_2012_base, record_id, wide=True):
     """ Load the record file for the given id.
 
     N.B. This file is assumed to be named "<record_id>.txt" and located
-    in the "<icu_mortality_base>/set-a" directory.
+    in the "<cinc_2012_base>/set-a" directory.
 
     Parameters
     ----------
-    icu_mortality_base: path-like
+    cinc_2012_base: path-like
         The path to the main folder for this CinC challenge
 
     record_id: string-like
@@ -290,7 +290,7 @@ def get_icu_mortality_record(icu_mortality_base, record_id, wide=True):
     record_descriptors: dictionary
         The six descriptors:
         
-            * EPISODE_ID: string, the record id. We call it "EPISODE_ID" to
+            * HADM_ID: string, the record id. We call it "HADM_ID" to
                 keep the nomenclature consistent with the MIMIC data
 
             * ICU_TYPE: string ["coronary_care_unit", 
@@ -306,7 +306,7 @@ def get_icu_mortality_record(icu_mortality_base, record_id, wide=True):
         The remaining time series entries for this record. This is returned as
         either a "long" or "wide" data frame with columns:
 
-            * EPISODE_ID: string (added for easy joining, etc.)
+            * HADM_ID: string (added for easy joining, etc.)
             * ELAPSED_TIME: timedelta64[ns]
             * MEASUREMENT: the name of the measurement
             * VALUE: the value of the measurement
@@ -315,7 +315,7 @@ def get_icu_mortality_record(icu_mortality_base, record_id, wide=True):
         measurement.
     """
     record_file = "{}.txt".format(record_id)
-    record_file = os.path.join(icu_mortality_base, "set-a", record_file)
+    record_file = os.path.join(cinc_2012_base, "set-a", record_file)
 
     observations = pd.read_csv(record_file)
 
@@ -325,7 +325,7 @@ def get_icu_mortality_record(icu_mortality_base, record_id, wide=True):
     observations = observations.replace(-1, np.nan)
 
     # first, get the descriptor
-    descriptor = _get_icu_mortality_record_descriptor(observations)
+    descriptor = _get_cinc_2012_record_descriptor(observations)
 
     # we do not want to expose this function, but we know the elapsed times
     # are of the form "HH:MM"
@@ -337,7 +337,7 @@ def get_icu_mortality_record(icu_mortality_base, record_id, wide=True):
     # and now the observations
 
     # first, discard the descriptor fields
-    m_d = observations['Parameter'].isin(ICU_MORTALITY_DESCRIPTOR_FIELDS)
+    m_d = observations['Parameter'].isin(CinC_2012_DESCRIPTOR_FIELDS)
     observations = observations[~m_d]
 
     # It is possible we actually do not have any observations besides the
@@ -371,7 +371,7 @@ def get_icu_mortality_record(icu_mortality_base, record_id, wide=True):
         observations.columns.name = None
 
     # either way, add the episode id
-    observations['EPISODE_ID'] = descriptor['EPISODE_ID']
+    observations['HADM_ID'] = descriptor['HADM_ID']
 
     # and return the descriptor and observations
     return descriptor, observations
