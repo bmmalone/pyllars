@@ -104,3 +104,21 @@ def add_dask_values_to_args(args, num_cpus=1, num_threads_per_cpu=1,
     args.num_cpus = num_cpus
     args.num_threads_per_cpu = num_threads_per_cpu
     args.cluster_location = cluster_location
+
+def get_joblib_parallel_backend_context_manager(args):
+    """ Get the appropriate context manager for joblib
+    """
+
+    from joblib import parallel_backend
+    import distributed.joblib
+
+    if args.cluster_location == "LOCAL":
+        backend_args = ['multiprocessing']
+        backend_kwargs = {}
+    else:
+        backend_args = ['dask.distributed']
+        backend_kwargs = {'scheduler_host': args.cluster_location}
+
+    backend = parallel_backend(*backend_args, **backend_kwargs)
+    return backend
+
