@@ -965,9 +965,15 @@ def get_type(type_string):
     """
     import importlib
 
-    module, class_ = type_string.rsplit(".", 1)
-    module = importlib.import_module(module)
-    class_ = getattr(module, class_)
+    class_ = None
+    try:
+        module, class_ = type_string.rsplit(".", 1)
+        module = importlib.import_module(module)
+        class_ = getattr(module, class_)
+    except Exception as e:
+        msg = "[utils.get_type]: could not parse type: {}".format(type_string)
+        logger.debug(msg)
+
     return class_
 
 def is_sequence(maybe_sequence):
