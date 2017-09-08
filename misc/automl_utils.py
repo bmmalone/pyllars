@@ -496,6 +496,7 @@ class AutoSklearnWrapper(object):
             autosklearn_optimizer=None,
             estimator_named_step=None,
             args=None,
+            le=None,
             **kwargs):
 
         msg = ("[asl_wrapper]: initializing a wrapper. ensemble: {}. "
@@ -507,6 +508,7 @@ class AutoSklearnWrapper(object):
         self.ensemble_ = ensemble
         self.autosklearn_optimizer = autosklearn_optimizer
         self.estimator_named_step = estimator_named_step
+        self.le_ = le
 
     def create_classification_optimizer(self, args, **kwargs):        
         """ Create an AutoSklearnClassifier and use it as the autosklearn
@@ -819,7 +821,8 @@ class AutoSklearnWrapper(object):
             'ensemble_': self.ensemble_,
             'estimator_named_step': self.estimator_named_step,
             'args': self.args,
-            'kwargs': self.kwargs
+            'kwargs': self.kwargs,
+            "le_": self.le_
         }
         return params
 
@@ -840,6 +843,9 @@ class AutoSklearnWrapper(object):
         if 'estimator_named_step' in parameters:
             self.estimator_named_step = parameters.pop('estimator_named_step')
 
+        if 'le_' in parameters:
+            self.le_ = parameters.pop('le_')
+
         return self
 
 
@@ -851,6 +857,7 @@ class AutoSklearnWrapper(object):
         state['autosklearn_optimizer'] = self.autosklearn_optimizer
         state['ensemble_'] = self.ensemble_
         state['estimator_named_step'] = self.estimator_named_step
+        state['le_'] = self.le_
 
         return state
 
@@ -861,6 +868,7 @@ class AutoSklearnWrapper(object):
         self.autosklearn_optimizer = state['autosklearn_optimizer']
         self.estimator_named_step = state['estimator_named_step']
         self.ensemble_ = state['ensemble_']
+        self.le_ = state['le_']
 
     def write(self, out_file):
         """ Validate that the wrapper has been fit and then write it to disk
