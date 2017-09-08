@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Utilities for working with the [Computing in Cardiology Challenge 2012
     dataset](https://physionet.org/challenge/2012/)
+- Minor extensions and fixes for `AutoSklearnWrapper`
 
 ## [0.2.4] - 2017-08-31
 ### Added

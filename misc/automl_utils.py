@@ -497,6 +497,7 @@ class AutoSklearnWrapper(object):
             estimator_named_step=None,
             args=None,
             le=None,
+            metric=None,
             **kwargs):
 
         msg = ("[asl_wrapper]: initializing a wrapper. ensemble: {}. "
@@ -508,6 +509,7 @@ class AutoSklearnWrapper(object):
         self.ensemble_ = ensemble
         self.autosklearn_optimizer = autosklearn_optimizer
         self.estimator_named_step = estimator_named_step
+        self.metric = metric
         self.le_ = le
 
     def create_classification_optimizer(self, args, **kwargs):        
@@ -607,6 +609,10 @@ class AutoSklearnWrapper(object):
     def fit(self, X_train, y, metric=None, encode_y=True):
         """ Optimize the ensemble parameters with autosklearn """
 
+        # overwrite our metric, if one was given
+        if metric is not None:
+            self.metric = metric
+
         # check if we have either args or a learner
         if self.args is not None:
             if self.autosklearn_optimizer is not None:
@@ -647,10 +653,11 @@ class AutoSklearnWrapper(object):
                 "optimizer. Please set one or the other (but not both).")
             raise ValueError(msg)
 
-        msg = "[asl_wrapper]: fitting a wrapper"
+        msg = ("[asl_wrapper]: fitting a wrapper with metric: {}".format(
+            self.metric))
         logger.debug(msg)
 
-        self.autosklearn_optimizer.fit(X_train, y, metric=metric)
+        self.autosklearn_optimizer.fit(X_train, y, metric=self.metric)
         
         vals = _extract_autosklearn_ensemble(
             self.autosklearn_optimizer,
@@ -822,7 +829,8 @@ class AutoSklearnWrapper(object):
             'estimator_named_step': self.estimator_named_step,
             'args': self.args,
             'kwargs': self.kwargs,
-            "le_": self.le_
+            "le_": self.le_,
+            'metric': self.metric
         }
         return params
 
@@ -832,7 +840,6 @@ class AutoSklearnWrapper(object):
 
         if 'kwargs' in parameters:
             self.kwargs = parameters.pop('kwargs')
-
 
         if 'autosklearn_optimizer' in parameters:
             self.autosklearn_optimizer = parameters.pop('autosklearn_optimizer')
@@ -846,6 +853,9 @@ class AutoSklearnWrapper(object):
         if 'le_' in parameters:
             self.le_ = parameters.pop('le_')
 
+        if 'metric' in parameters:
+            self.metric = parameters.pop('metric')
+
         return self
 
 
@@ -858,6 +868,7 @@ class AutoSklearnWrapper(object):
         state['ensemble_'] = self.ensemble_
         state['estimator_named_step'] = self.estimator_named_step
         state['le_'] = self.le_
+        state['metric'] = self.metric
 
         return state
 
@@ -869,6 +880,7 @@ class AutoSklearnWrapper(object):
         self.estimator_named_step = state['estimator_named_step']
         self.ensemble_ = state['ensemble_']
         self.le_ = state['le_']
+        self.metric = state['metric']
 
     def write(self, out_file):
         """ Validate that the wrapper has been fit and then write it to disk
