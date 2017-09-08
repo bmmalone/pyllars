@@ -6,6 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # system imports
+import collections
 import os
 
 # pydata imports
@@ -186,7 +187,22 @@ pipeline_step_names_map = {
     "<class 'sklearn.ensemble.forest.RandomForestRegressor'>": "Random forest regression",
     "<class 'sklearn.linear_model.ridge.Ridge'>": "Ridge regression",
     "<class 'sklearn.linear_model.bayes.ARDRegression'>": "Bayesian ridge regression",
-    "<class 'sklearn.svm.classes.LinearSVR'>": "linear support vector regression"
+    "<class 'sklearn.svm.classes.LinearSVR'>": "Linear support vector regression",
+
+    # classification models
+    "<class 'autosklearn.evaluation.abstract_evaluator.MyDummyClassifier'>": "Dummy classifier",
+    "<class 'sklearn.ensemble.forest.RandomForestClassifier'>": "Random forest classification",
+    "<class 'sklearn.svm.classes.LinearSVC'>": "Support vector classification (liblinear)",
+    "<class 'sklearn.svm.classes.SVC'>": "Support vector classification (libsvm)",
+    "<class 'sklearn.discriminant_analysis.LinearDiscriminantAnalysis'>": "Linear discriminant analysis",
+    "<class 'sklearn.ensemble.gradient_boosting.GradientBoostingClassifier'>": "Gradient-boosted regression trees for classification",
+    "<class 'sklearn.linear_model.stochastic_gradient.SGDClassifier'>": "Linear model trained with stochastic gradient descent",
+    "<class 'sklearn.ensemble.weight_boosting.AdaBoostClassifier'>": "AdaBoost (SAMME), default base: DecisionTree"
+    
+}
+
+PRETTY_NAME_TYPE_MAP = {
+    utils.get_type(k.split("'")[1]): v for k,v in pipeline_step_names_map.items()
 }
 
 # the names of the actual "element" (estimator, etc.) for steps in
@@ -772,6 +788,30 @@ class AutoSklearnWrapper(object):
             _get_asl_estimator(p, self.estimator_named_step) for p in pipelines 
         ]
         return estimators
+
+    def get_ensemble_model_summary(self):
+        """ Create a mapping from pretty model names to their total weight in
+        the ensemble
+        
+        Parameters
+        ----------
+        asl_wrapper: a fit AutoSklearnWrapper
+        
+        Returns
+        -------
+        ensemble_summary: dict of string -> float
+            A mapping from model names to weights
+        """
+        weights = self.ensemble_[0]    
+        estimators = self.get_estimators()
+        
+        summary = collections.defaultdict(float)
+        
+        for w, e in zip(weights, estimators):
+            type_str = PRETTY_NAME_TYPE_MAP[type(e)]
+            summary[type_str] += w
+            
+        return summary
 
     def get_params(self, deep=True):
         params = {
