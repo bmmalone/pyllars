@@ -191,13 +191,15 @@ pipeline_step_names_map = {
 
     # classification models
     "<class 'autosklearn.evaluation.abstract_evaluator.MyDummyClassifier'>": "Dummy classifier",
-    "<class 'sklearn.ensemble.forest.RandomForestClassifier'>": "Random forest classification",
+    "<class 'sklearn.ensemble.forest.RandomForestClassifier'>": "Random forest with optimal splits classifier",
     "<class 'sklearn.svm.classes.LinearSVC'>": "Support vector classification (liblinear)",
     "<class 'sklearn.svm.classes.SVC'>": "Support vector classification (libsvm)",
     "<class 'sklearn.discriminant_analysis.LinearDiscriminantAnalysis'>": "Linear discriminant analysis",
     "<class 'sklearn.ensemble.gradient_boosting.GradientBoostingClassifier'>": "Gradient-boosted regression trees for classification",
     "<class 'sklearn.linear_model.stochastic_gradient.SGDClassifier'>": "Linear model trained with stochastic gradient descent",
-    "<class 'sklearn.ensemble.weight_boosting.AdaBoostClassifier'>": "AdaBoost (SAMME), default base: DecisionTree"
+    "<class 'sklearn.ensemble.weight_boosting.AdaBoostClassifier'>": "AdaBoost (SAMME), default base: DecisionTree",
+    "<class 'sklearn.linear_model.passive_aggressive.PassiveAggressiveClassifier'>": "Margin-based Passive-Aggressive classifier",
+    "<class 'sklearn.ensemble.forest.ExtraTreesClassifier'>": "Random forest with random splits classifier"
     
 }
 
