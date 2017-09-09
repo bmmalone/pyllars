@@ -494,25 +494,23 @@ class AutoSklearnWrapper(object):
     """
 
     def __init__(self,
-            ensemble=None,
+            ensemble_=None,
             autosklearn_optimizer=None,
             estimator_named_step=None,
             args=None,
-            le=None,
-            metric=None,
-            **kwargs):
+            le_=None,
+            metric=None):
 
         msg = ("[asl_wrapper]: initializing a wrapper. ensemble: {}. "
-            "autosklearn: {}".format(ensemble, autosklearn_optimizer))
+            "autosklearn: {}" .format(ensemble_, autosklearn_optimizer))
         logger.debug(msg)
 
         self.args = args
-        self.kwargs = kwargs
-        self.ensemble_ = ensemble
+        self.ensemble_ = ensemble_
         self.autosklearn_optimizer = autosklearn_optimizer
         self.estimator_named_step = estimator_named_step
         self.metric = metric
-        self.le_ = le
+        self.le_ = le_
 
     def create_classification_optimizer(self, args, **kwargs):        
         """ Create an AutoSklearnClassifier and use it as the autosklearn
@@ -627,13 +625,13 @@ class AutoSklearnWrapper(object):
                     "optimizer")
                 logger.debug(msg)
 
-                self.create_regression_optimizer(self.args, **self.kwargs)
+                self.create_regression_optimizer(self.args)
             else:
                 msg = ("[asl_wrapper]: creating an autosklearn classification "
                     "optimizer")
                 logger.debug(msg)
 
-                self.create_classification_optimizer(self.args, **self.kwargs)
+                self.create_classification_optimizer(self.args)
 
                 # sometimes, it seems we need to encode labels to keep them
                 # around.
@@ -830,7 +828,6 @@ class AutoSklearnWrapper(object):
             'ensemble_': self.ensemble_,
             'estimator_named_step': self.estimator_named_step,
             'args': self.args,
-            'kwargs': self.kwargs,
             "le_": self.le_,
             'metric': self.metric
         }
@@ -839,9 +836,6 @@ class AutoSklearnWrapper(object):
     def set_params(self, **parameters):
         if 'args' in parameters:
             self.args = parameters.pop('args')
-
-        if 'kwargs' in parameters:
-            self.kwargs = parameters.pop('kwargs')
 
         if 'autosklearn_optimizer' in parameters:
             self.autosklearn_optimizer = parameters.pop('autosklearn_optimizer')
@@ -865,7 +859,6 @@ class AutoSklearnWrapper(object):
         """ Returns everything to be pickled """
         state = {}
         state['args'] = self.args
-        state['kwargs'] = self.kwargs
         state['autosklearn_optimizer'] = self.autosklearn_optimizer
         state['ensemble_'] = self.ensemble_
         state['estimator_named_step'] = self.estimator_named_step
@@ -877,7 +870,6 @@ class AutoSklearnWrapper(object):
     def __setstate__(self, state):
         """ Re-creates the object after pickling """
         self.args = state['args']
-        self.kwargs = state['kwargs']
         self.autosklearn_optimizer = state['autosklearn_optimizer']
         self.estimator_named_step = state['estimator_named_step']
         self.ensemble_ = state['ensemble_']
