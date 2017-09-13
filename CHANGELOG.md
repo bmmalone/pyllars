@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
     dataset](https://physionet.org/challenge/2012/)
 - Minor extensions and fixes for `AutoSklearnWrapper`
 - Helper for drawing rectangles in matplotlib
+- Multiclass AUC calculation from [Hand and Till, 2001]
 
 ## [0.2.4] - 2017-08-31
 ### Added

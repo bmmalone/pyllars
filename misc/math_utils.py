@@ -14,7 +14,7 @@
 #   while that module considers data frames more like database tables which
 #   hold various types of records.
 ###
-
+import itertools
 from enum import Enum
 import numpy as np
 import scipy.stats
@@ -819,3 +819,140 @@ def collect_binary_classification_metrics(y_probas_pred, y_true, threshold=0.5,
 
     return ret
 
+def _calc_hand_and_till_a_value(y_true, y_score, i, j):
+    """ Calculate the \hat{A} value in Equation (3) of:
+    
+    Hand, D. & Till, R. A Simple Generalisation of the Area Under the ROC Curve
+    for Multiple Class Classification Problems Machine Learning, 2001, 45, 171-186.
+    
+    Specifically:
+        A(i|j) = \frac{ S_i - n_i*(n_i + 1)/2 }{n_i * n_j},
+
+        where n_i, n_j are the count of instances of the respective classes and
+        S_i is the (base-1) sum of the ranks of class i
+    
+    Parameters
+    ----------
+    y_true: np.array with shape [n_samples]
+        The true label of each instance. The labels are assumed to be encoded with
+        integers [0, 1, ... n_classes-1]. The respective columns in y_prob should
+        give the probabilities of the matching label.
+        
+    y_score: np.array with shape [n_samples, n_classes]
+        The score predictions for each class, e.g., from pred_proba, though they
+        are not required to be probabilities
+        
+    i, j: integers
+        The class indices
+        
+    Returns
+    -------
+    a_hat: float
+        The \hat{A} value from Equation (3) referenced above. Specifically, this is
+        the probability that a randomly drawn member of class j will have a lower
+        estimated score for belonging to class i than a randomly drawn member
+        of class i.
+    """
+    # so first pull out all elements of class i or j
+    m_j = (y_true == j)
+    m_i = (y_true == i)
+    m_ij = (m_i | m_j)
+
+    y_true_ij = y_true[m_ij]
+    y_score_ij = y_score[m_ij]
+
+    # count them
+    n_i = np.sum(m_i)
+    n_j = np.sum(m_j)
+
+
+    # likelihood of class i
+    y_score_i_ij = zip(y_true_ij, y_score_ij[:,i])
+    
+    # rank the instances
+    sorted_c_pi = np.array(sorted(y_score_i_ij, key=lambda a: a[1]))
+
+    # sum the ranks for class i
+
+    # first, find where the class_i's are
+    m_ci = sorted_c_pi[:,0] == i
+
+    # ranks are base-1, so add 1
+    ci_ranks = np.where(m_ci)[0] + 1
+    s_i = np.sum(ci_ranks)
+
+    a_i_given_j = s_i - n_i * (n_i + 1)/2
+    a_i_given_j /= (n_i * n_j)
+
+    return a_i_given_j
+
+def calc_hand_and_till_m_score(y_true, y_score):
+    """ Calculate the "M" score from Equation (7) of:
+    
+    Hand, D. & Till, R. A Simple Generalisation of the Area Under the ROC Curve
+    for Multiple Class Classification Problems Machine Learning, 2001, 45,
+    171-186.
+    
+    This is typically taken as a good multi-class extension of the AUC score.
+    For more details, see:
+    
+    Fawcett, T. An introduction to ROC analysis Pattern Recognition Letters,
+    2006, 27, 861 - 874.
+
+    N.B. This function *can* handle unobserved labels, except for the label
+    with the highest index. In particular:
+
+    y_score.shape[1] != np.max(np.unique(y_true)) + 1 causes an error.
+    
+    Parameters
+    ----------
+    y_true: np.array with shape [n_samples]
+        The true label of each instance. The labels are assumed to be encoded 
+        with integers [0, 1, ... n_classes-1]. The respective columns in
+        y_score should give the scores of the matching label.
+        
+    y_score: np.array with shape [n_samples, n_classes]
+        The score predictions for each class, e.g., from pred_proba, though
+        they are not required to be probabilities
+        
+    Returns
+    -------
+    m: float
+        The "multi-class AUC" score referenced above
+    """
+    
+    classes = np.unique(y_true)
+    num_classes = np.max(classes)+1
+    
+    # first, validate our input
+    if y_true.shape[0] != y_score.shape[0]:
+        msg = ("[math_utils.m_score]: y_true and y_score do not have matching "
+            "shapes. y_true: {}, y_score: {}".format(y_true.shape,
+            y_score.shape))
+        raise ValueError(msg)
+
+    if y_score.shape[1] != (num_classes):
+        msg = ("[math_utils.m_score]: y_score does not have the expected "
+            "number of columns based on the maximum observed class in y_true. "
+            "y_score.shape: {}. expected number of columns: {}".format(
+            y_score.shape, num_classes))
+        raise ValueError(msg)
+    
+    # the specific equation is:
+    #
+    # M = \frac{2}{c*(c-1)}*\sum_{i<j} {\hat{A}(i,j)},
+    #
+    # where \hat{A}(i,j) is \frac{A(i|j) + A(i|j)}{2}
+    ij_pairs = itertools.combinations(classes, 2)
+
+    m = 0
+    for i,j in ij_pairs:
+        a_ij = _calc_hand_and_till_a_value(y_true, y_score, i,j)
+        a_ji = _calc_hand_and_till_a_value(y_true, y_score, j, i)
+
+        m += (a_ij + a_ji) / 2
+
+    m_1 = num_classes * (num_classes - 1)
+    m_1 = 2 / m_1
+    m = m_1 * m
+    return m
