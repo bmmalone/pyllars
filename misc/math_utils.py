@@ -865,7 +865,6 @@ def _calc_hand_and_till_a_value(y_true, y_score, i, j):
     n_i = np.sum(m_i)
     n_j = np.sum(m_j)
 
-
     # likelihood of class i
     y_score_i_ij = zip(y_true_ij, y_score_ij[:,i])
     
@@ -892,6 +891,86 @@ def calc_hand_and_till_m_score(y_true, y_score):
     Hand, D. & Till, R. A Simple Generalisation of the Area Under the ROC Curve
     for Multiple Class Classification Problems Machine Learning, 2001, 45,
     171-186.
+    
+    This is typically taken as a good multi-class extension of the AUC score.
+    For more details, see:
+    
+    Fawcett, T. An introduction to ROC analysis Pattern Recognition Letters,
+    2006, 27, 861 - 874.
+
+    N.B. This function *can* handle unobserved labels, except for the label
+    with the highest index. In particular:
+
+    y_score.shape[1] != np.max(np.unique(y_true)) + 1 causes an error.
+
+    N.B. In case y_score contains any np.nan's, those will be removed before
+    calculating the M score.
+    
+    Parameters
+    ----------
+    y_true: np.array with shape [n_samples]
+        The true label of each instance. The labels are assumed to be encoded 
+        with integers [0, 1, ... n_classes-1]. The respective columns in
+        y_score should give the scores of the matching label.
+        
+    y_score: np.array with shape [n_samples, n_classes]
+        The score predictions for each class, e.g., from pred_proba, though
+        they are not required to be probabilities
+        
+    Returns
+    -------
+    m: float
+        The "multi-class AUC" score referenced above
+    """
+    
+    classes = np.unique(y_true)
+    num_classes = np.max(classes)+1
+    
+    # first, validate our input
+    if y_true.shape[0] != y_score.shape[0]:
+        msg = ("[math_utils.m_score]: y_true and y_score do not have matching "
+            "shapes. y_true: {}, y_score: {}".format(y_true.shape,
+            y_score.shape))
+        raise ValueError(msg)
+
+    if y_score.shape[1] != (num_classes):
+        msg = ("[math_utils.m_score]: y_score does not have the expected "
+            "number of columns based on the maximum observed class in y_true. "
+            "y_score.shape: {}. expected number of columns: {}".format(
+            y_score.shape, num_classes))
+        raise ValueError(msg)
+
+    # clear out the np.nan's
+    m_nan = np.any(np.isnan(y_score), axis=1)
+    y_score = y_score[~m_nan]
+    y_true = y_true[~m_nan]
+    
+    # the specific equation is:
+    #
+    # M = \frac{2}{c*(c-1)}*\sum_{i<j} {\hat{A}(i,j)},
+    #
+    # where \hat{A}(i,j) is \frac{A(i|j) + A(i|j)}{2}
+    ij_pairs = itertools.combinations(classes, 2)
+
+    m = 0
+    for i,j in ij_pairs:
+        a_ij = _calc_hand_and_till_a_value(y_true, y_score, i,j)
+        a_ji = _calc_hand_and_till_a_value(y_true, y_score, j, i)
+
+        m += (a_ij + a_ji) / 2
+
+    m_1 = num_classes * (num_classes - 1)
+    m_1 = 2 / m_1
+    m = m_1 * m
+    return m
+
+
+def calc_provost_and_domingos_auc(y_true, y_score):
+    """ Calculate the "M" score from Equation (7) of:
+    
+    Provost, F. & Domingos, P. Well-Trained PETs: Improving Probability
+    Estimation Trees Sterm School of Business, NYU, Sterm School of
+    Business, NYU, 2000.
     
     This is typically taken as a good multi-class extension of the AUC score.
     For more details, see:
@@ -937,22 +1016,24 @@ def calc_hand_and_till_m_score(y_true, y_score):
             "y_score.shape: {}. expected number of columns: {}".format(
             y_score.shape, num_classes))
         raise ValueError(msg)
-    
-    # the specific equation is:
-    #
-    # M = \frac{2}{c*(c-1)}*\sum_{i<j} {\hat{A}(i,j)},
-    #
-    # where \hat{A}(i,j) is \frac{A(i|j) + A(i|j)}{2}
-    ij_pairs = itertools.combinations(classes, 2)
-
+        
     m = 0
-    for i,j in ij_pairs:
-        a_ij = _calc_hand_and_till_a_value(y_true, y_score, i,j)
-        a_ji = _calc_hand_and_till_a_value(y_true, y_score, j, i)
+    
+    for c in classes:
+        m_c = y_true == c
+        p_c = np.sum(m_c) / len(y_true)
 
-        m += (a_ij + a_ji) / 2
+        y_true_c = (y_true == c)
+        y_score_c = y_score[:,c]
 
-    m_1 = num_classes * (num_classes - 1)
-    m_1 = 2 / m_1
-    m = m_1 * m
+        m_nan = np.isnan(y_score_c)
+        y_score_c = y_score_c[~m_nan]
+        y_true_c = y_true_c[~m_nan]
+
+        auc_c = sklearn.metrics.roc_auc_score(y_true_c, y_score_c)
+        a_c = auc_c * p_c
+        
+        m += a_c
+        
     return m
+    
