@@ -4,6 +4,7 @@
 
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import numpy as np
 
 import misc.utils as utils
@@ -58,7 +59,7 @@ def set_title_fontsize(ax, fontsize):
 
     fontsize: int, or string mpl recognizes
         The size of the title font
-
+ 
     Returns
     -------
     None, but the  title fontsize is updated
@@ -824,3 +825,44 @@ def plot_trend_line(ax, x, intercept, slope, power, **kwargs):
 
     #Plot trendline
     ax.plot(x, y, **kwargs)
+
+def draw_rectangle(ax, base_x, base_y, width, height, center_x=False, 
+        center_y=False, **kwargs):
+    """ Draw a rectangle at the given x and y coordinates. Optionally, these
+    can be adjusted such that they are the respective centers rather than edge
+    values.
+
+    Parameters
+    ----------
+    ax: mpl.Axis
+        The axis on which the rectangle will be drawn
+
+    base_{x,y}: number
+        The base x and y coordinates
+
+    width, height: number
+        The width (change in x) and height (change in y) of the rectangle
+
+    center_{x,y}: bool
+        Whether to adjust the x and y coordinates such that they become the
+        center rather than lower left. In particular, if center_x is True, then
+        base_x will be shifted left by width/2; likewise, if center_y is True,
+        then base_y will be shifted down by height/2.
+
+    kwargs: key=value pairs
+        Additional keywords are passed to the patches.Rectangle constructor
+
+    base
+    """
+    y_offset = 0
+    if center_y:
+        y_offset = height/2
+        
+    x_offset = 0
+    if center_x:
+        x_offset = width/2
+        
+    y = base_y - y_offset
+    x = base_x - x_offset
+    ax.add_patch(patches.Rectangle((x,y), width, height, **kwargs))
+    
