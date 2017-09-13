@@ -199,7 +199,13 @@ pipeline_step_names_map = {
     "<class 'sklearn.linear_model.stochastic_gradient.SGDClassifier'>": "Linear model trained with stochastic gradient descent",
     "<class 'sklearn.ensemble.weight_boosting.AdaBoostClassifier'>": "AdaBoost (SAMME), default base: DecisionTree",
     "<class 'sklearn.linear_model.passive_aggressive.PassiveAggressiveClassifier'>": "Margin-based Passive-Aggressive classifier",
-    "<class 'sklearn.ensemble.forest.ExtraTreesClassifier'>": "Random forest with random splits classifier"
+    "<class 'sklearn.ensemble.forest.ExtraTreesClassifier'>": "Random forest with random splits classifier",
+    "<class 'sklearn.discriminant_analysis.QuadraticDiscriminantAnalysis'>": "Quadratic discriminant analysis",
+    "<class 'sklearn.naive_bayes.GaussianNB'>": "Naive Bayes with Gaussian observations",
+    "<class 'sklearn.tree.tree.DecisionTreeClassifier'>": "Basic decision tree",
+    "<class 'sklearn.naive_bayes.BernoulliNB'>": "Naive Bayes with Bernoulli observations",
+    "<class 'sklearn.naive_bayes.MultinomialNB'>": "Naive Bayes with multinomial observations",
+    "<class 'sklearn.neighbors.classification.KNeighborsClassifier'>": "k-nearest neighbors classifier"
     
 }
 
