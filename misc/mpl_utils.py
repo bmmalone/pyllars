@@ -12,6 +12,22 @@ import misc.utils as utils
 import logging
 logger = logging.getLogger(__name__)
 
+def add_fontsizes_to_args(args,
+        legend_title_fontsize=12,
+        legend_fontsize=10,
+        title_fontsize=20,
+        label_fontsize=15,
+        ticklabels_fontsize=10):
+    """ Add reasonable default fontsize values to the arguments
+    """
+    args.legend_title_fontsize = legend_title_fontsize
+    args.legend_fontsize = legend_fontsize
+    args.title_fontsize = title_fontsize
+    args.label_fontsize = label_fontsize
+    args.ticklabels_fontsize = ticklabels_fontsize
+
+
+
 def set_legend_title_fontsize(ax, fontsize):
     """ Set the font size of the title of the legend.
 
