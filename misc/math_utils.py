@@ -748,20 +748,23 @@ def l1_distance(p, q):
     return np.sum(diff)
 
 
-def collect_binary_classification_metrics(y_probas_pred, y_true, threshold=0.5,
+def collect_binary_classification_metrics(y_true, y_probas_pred, threshold=0.5,
         pos_label=1):
     """ Collect various classification performance metrics for the predictions
 
+    N.B. This function assumes the second column in y_probas_pred gives the
+    score for the "positive" class.
+
     Parameters
     ----------
-    y_pred_prob: 2-d np.array of floats, shape is (num_instances, 2)
-        The *probability* of each prediction for each instance
-
     y_true: np.array of binary-like values
         The true class of each instance
 
-    threshold: float in (0,1]
-        The threshold to choose "positive" predictions
+    y_probas_pred: 2-d np.array of floats, shape is (num_instances, 2)
+        The score of each prediction for each instance
+    
+    threshold: float
+        The score threshold to choose "positive" predictions
 
     pos_label: str or int
         The "positive" class for some metrics
@@ -771,6 +774,20 @@ def collect_binary_classification_metrics(y_probas_pred, y_true, threshold=0.5,
     metrics: dict
         A mapping from the metric name to the respective value
     """
+
+    # first, validate the input
+    if y_true.shape[0] != y_probas_pred.shape[0]:
+        msg = ("[math_utils.collect_binary_classification_metrics]: y_true "
+            "and y_probas_pred do not have matching shapes. y_true: {}, "
+            "y_probas_pred: {}".format(y_true.shape, y_probas_pred.shape))
+        raise ValueError(msg)
+
+    if y_probas_pred.shape[1] != 2:
+        msg = ("[math_utils.collect_binary_classification_metrics]: "
+            "y_probas_pred does not have scores for exactly two classes: "
+            "y_probas_pred.shape: {}".format(y_probas_pred.shape))
+        raise ValueError(msg)
+
 
     # first, pull out the probability of positive classes
     y_score = y_probas_pred[:,1]
@@ -867,7 +884,7 @@ def _calc_hand_and_till_a_value(y_true, y_score, i, j):
 
     # likelihood of class i
     y_score_i_ij = zip(y_true_ij, y_score_ij[:,i])
-    
+
     # rank the instances
     sorted_c_pi = np.array(sorted(y_score_i_ij, key=lambda a: a[1]))
 
