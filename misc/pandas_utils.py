@@ -7,6 +7,7 @@
 #   hold various types of records.
 ###
 
+import functools
 import gzip
 import os
 import shutil
@@ -18,6 +19,8 @@ import openpyxl
 import fastparquet
 
 import misc.utils as utils
+
+import typing
 
 import logging
 logger = logging.getLogger(__name__)
@@ -413,4 +416,34 @@ def groupby_to_generator(groups:pd.core.groupby.GroupBy):
     """ Convert the groupby object to a generator of data frames """
     for k, g in groups:
         yield g
+
+StrOrList = typing.Union[str,typing.List[str]]
+def join_df_list(dfs:typing.List[pd.DataFrame], join_col:StrOrList, *args,
+        **kwargs) -> pd.DataFrame:
+    """ Join a list of data frames on a common column
+
+    Parameters
+    ----------
+    dfs: list of pd.DataFrames
+        The data frames
+
+    join_col: string or list of strings
+        The name of the column(s) to use for joining. All of the data frames in
+        `dfs` must have this column (or all columns in the list).
+
+    args, kwargs
+        These are passed through to pd.merge
+
+    Returns
+    -------
+    joined_df: pd.DataFrame
+        The data frame from joining all of those in the list on `join_col`.
+        This function does not especially handle other columns which appear
+        in all data frames, and their names in the joined data frame will be
+        adjusted according to the standard pandas suffix approach.
+    """
+    joined_df = functools.reduce(
+        lambda left,right: pd.merge(left,right,on=join_col), dfs)
+
+    return joined_df
 
