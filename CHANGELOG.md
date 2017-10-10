@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Helper for drawing rectangles in matplotlib
 - Multiclass AUC calculation from [Hand and Till, 2001], [Provost and Domingos, 2000]
 - Multicolumn label encoder helper
+- Utility to add MCAR missing values to a data matrix
+
+### Updated
+- Confusion matrix plotting utility to work on axes objects and to be more
+    configurable
 
 ## [0.2.4] - 2017-08-31
 ### Added
