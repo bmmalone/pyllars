@@ -58,7 +58,8 @@ def symmetric_gaussian_kl(p, q):
     )
 
 def random_pick(probs):
-    import numpy as np
+    """ Select an item according to the specified categorical distribution
+    """
     '''
     >>> probs = [.3, .7]
     >>> random_pick(probs)
@@ -66,6 +67,57 @@ def random_pick(probs):
     cutoffs = np.cumsum(probs)
     idx = cutoffs.searchsorted(np.random.uniform(0, cutoffs[-1]))
     return idx
+
+def mask_random_values(X, likelihood=0.1, return_mask=False, random_state=None):
+    """ Replace values of X with np.nan, presumably to simulate missing data.
+
+    Specifically, this matrix simulates a missing completely at random (MCAR)
+    mechanism. Thus, the likelihood that a particular cell of X is replaced
+    with np.nan does not depend on its own value or those of any other any
+    other cells.
+
+    Also, this function does not treat np.nan values already present in X in
+    any special way.
+
+    Parameters
+    ----------
+    X: np.array-like
+        The data. It must have `shape` and `copy` methods, as well as support
+        Boolean mask indexing. Thus, some forms of scipy.sparse_matrix may
+        also work
+
+    likelihood: float between 0 and 1
+        The likelihood that each value in X is replaced with np.nan.
+
+    return_mask: bool
+        Whether to include the Boolean indicator matrix of values selected
+        to remove.
+
+    random_state: int
+        An attempt to make things reproducible
+
+    Returns
+    -------
+    X_incomplete: np.array
+        An array with the same shape as X, but with some values replaced with
+        np.nan.
+
+    missing_mask: np.array (if return_mask is True)
+        A Boolean array with the same shape as where True values in the mask
+        indicating that the respective cell in X was replaced.
+    """
+    np.random.seed(random_state)
+    missing_mask = np.random.rand(*X.shape) < likelihood
+    X_incomplete = X.copy()
+
+    # missing entries indicated with NaN
+    X_incomplete[missing_mask] = np.nan
+
+    ret = X_incomplete
+    if return_mask:
+        ret = (X_incomplete, missing_mask)
+
+    return ret
 
 def permute_matrix(m, is_flat=False, shape=None):
     """ Randomly permute the entries of the matrix. The matrix is first 
