@@ -185,6 +185,21 @@ def calculate_univariate_gaussian_kl(mean_p_var_p, mean_q_var_q):
     kl = t_1 - 0.5 + np.exp(t_2 - t_3)
     return kl
 
+def has_nans(X):
+    """ Check if `X` has any np.nan values
+
+    Parameters
+    ----------
+    X: np.array
+        The array
+
+    Returns
+    -------
+    has_nans: bool
+        True if any np.nan's are in `X`, False otherwise
+    """
+    # please see: https://stackoverflow.com/questions/6736590 for details
+    return np.isnan(np.sum(X))
 
 def remove_negatives(x): 
     """ Remove all negative and NaN values from x
