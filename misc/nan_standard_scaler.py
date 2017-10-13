@@ -30,7 +30,12 @@ class NaNStandardScaler(sklearn.base.TransformerMixin):
         # value, we cannot really do anything with it
 
         # so ignore those
-        X[:,self.col_ignore_] = 0
+
+        # check if we have a single vector
+        if len(X.shape) == 1:
+            X[self.col_ignore_] = 0
+        else:
+            X[:,self.col_ignore_] = 0
 
         X = ((X - self.col_mean_) / self.col_std_)
 
