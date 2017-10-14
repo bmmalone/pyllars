@@ -22,6 +22,8 @@ import statsmodels.stats.weightstats
 from aslib_scenario.aslib_scenario import ASlibScenario
 import misc.utils as utils
 
+from misc.deprecated_decorator import deprecated
+
 imputer_strategies = [
     'mean', 
     'median', 
@@ -29,6 +31,11 @@ imputer_strategies = [
     'zero_fill'
 ]
 
+deprecated_message = ("Please use the version of this code in the "
+    "`automl-utils` project. This will be removed from `misc` in version "
+    "0.3.0")
+
+@deprecated(deprecated_message)
 def check_imputer_strategy(imputer_strategy, raise_error=True, error_prefix=""):
     """ Ensure that the imputer strategy is a valid selection. 
 
@@ -62,7 +69,8 @@ def check_imputer_strategy(imputer_strategy, raise_error=True, error_prefix=""):
             return False
 
     return True
-
+    
+@deprecated(deprecated_message)
 def get_imputer(imputer_strategy, verify=False):
     """ Get the imputer for use in an sklearn pipeline
 
@@ -231,6 +239,7 @@ passthrough_types = {
     int
 }
 
+@deprecated(deprecated_message)
 def get_simple_pipeline(asl_pipeline, as_array=False):
     """ Extract the "meat" elements from an auto-sklearn pipeline to create
     a "normal" sklearn pipeline.
@@ -314,6 +323,7 @@ def get_simple_pipeline(asl_pipeline, as_array=False):
         simple_pipeline = sklearn.pipeline.Pipeline(simple_pipeline)
     return simple_pipeline
 
+@deprecated(deprecated_message)
 def retrain_asl_wrapper(asl_wrapper, X_train, y_train):
     """ Retrain the ensemble in the asl_wrapper using the new training data
 
@@ -358,6 +368,7 @@ def retrain_asl_wrapper(asl_wrapper, X_train, y_train):
     
     return new_ensemble
 
+@deprecated(deprecated_message)
 def _validate_fit_asl_wrapper(asl_wrapper):
     """ Check that the AutoSklearnWrapper contains a valid ensemble
     """
@@ -384,6 +395,7 @@ def _validate_fit_asl_wrapper(asl_wrapper):
         raise ValueError(msg)
 
 
+@deprecated(deprecated_message)
 def _get_asl_estimator(asl_pipeline, pipeline_step='regressor'):
     """ Extract the concrete estimator (RandomForest, etc.) from the asl
     pipeline.
@@ -408,6 +420,7 @@ def _get_asl_estimator(asl_pipeline, pipeline_step='regressor'):
 
     return asl_model
 
+@deprecated(deprecated_message)
 def _get_asl_pipeline(aml_model):
     """ Extract the pipeline object from an autosklearn_optimizer model.
     """
@@ -421,6 +434,7 @@ def _get_asl_pipeline(aml_model):
     asl_pipeline = aml_model
     return asl_pipeline
 
+@deprecated(deprecated_message)
 def _extract_autosklearn_ensemble(autosklearn_optimizer,
         estimtor_named_step='regressor'):
     """ Extract the nonzero weights, associated pipelines and estimators from
@@ -454,6 +468,7 @@ def _extract_autosklearn_ensemble(autosklearn_optimizer,
 
     return (nonzero_weights, asl_pipelines, asl_estimators)
 
+@deprecated(deprecated_message)
 def filter_model_types(aml, model_types):
     """ Remove all models of the specified type from the ensemble.
 
@@ -490,6 +505,7 @@ def filter_model_types(aml, model_types):
     
     return (weights, pipelines[to_filter])
 
+@deprecated(deprecated_message)
 class AutoSklearnWrapper(object):
     """ A wrapper for an autosklearn optimizer to easily integrate it within a
     larger sklearn.Pipeline. The purpose of this class is largely to minimize
@@ -894,6 +910,7 @@ class AutoSklearnWrapper(object):
         asl_wrapper = joblib.load(in_file)
         return asl_wrapper
 
+@deprecated(deprecated_message)
 def add_automl_options(parser,
     default_out = ".",
     default_tmp = None,
@@ -946,6 +963,7 @@ def add_automl_options(parser,
     automl_options.add_argument('--ensemble-nbest', help="The number of models to use "
         "for prediction.", type=int, default=default_ensemble_nbest)
 
+@deprecated(deprecated_message)
 def add_automl_values_to_args(args,
         out = ".",
         tmp = None,
@@ -970,6 +988,7 @@ def add_automl_values_to_args(args,
     args.ensemble_nbest = ensemble_nbest
 
 
+@deprecated(deprecated_message)
 def get_automl_options_string(args):
     """ This function creates a string suitable for passing to another script
         of the automl command line options.
@@ -1012,6 +1031,8 @@ def get_automl_options_string(args):
 ###
 #   Utilities to help with OpenBLAS
 ###
+
+@deprecated(deprecated_message)
 def add_blas_options(parser, default_num_blas_cpus=1):
     """ Add options to the parser to control the number of BLAS threads
     """
@@ -1032,6 +1053,7 @@ def add_blas_options(parser, default_num_blas_cpus=1):
         "arguments. This flag is not inended for external users.",
         action='store_true')
 
+@deprecated(deprecated_message)
 def get_blas_options_string(args):
     """  Create a string suitable for passing to another script of the BLAS
     command line options
@@ -1039,7 +1061,7 @@ def get_blas_options_string(args):
     s = "--num-blas-threads {}".format(args.num_blas_threads)
     return s
 
-
+@deprecated(deprecated_message)
 def spawn_for_blas(args):
     """ Based on the BLAS command line arguments, update the environment and
     spawn a new version of the process
@@ -1109,6 +1131,7 @@ def spawn_for_blas(args):
 #       https://github.com/mlindauer/AutoFolio
 ###
 
+@deprecated(deprecated_message)
 def load_autofolio(fn:str):
     """ Read a pickled autofolio model.
 
@@ -1161,10 +1184,12 @@ def load_autofolio(fn:str):
 #       https://github.com/mlindauer/ASlibScenario
 ###
 
+@deprecated(deprecated_message)
 def _get_feature_step_dependencies(scenario, feature_step):
     fg = scenario.feature_group_dict[feature_step]
     return set(fg.get('requires', []))
     
+@deprecated(deprecated_message)
 def check_all_dependencies(scenario, feature_steps):
     """ Ensure all dependencies all included for all feature sets
     
@@ -1189,6 +1214,7 @@ def check_all_dependencies(scenario, feature_steps):
             return False
     return True
 
+@deprecated(deprecated_message)
 def extract_feature_step_dependency_graph(scenario):
     """ Create a graph encoding dependencies among the feature steps
 
@@ -1219,6 +1245,7 @@ def extract_feature_step_dependency_graph(scenario):
 
     return dependency_graph
 
+@deprecated(deprecated_message)
 def extract_feature_names(scenario, feature_steps):
     """ Extract the names of features for the specified feature steps
 
@@ -1242,6 +1269,7 @@ def extract_feature_names(scenario, feature_steps):
     feature_names = utils.flatten_lists(feature_names)
     return feature_names
 
+@deprecated(deprecated_message)
 def load_scenario(scenario_path, return_name=True):
     """ Load the ASlibScenario in the given path
 
@@ -1272,7 +1300,7 @@ def load_scenario(scenario_path, return_name=True):
     else:
         return scenario
 
-
+@deprecated(deprecated_message)
 def load_all_scenarios(scenarios_dir):
     """ Load all scenarios in scenarios_dir into a dictionary
 
@@ -1311,6 +1339,7 @@ def load_all_scenarios(scenarios_dir):
 
     return scenarios
 
+@deprecated(deprecated_message)
 def create_cv_splits(scenario):
     """ Create cross-validation splits for the scenario and save to file
 

@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Confusion matrix plotting utility to work on axes objects and to be more
     configurable
 
+### Deprecated
+- `automl_utils`. The functionality is now available in the 
+    [`automl-utils` package](https://github.com/bmmalone/automl-utils).
+
 ## [0.2.4] - 2017-08-31
 ### Added
 - Helper to collect sklearn classification metrics

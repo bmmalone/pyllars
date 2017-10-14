@@ -1,11 +1,11 @@
-###
-#   This module exposes a "deprecated" decorator. The code is taken directly
-#   from this stackoverflow question:
-#       
-#       https://stackoverflow.com/questions/2536307
-#
-#   This is the answer by "Laurent LAPORTE".
-###
+"""
+This module exposes a "deprecated" decorator. The code is taken directly from
+this stackoverflow question:
+       
+       https://stackoverflow.com/questions/2536307
+
+This is the answer by "Laurent LAPORTE".
+"""
 
 import functools
 import inspect
