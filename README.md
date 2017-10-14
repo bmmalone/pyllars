@@ -26,6 +26,9 @@ This package contains helpers for a wide variety of python applications.
     working with [`auto-sklearn`](https://github.com/automl/auto-sklearn)
     and related projects, including the algorithm selection framework provided
     by the [`ASlib`](https://github.com/mlindauer/ASlibScenario) project.
+    
+    **N.B.** This module has been deprecated. Please use the new version in
+    the [`automl-utils` repo](https://github.com/bmmalone/automl-utils).
 
 * `dask_utils`. Utilities for working with [dask](https://dask.pydata.org/en/latest/).
     For example, this include functions for easily specifying connection, etc.,
@@ -33,7 +36,7 @@ This package contains helpers for a wide variety of python applications.
     
 * `external_sparse_matrix_list`. A class which wraps a list of sparse matrices
     and seamlessly handles reading and writing them to- and from-disk in
-    standard, compressed text formats, such as [Matrix Market](http://math.nist.gov/MatrixMarket/formats.html)
+    standard, compressed text formats, such as [Matrix Market](http://math.nist.gov/MatrixMarket/formats.html).
 
 * `incremental_gaussian_estimator`. A class which calculates sample mean and
     variance from univariate online (that is, streaming) observations.
@@ -46,6 +49,10 @@ This package contains helpers for a wide variety of python applications.
     * A Bayesian test to determine if two proportions differ significantly
     * A Bayesian test to determine if the means of two populations differ
         significantly (that is, something like a Bayesian t-test)
+        
+* `missing_data_utils`. Utilities for removing data according to different
+    missingness mechanisms, including missing at random (MAR), missing
+    completely at random (MCAR), and not missing at random (NMAR).
 
 * `mpl_utils`. Utilities for manipulating object-oriented matplotlib plots, that
     is, those which uses `Axes` objects.
@@ -55,6 +62,9 @@ This package contains helpers for a wide variety of python applications.
     the normal `StandardScaler`, this class ignores `nan`s, `inf`s and other
     typically-problematic values.
     
+* `nan_nearest_neighbors`. A simple k-NN algorithm which handles features with
+    missing values represented as `np.nan`s.
+    
 * `pandas_utils`. Utilities for working with pandas data frames, such as
     seamless file-IO for a variety of formats like parquet, hdf5 and excel.
     
@@ -63,8 +73,9 @@ This package contains helpers for a wide variety of python applications.
     
 #### Domain-specific utilities
 
-* `mimic_utils`. Utilities for working with the [MIMIC](https://mimic.physionet.org/)
-    clinical care database.
+* `physionet_utils`. Utilities for working with the [MIMIC](https://mimic.physionet.org/)
+    clinical care database as well as other datasets published by `physionet`,
+    such as the [`Computing in Cardiology Challenge`](https://www.physionet.org/challenge/2012/).
 
 #### General utilities
 * `latex`. Utilities for programmatically creating latex documents.

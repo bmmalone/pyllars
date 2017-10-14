@@ -208,7 +208,7 @@ class NanNearestNeighbors(object):
         # check if we want the list of lists
         if not as_np:
             ret_indices = [
-                ret_indices[i] for i in range(ret_indices.shape[0])
+                list(ret_indices[i]) for i in range(ret_indices.shape[0])
             ]
 
         ret = ret_indices
