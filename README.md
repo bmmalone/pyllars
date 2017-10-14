@@ -6,7 +6,7 @@ This project contains many python3 utilities that I find useful.
 This package is written in python3. `pip` can be used to install it:
 
 ```
-git@github.com:bmmalone/pymisc-utils.git
+git clone git@github.com:bmmalone/pymisc-utils.git
 cd pymisc-utils
 pip3 install .
 ```
@@ -57,13 +57,16 @@ This package contains helpers for a wide variety of python applications.
 * `mpl_utils`. Utilities for manipulating object-oriented matplotlib plots, that
     is, those which uses `Axes` objects.
     
+* `multicolumn_label_encoder`. An `sklearn` transformer which wraps label
+    encoders for multiple columns.
+    
+* `nan_nearest_neighbors`. A simple k-NN algorithm which handles features with
+    missing values represented as `np.nan`s.
+    
 * `nan_standard_scaler`. An `sklearn` transformer which scales features by the
     observed mean and standard deviation of the training data; in contrast to
     the normal `StandardScaler`, this class ignores `nan`s, `inf`s and other
     typically-problematic values.
-    
-* `nan_nearest_neighbors`. A simple k-NN algorithm which handles features with
-    missing values represented as `np.nan`s.
     
 * `pandas_utils`. Utilities for working with pandas data frames, such as
     seamless file-IO for a variety of formats like parquet, hdf5 and excel.
@@ -75,9 +78,12 @@ This package contains helpers for a wide variety of python applications.
 
 * `physionet_utils`. Utilities for working with the [MIMIC](https://mimic.physionet.org/)
     clinical care database as well as other datasets published by `physionet`,
-    such as the [`Computing in Cardiology Challenge`](https://www.physionet.org/challenge/2012/).
+    such as the [Computing in Cardiology Challenge](https://www.physionet.org/challenge/2012/).
 
 #### General utilities
+* `deprecated_decorator`. A simple decorator for marking functions, classes,
+    etc., as deprecated.
+
 * `latex`. Utilities for programmatically creating latex documents.
 
 * `logging_utils`. Utilities for easily controlling logging behavior from the
