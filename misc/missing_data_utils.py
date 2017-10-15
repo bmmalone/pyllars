@@ -410,3 +410,81 @@ def get_incomplete_data_splits(
     
     return ret
     
+_training_results_fields = (
+    "model_fit_c",
+    "model_fit_i",
+    "y_pred_cc",
+    "y_pred_ic",
+    "y_pred_ci",
+    "y_pred_ii",
+    "y_test"
+)
+_training_results_fields = ' '.join(_training_results_fields)
+TrainingResults = collections.namedtuple(
+    "TrainingResults",
+    _training_results_fields
+)
+
+def train_on_incomplete_data(model, incomplete_data):
+    """ Perform all combinations of training and testing for the model and
+    incomplete data set structure.
+    
+    In particular, this function fits the model using both the complete and
+    incomplete versions of the data. It then makes predictions on both the 
+    complete and incomplete versions of the test data.
+    
+    Parameters
+    ----------
+    model: an sklearn model
+        In particular, the model must support cloning via `sklearn.clone`,
+        have a `fit` method and have a `predict` method after fitting.
+        
+    incomplete_data: an IncompleteData named tuple
+        A structure containing both complete and incomplete data. Presumably,
+        this was created using `get_incomplete_data_splits`.
+    
+    Returns (as a named tuple)
+    -------
+    model_fit_c: fit sklearn model
+        The model fit using the complete data
+        
+    model_fit_i: fit sklearn model
+        The model fit using the incomplete data
+        
+    y_pred_cc: np.array
+        The predictions from `model_fit_c` on the complete test dataset
+        
+    y_pred_ci: np.array
+        The predictions from `model_fit_c` on the incomplete test data
+        
+    y_pred_ic: np.array
+        The predictions from `model_fit_i` on the complete test data
+        
+    y_pred_ii: np.array
+        The predictions from `model_fit_i` on the incomplete test data
+
+    y_test: np.array
+        The true test values
+    """
+    model_fit_c = sklearn.clone(model)
+    model_fit_c.fit(incomplete_data.X_train_complete, incomplete_data.y_train)
+    
+    model_fit_i = sklearn.clone(model)
+    model_fit_i.fit(incomplete_data.X_train_incomplete, incomplete_data.y_train)
+    
+    y_pred_cc = model_fit_c.predict(incomplete_data.X_test_complete)
+    y_pred_ci = model_fit_c.predict(incomplete_data.X_test_incomplete)
+    y_pred_ic = model_fit_i.predict(incomplete_data.X_test_complete)
+    y_pred_ii = model_fit_i.predict(incomplete_data.X_test_incomplete)
+    
+    ret = TrainingResults(
+        model_fit_c,
+        model_fit_i,
+        y_pred_cc,
+        y_pred_ic,
+        y_pred_ci,
+        y_pred_ii,
+        incomplete_data.y_test
+    )
+    
+    return ret
