@@ -340,9 +340,10 @@ def get_incomplete_data_splits(
         y,
         fold=0,
         num_folds=10,
+        stratify=True,
         random_state=8675309):
 
-    """ Split the datasets using StratifiedKFold cross-validation
+    """ Split the datasets for use with cross-validation
     
     Parameters
     ----------
@@ -350,7 +351,8 @@ def get_incomplete_data_splits(
         A data matrix suitable for sklearn, without missing values
         
     X_incomplete: data matrix
-        A data matrix suitable for sklearn, with missing values represented as np.nan
+        A data matrix suitable for sklearn, with missing values represented
+        as `np.nan`
         
     y: target variables
         The target variables corresponding to X
@@ -360,6 +362,10 @@ def get_incomplete_data_splits(
         
     num_folds: int
         The number of cv folds to create
+
+    stratify: bool
+        Whether to use stratified splits (True) or random (False). In
+        particular, stratified splits will not work for regression.
         
     random_state: int
         An attempt to make things reproducible
@@ -385,10 +391,14 @@ def get_incomplete_data_splits(
         The (complete) testing target data for this fold
     """
     
-    
-    cv = sklearn.model_selection.StratifiedKFold(
-        num_folds, random_state=random_state
-    )
+    if stratify:
+        cv = sklearn.model_selection.StratifiedKFold(
+            num_folds, random_state=random_state
+        )
+    else:
+        cv = sklearn.model_selection.KFold(
+            num_folds, random_state=random_state, shuffle=True
+        )
 
     splits = cv.split(X_complete, y)
     train, test = more_itertools.nth(splits, fold)
