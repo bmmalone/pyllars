@@ -18,7 +18,7 @@ class NaNStandardScaler(sklearn.base.TransformerMixin):
 
             if isinstance(X, pd.DataFrame):
                 self.columns_ = X.columns
-            elif isinstance(X, np.array):
+            elif isinstance(X, np.ndarray):
                 self.columns_ = np.arange(X.shape[1])
         else:
             self.columns_ = self.columns
@@ -26,7 +26,7 @@ class NaNStandardScaler(sklearn.base.TransformerMixin):
         # now, actually grab the columns depending on the type of X
         if isinstance(X, pd.DataFrame):
             X_cols = X[self.columns_]
-        elif isinstance(X, np.array):
+        elif isinstance(X, np.ndarray):
             X_cols = X[:,self.columns_]
         else:
             msg = ("[NanStandardScaler.fit]: unrecognized data type: {}".
@@ -65,7 +65,7 @@ class NaNStandardScaler(sklearn.base.TransformerMixin):
             X_cols = X[self.columns_].copy()
             X_cols.iloc[:, self.col_ignore_] = 0
  
-        elif isinstance(X, np.array):
+        elif isinstance(X, np.ndarray):
             X_cols = X[:,self.columns_]
             X_cols[:,self.col_ignore_] = 0
         else:
