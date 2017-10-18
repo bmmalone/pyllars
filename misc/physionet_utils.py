@@ -71,6 +71,32 @@ def fix_mimic_icds(icds, num_cpus=1):
     return fixed_icds
 
 
+def get_admissions(mimic_base, to_pandas=True):
+    """ Load the ADMISSIONS table
+
+    Parameters
+    ----------
+    mimic_base: path-like
+        The path to the main MIMIC folder
+
+    to_pandas: bool
+        Whether to read the table as a pandas (True) or dask (False) data frame
+
+    Returns
+    -------
+    admissions: pd.DataFrame or dd.DataFrame
+        The admissions table as either a pandas or dask data frame,
+            depending on the value of to_pandas
+    """
+    admissions = os.path.join(mimic_base, "ADMISSIONS.csv.gz")
+
+    if to_pandas:
+        admissions = pd_utils.read_df(admissions)
+    else:
+        admissions = dd.read_csv(admissions)
+
+    return admissions
+
 
 def get_diagnosis_icds(mimic_base, to_pandas=True, fix_icds=False):
     """ Load the DIAGNOSES_ICDS table
@@ -108,6 +134,34 @@ def get_diagnosis_icds(mimic_base, to_pandas=True, fix_icds=False):
         diagnosis_icds['ICD9_CODE'] = fixed_icd
 
     return diagnosis_icds
+
+
+def get_patients(mimic_base, to_pandas=True):
+    """ Load the PATIENTS table
+
+    Parameters
+    ----------
+    mimic_base: path-like
+        The path to the main MIMIC folder
+
+    to_pandas: bool
+        Whether to read the table as a pandas (True) or dask (False) data frame
+
+    Returns
+    -------
+    patients: pd.DataFrame or dd.DataFrame
+        The patients table as either a pandas or dask data frame,
+            depending on the value of to_pandas
+    """
+    patients = os.path.join(mimic_base, "PATIENTS.csv.gz")
+
+    if to_pandas:
+        patients = pd_utils.read_df(patients)
+    else:
+        patients = dd.read_csv(patients)
+
+    return patients
+
         
 
 def get_procedure_icds(mimic_base, to_pandas=True):
