@@ -69,6 +69,7 @@ Example::
 
 import collections
 import numpy as np
+import scipy.sparse
 import sklearn.model_selection
 
 import misc.math_utils as math_utils
@@ -341,7 +342,8 @@ def get_incomplete_data_splits(
         fold=0,
         num_folds=10,
         stratify=True,
-        random_state=8675309):
+        random_state=8675309,
+        identities=None):
 
     """ Split the datasets for use with cross-validation
     
@@ -369,6 +371,10 @@ def get_incomplete_data_splits(
         
     random_state: int
         An attempt to make things reproducible
+
+    identities: list-like of ints or None
+        Optionally, the identities of the nodes. If present, they will be
+        added as the first column of all of the respective X matrices.
         
     Returns (as a named tuple)
     -------
@@ -409,6 +415,16 @@ def get_incomplete_data_splits(
     X_train_incomplete = X_incomplete[train]
     X_test_incomplete = X_incomplete[test]
 
+    # check on our node identities
+    if identities is not None:
+        train_identities = identities[train]
+        test_identities = identities[test]
+
+        X_train_complete = add_identities(X_train_complete, train_identities)
+        X_train_incomplete = add_identities(X_train_incomplete, train_identities)
+        X_test_complete = add_identities(X_test_complete, test_identities)
+        X_test_incomplete = add_identities(X_test_incomplete, test_identities)
+
     ret = IncompleteDataset(
         X_train_complete,
         X_train_incomplete,
@@ -419,6 +435,55 @@ def get_incomplete_data_splits(
     )
     
     return ret
+
+def add_identities(X, node_identities=None):
+    """ Add the identity as the first column of X
+    
+    The identity column is just the integer index of the corresponding
+    row of `X`. For example, this could give the index of a node within
+    an associated graph structure.
+    
+    Parameters
+    ----------
+    X: 2D np.array or scipy.sparse_matrix
+        The data matrix
+        
+    node_identities: iterable of ints or None
+        The identities of the nodes. If `None` is given, then the identity
+        of the node in row `i` is the integer `i`.
+        
+    Returns
+    -------
+    X_with_identity: data matrix
+        Either an np.array or scipy.sparse_matrix which is a copy of `X`
+        with the identity column prepended.
+        
+        In case `X` was a sparse matrix, it will always be returned as a
+        csr sparse matrix.
+    """
+    if node_identities is None:
+        node_identities = np.arange(X.shape[0], dtype=int)
+    
+    if scipy.sparse.issparse(X):
+        X_with_identity = scipy.sparse.hstack((node_identities[:,np.newaxis], X))
+        X_with_identity = X_with_identity.tocsr()
+        
+    elif isinstance(X, np.ndarray):
+        if X.ndim != 2:
+            msg = ("[add_node_identities]: attempting to add identities to "
+                "an np.array with invalid number of dimensions: {}".format(
+                X.ndim))
+            raise ValueError(msg)
+            
+        X_with_identity = np.c_[node_identities, X]
+
+    else:
+        msg = ("[add_node_identities]: attempting to add identities to an "
+               "invalid data matrix data type: {}".format(type(X)))
+        raise ValueError(msg)
+        
+    return X_with_identity
+        
     
 _training_results_fields = (
     "model_fit_c",
