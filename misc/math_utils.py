@@ -1063,17 +1063,23 @@ def calc_hand_and_till_m_score(y_true, y_score):
     m: float
         The "multi-class AUC" score referenced above
     """
+
+    #msg = ("[hand_and_till] y_true: {}. y_score: {}".format(y_true, y_score))
+    #print(msg)
     
     classes = np.unique(y_true)
+
+    # make sure the classes are integers, or we will have problems indexing
+    classes = np.array(classes, dtype=int)
     num_classes = np.max(classes)+1
-    
+
     # first, validate our input
     if y_true.shape[0] != y_score.shape[0]:
         msg = ("[math_utils.m_score]: y_true and y_score do not have matching "
             "shapes. y_true: {}, y_score: {}".format(y_true.shape,
             y_score.shape))
         raise ValueError(msg)
-
+    
     if y_score.shape[1] != (num_classes):
         msg = ("[math_utils.m_score]: y_score does not have the expected "
             "number of columns based on the maximum observed class in y_true. "
@@ -1099,10 +1105,12 @@ def calc_hand_and_till_m_score(y_true, y_score):
         a_ji = _calc_hand_and_till_a_value(y_true, y_score, j, i)
 
         m += (a_ij + a_ji) / 2
-
+    
     m_1 = num_classes * (num_classes - 1)
     m_1 = 2 / m_1
     m = m_1 * m
+
+    #print("[hand_and_till] m: {}".format(m))
     return m
 
 
@@ -1142,6 +1150,10 @@ def calc_provost_and_domingos_auc(y_true, y_score):
     """
     
     classes = np.unique(y_true)
+
+    # make sure the classes are integers, or we will have problems indexing
+    classes = np.array(classes, dtype=int)
+
     num_classes = np.max(classes)+1
     
     # first, validate our input
