@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 stan_console_scripts = [
-    'pickle-stan=misc.pickle_stan:main [stan]'
+    'pickle-stan=misc.pickle_stan:main'
 ]
 
 other_console_scripts = [
@@ -18,7 +18,7 @@ def readme():
         return f.read()
 
 setup(name='misc',
-        version='0.2.4',
+        version='0.2.5',
         description="This package contains python3 utilities I find useful.",
         long_description=readme(),
         keywords="utilities",

@@ -4,7 +4,7 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [0.2.5] - In progress
+## [0.2.5] - 2017-10-26
 ### Added
 - Utilities for working with the [Computing in Cardiology Challenge 2012
     dataset](https://physionet.org/challenge/2012/)
