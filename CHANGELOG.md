@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Confusion matrix plotting utility to work on axes objects and to be more
     configurable
 
+- `fastparquet` imports are now immediately before their use. This is related
+  to [Issue #4](https://github.com/bmmalone/pymisc-utils/issues/4)
+
 ### Deprecated
 - `automl_utils`. The functionality is now available in the 
     [`automl-utils` package](https://github.com/bmmalone/automl-utils).
