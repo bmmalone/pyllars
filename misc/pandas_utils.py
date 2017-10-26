@@ -16,7 +16,6 @@ import numpy as np
 import pandas as pd
 
 import openpyxl
-import fastparquet
 
 import misc.utils as utils
 
@@ -162,6 +161,7 @@ def read_df(filename, filetype='AUTO', sheet=None, **kwargs):
     elif filetype == 'hdf5':
         df = pd.read_hdf(filename, key=sheet, **kwargs)
     elif filetype == "parquet":
+        import fastparquet
         pf = fastparquet.ParquetFile(filename, **kwargs)
 
         # multi-indices are not yet supported, so we always have to turn
@@ -284,6 +284,8 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
             else:
                 # delete directory
                 shutil.rmtree(out)
+        
+        import fastparquet
         fastparquet.write(out, df, **kwargs)
 
     else:
