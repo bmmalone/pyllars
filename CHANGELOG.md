@@ -4,6 +4,25 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.2.5] - 2017-10-26
+### Added
+- Utilities for working with the [Computing in Cardiology Challenge 2012
+    dataset](https://physionet.org/challenge/2012/)
+- Minor extensions and fixes for `AutoSklearnWrapper`
+- Helper for drawing rectangles in matplotlib
+- Multiclass AUC calculation from [Hand and Till, 2001], [Provost and Domingos, 2000]
+- Multicolumn label encoder helper
+- Utility to add MCAR, MAR and NMAR missing values to a data matrix
+- Simple kNN implementation which is robust against missing values
+
+### Updated
+- Confusion matrix plotting utility to work on axes objects and to be more
+    configurable
+
+### Deprecated
+- `automl_utils`. The functionality is now available in the 
+    [`automl-utils` package](https://github.com/bmmalone/automl-utils).
+
 ## [0.2.4] - 2017-08-31
 ### Added
 - Helper to collect sklearn classification metrics

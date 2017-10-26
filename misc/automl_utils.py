@@ -6,6 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # system imports
+import collections
 import os
 
 # pydata imports
@@ -21,6 +22,8 @@ import statsmodels.stats.weightstats
 from aslib_scenario.aslib_scenario import ASlibScenario
 import misc.utils as utils
 
+from misc.deprecated_decorator import deprecated
+
 imputer_strategies = [
     'mean', 
     'median', 
@@ -28,6 +31,11 @@ imputer_strategies = [
     'zero_fill'
 ]
 
+deprecated_message = ("Please use the version of this code in the "
+    "`automl-utils` project. This will be removed from `misc` in version "
+    "0.3.0")
+
+@deprecated(deprecated_message)
 def check_imputer_strategy(imputer_strategy, raise_error=True, error_prefix=""):
     """ Ensure that the imputer strategy is a valid selection. 
 
@@ -61,7 +69,8 @@ def check_imputer_strategy(imputer_strategy, raise_error=True, error_prefix=""):
             return False
 
     return True
-
+    
+@deprecated(deprecated_message)
 def get_imputer(imputer_strategy, verify=False):
     """ Get the imputer for use in an sklearn pipeline
 
@@ -186,7 +195,30 @@ pipeline_step_names_map = {
     "<class 'sklearn.ensemble.forest.RandomForestRegressor'>": "Random forest regression",
     "<class 'sklearn.linear_model.ridge.Ridge'>": "Ridge regression",
     "<class 'sklearn.linear_model.bayes.ARDRegression'>": "Bayesian ridge regression",
-    "<class 'sklearn.svm.classes.LinearSVR'>": "linear support vector regression"
+    "<class 'sklearn.svm.classes.LinearSVR'>": "Linear support vector regression",
+
+    # classification models
+    "<class 'autosklearn.evaluation.abstract_evaluator.MyDummyClassifier'>": "Dummy classifier",
+    "<class 'sklearn.ensemble.forest.RandomForestClassifier'>": "Random forest with optimal splits classifier",
+    "<class 'sklearn.svm.classes.LinearSVC'>": "Support vector classification (liblinear)",
+    "<class 'sklearn.svm.classes.SVC'>": "Support vector classification (libsvm)",
+    "<class 'sklearn.discriminant_analysis.LinearDiscriminantAnalysis'>": "Linear discriminant analysis",
+    "<class 'sklearn.ensemble.gradient_boosting.GradientBoostingClassifier'>": "Gradient-boosted regression trees for classification",
+    "<class 'sklearn.linear_model.stochastic_gradient.SGDClassifier'>": "Linear model trained with stochastic gradient descent",
+    "<class 'sklearn.ensemble.weight_boosting.AdaBoostClassifier'>": "AdaBoost (SAMME), default base: DecisionTree",
+    "<class 'sklearn.linear_model.passive_aggressive.PassiveAggressiveClassifier'>": "Margin-based Passive-Aggressive classifier",
+    "<class 'sklearn.ensemble.forest.ExtraTreesClassifier'>": "Random forest with random splits classifier",
+    "<class 'sklearn.discriminant_analysis.QuadraticDiscriminantAnalysis'>": "Quadratic discriminant analysis",
+    "<class 'sklearn.naive_bayes.GaussianNB'>": "Naive Bayes with Gaussian observations",
+    "<class 'sklearn.tree.tree.DecisionTreeClassifier'>": "Basic decision tree",
+    "<class 'sklearn.naive_bayes.BernoulliNB'>": "Naive Bayes with Bernoulli observations",
+    "<class 'sklearn.naive_bayes.MultinomialNB'>": "Naive Bayes with multinomial observations",
+    "<class 'sklearn.neighbors.classification.KNeighborsClassifier'>": "k-nearest neighbors classifier"
+    
+}
+
+PRETTY_NAME_TYPE_MAP = {
+    utils.get_type(k.split("'")[1]): v for k,v in pipeline_step_names_map.items()
 }
 
 # the names of the actual "element" (estimator, etc.) for steps in
@@ -207,6 +239,7 @@ passthrough_types = {
     int
 }
 
+@deprecated(deprecated_message)
 def get_simple_pipeline(asl_pipeline, as_array=False):
     """ Extract the "meat" elements from an auto-sklearn pipeline to create
     a "normal" sklearn pipeline.
@@ -290,6 +323,7 @@ def get_simple_pipeline(asl_pipeline, as_array=False):
         simple_pipeline = sklearn.pipeline.Pipeline(simple_pipeline)
     return simple_pipeline
 
+@deprecated(deprecated_message)
 def retrain_asl_wrapper(asl_wrapper, X_train, y_train):
     """ Retrain the ensemble in the asl_wrapper using the new training data
 
@@ -334,6 +368,7 @@ def retrain_asl_wrapper(asl_wrapper, X_train, y_train):
     
     return new_ensemble
 
+@deprecated(deprecated_message)
 def _validate_fit_asl_wrapper(asl_wrapper):
     """ Check that the AutoSklearnWrapper contains a valid ensemble
     """
@@ -360,6 +395,7 @@ def _validate_fit_asl_wrapper(asl_wrapper):
         raise ValueError(msg)
 
 
+@deprecated(deprecated_message)
 def _get_asl_estimator(asl_pipeline, pipeline_step='regressor'):
     """ Extract the concrete estimator (RandomForest, etc.) from the asl
     pipeline.
@@ -384,6 +420,7 @@ def _get_asl_estimator(asl_pipeline, pipeline_step='regressor'):
 
     return asl_model
 
+@deprecated(deprecated_message)
 def _get_asl_pipeline(aml_model):
     """ Extract the pipeline object from an autosklearn_optimizer model.
     """
@@ -397,6 +434,7 @@ def _get_asl_pipeline(aml_model):
     asl_pipeline = aml_model
     return asl_pipeline
 
+@deprecated(deprecated_message)
 def _extract_autosklearn_ensemble(autosklearn_optimizer,
         estimtor_named_step='regressor'):
     """ Extract the nonzero weights, associated pipelines and estimators from
@@ -430,6 +468,7 @@ def _extract_autosklearn_ensemble(autosklearn_optimizer,
 
     return (nonzero_weights, asl_pipelines, asl_estimators)
 
+@deprecated(deprecated_message)
 def filter_model_types(aml, model_types):
     """ Remove all models of the specified type from the ensemble.
 
@@ -466,6 +505,7 @@ def filter_model_types(aml, model_types):
     
     return (weights, pipelines[to_filter])
 
+@deprecated(deprecated_message)
 class AutoSklearnWrapper(object):
     """ A wrapper for an autosklearn optimizer to easily integrate it within a
     larger sklearn.Pipeline. The purpose of this class is largely to minimize
@@ -476,21 +516,23 @@ class AutoSklearnWrapper(object):
     """
 
     def __init__(self,
-            ensemble=None,
+            ensemble_=None,
             autosklearn_optimizer=None,
             estimator_named_step=None,
             args=None,
-            **kwargs):
+            le_=None,
+            metric=None):
 
         msg = ("[asl_wrapper]: initializing a wrapper. ensemble: {}. "
-            "autosklearn: {}".format(ensemble, autosklearn_optimizer))
+            "autosklearn: {}" .format(ensemble_, autosklearn_optimizer))
         logger.debug(msg)
 
         self.args = args
-        self.kwargs = kwargs
-        self.ensemble_ = ensemble
+        self.ensemble_ = ensemble_
         self.autosklearn_optimizer = autosklearn_optimizer
         self.estimator_named_step = estimator_named_step
+        self.metric = metric
+        self.le_ = le_
 
     def create_classification_optimizer(self, args, **kwargs):        
         """ Create an AutoSklearnClassifier and use it as the autosklearn
@@ -589,6 +631,10 @@ class AutoSklearnWrapper(object):
     def fit(self, X_train, y, metric=None, encode_y=True):
         """ Optimize the ensemble parameters with autosklearn """
 
+        # overwrite our metric, if one was given
+        if metric is not None:
+            self.metric = metric
+
         # check if we have either args or a learner
         if self.args is not None:
             if self.autosklearn_optimizer is not None:
@@ -601,13 +647,13 @@ class AutoSklearnWrapper(object):
                     "optimizer")
                 logger.debug(msg)
 
-                self.create_regression_optimizer(self.args, **self.kwargs)
+                self.create_regression_optimizer(self.args)
             else:
                 msg = ("[asl_wrapper]: creating an autosklearn classification "
                     "optimizer")
                 logger.debug(msg)
 
-                self.create_classification_optimizer(self.args, **self.kwargs)
+                self.create_classification_optimizer(self.args)
 
                 # sometimes, it seems we need to encode labels to keep them
                 # around.
@@ -629,10 +675,11 @@ class AutoSklearnWrapper(object):
                 "optimizer. Please set one or the other (but not both).")
             raise ValueError(msg)
 
-        msg = "[asl_wrapper]: fitting a wrapper"
+        msg = ("[asl_wrapper]: fitting a wrapper with metric: {}".format(
+            self.metric))
         logger.debug(msg)
 
-        self.autosklearn_optimizer.fit(X_train, y, metric=metric)
+        self.autosklearn_optimizer.fit(X_train, y, metric=self.metric)
         
         vals = _extract_autosklearn_ensemble(
             self.autosklearn_optimizer,
@@ -686,7 +733,7 @@ class AutoSklearnWrapper(object):
         if self.estimator_named_step == "regressor":
             predict_f = self._predict_regression        
         
-        return predict_f(X_test, self)
+        return predict_f(X_test)
 
     def predict_proba(self, X_test):
         """ Use the automl ensemble to estimate class probabilities
@@ -773,23 +820,44 @@ class AutoSklearnWrapper(object):
         ]
         return estimators
 
+    def get_ensemble_model_summary(self):
+        """ Create a mapping from pretty model names to their total weight in
+        the ensemble
+        
+        Parameters
+        ----------
+        asl_wrapper: a fit AutoSklearnWrapper
+        
+        Returns
+        -------
+        ensemble_summary: dict of string -> float
+            A mapping from model names to weights
+        """
+        weights = self.ensemble_[0]    
+        estimators = self.get_estimators()
+        
+        summary = collections.defaultdict(float)
+        
+        for w, e in zip(weights, estimators):
+            type_str = PRETTY_NAME_TYPE_MAP[type(e)]
+            summary[type_str] += w
+            
+        return summary
+
     def get_params(self, deep=True):
         params = {
             'autosklearn_optimizer': self.autosklearn_optimizer,
             'ensemble_': self.ensemble_,
             'estimator_named_step': self.estimator_named_step,
             'args': self.args,
-            'kwargs': self.kwargs
+            "le_": self.le_,
+            'metric': self.metric
         }
         return params
 
     def set_params(self, **parameters):
         if 'args' in parameters:
             self.args = parameters.pop('args')
-
-        if 'kwargs' in parameters:
-            self.kwargs = parameters.pop('kwargs')
-
 
         if 'autosklearn_optimizer' in parameters:
             self.autosklearn_optimizer = parameters.pop('autosklearn_optimizer')
@@ -800,6 +868,12 @@ class AutoSklearnWrapper(object):
         if 'estimator_named_step' in parameters:
             self.estimator_named_step = parameters.pop('estimator_named_step')
 
+        if 'le_' in parameters:
+            self.le_ = parameters.pop('le_')
+
+        if 'metric' in parameters:
+            self.metric = parameters.pop('metric')
+
         return self
 
 
@@ -807,20 +881,22 @@ class AutoSklearnWrapper(object):
         """ Returns everything to be pickled """
         state = {}
         state['args'] = self.args
-        state['kwargs'] = self.kwargs
         state['autosklearn_optimizer'] = self.autosklearn_optimizer
         state['ensemble_'] = self.ensemble_
         state['estimator_named_step'] = self.estimator_named_step
+        state['le_'] = self.le_
+        state['metric'] = self.metric
 
         return state
 
     def __setstate__(self, state):
         """ Re-creates the object after pickling """
         self.args = state['args']
-        self.kwargs = state['kwargs']
         self.autosklearn_optimizer = state['autosklearn_optimizer']
         self.estimator_named_step = state['estimator_named_step']
         self.ensemble_ = state['ensemble_']
+        self.le_ = state['le_']
+        self.metric = state['metric']
 
     def write(self, out_file):
         """ Validate that the wrapper has been fit and then write it to disk
@@ -834,6 +910,7 @@ class AutoSklearnWrapper(object):
         asl_wrapper = joblib.load(in_file)
         return asl_wrapper
 
+@deprecated(deprecated_message)
 def add_automl_options(parser,
     default_out = ".",
     default_tmp = None,
@@ -886,6 +963,7 @@ def add_automl_options(parser,
     automl_options.add_argument('--ensemble-nbest', help="The number of models to use "
         "for prediction.", type=int, default=default_ensemble_nbest)
 
+@deprecated(deprecated_message)
 def add_automl_values_to_args(args,
         out = ".",
         tmp = None,
@@ -910,6 +988,7 @@ def add_automl_values_to_args(args,
     args.ensemble_nbest = ensemble_nbest
 
 
+@deprecated(deprecated_message)
 def get_automl_options_string(args):
     """ This function creates a string suitable for passing to another script
         of the automl command line options.
@@ -952,6 +1031,8 @@ def get_automl_options_string(args):
 ###
 #   Utilities to help with OpenBLAS
 ###
+
+@deprecated(deprecated_message)
 def add_blas_options(parser, default_num_blas_cpus=1):
     """ Add options to the parser to control the number of BLAS threads
     """
@@ -972,6 +1053,7 @@ def add_blas_options(parser, default_num_blas_cpus=1):
         "arguments. This flag is not inended for external users.",
         action='store_true')
 
+@deprecated(deprecated_message)
 def get_blas_options_string(args):
     """  Create a string suitable for passing to another script of the BLAS
     command line options
@@ -979,7 +1061,7 @@ def get_blas_options_string(args):
     s = "--num-blas-threads {}".format(args.num_blas_threads)
     return s
 
-
+@deprecated(deprecated_message)
 def spawn_for_blas(args):
     """ Based on the BLAS command line arguments, update the environment and
     spawn a new version of the process
@@ -1049,6 +1131,7 @@ def spawn_for_blas(args):
 #       https://github.com/mlindauer/AutoFolio
 ###
 
+@deprecated(deprecated_message)
 def load_autofolio(fn:str):
     """ Read a pickled autofolio model.
 
@@ -1101,10 +1184,12 @@ def load_autofolio(fn:str):
 #       https://github.com/mlindauer/ASlibScenario
 ###
 
+@deprecated(deprecated_message)
 def _get_feature_step_dependencies(scenario, feature_step):
     fg = scenario.feature_group_dict[feature_step]
     return set(fg.get('requires', []))
     
+@deprecated(deprecated_message)
 def check_all_dependencies(scenario, feature_steps):
     """ Ensure all dependencies all included for all feature sets
     
@@ -1129,6 +1214,7 @@ def check_all_dependencies(scenario, feature_steps):
             return False
     return True
 
+@deprecated(deprecated_message)
 def extract_feature_step_dependency_graph(scenario):
     """ Create a graph encoding dependencies among the feature steps
 
@@ -1159,6 +1245,7 @@ def extract_feature_step_dependency_graph(scenario):
 
     return dependency_graph
 
+@deprecated(deprecated_message)
 def extract_feature_names(scenario, feature_steps):
     """ Extract the names of features for the specified feature steps
 
@@ -1182,6 +1269,7 @@ def extract_feature_names(scenario, feature_steps):
     feature_names = utils.flatten_lists(feature_names)
     return feature_names
 
+@deprecated(deprecated_message)
 def load_scenario(scenario_path, return_name=True):
     """ Load the ASlibScenario in the given path
 
@@ -1212,7 +1300,7 @@ def load_scenario(scenario_path, return_name=True):
     else:
         return scenario
 
-
+@deprecated(deprecated_message)
 def load_all_scenarios(scenarios_dir):
     """ Load all scenarios in scenarios_dir into a dictionary
 
@@ -1251,6 +1339,7 @@ def load_all_scenarios(scenarios_dir):
 
     return scenarios
 
+@deprecated(deprecated_message)
 def create_cv_splits(scenario):
     """ Create cross-validation splits for the scenario and save to file
 

@@ -1,15 +1,33 @@
 ###
 #   This module contains a number of helper functions for matplotlib.
 ###
+import itertools
 
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import numpy as np
 
 import misc.utils as utils
 
 import logging
 logger = logging.getLogger(__name__)
+
+def add_fontsizes_to_args(args,
+        legend_title_fontsize=12,
+        legend_fontsize=10,
+        title_fontsize=20,
+        label_fontsize=15,
+        ticklabels_fontsize=10):
+    """ Add reasonable default fontsize values to the arguments
+    """
+    args.legend_title_fontsize = legend_title_fontsize
+    args.legend_fontsize = legend_fontsize
+    args.title_fontsize = title_fontsize
+    args.label_fontsize = label_fontsize
+    args.ticklabels_fontsize = ticklabels_fontsize
+
+
 
 def set_legend_title_fontsize(ax, fontsize):
     """ Set the font size of the title of the legend.
@@ -58,7 +76,7 @@ def set_title_fontsize(ax, fontsize):
 
     fontsize: int, or string mpl recognizes
         The size of the title font
-
+ 
     Returns
     -------
     None, but the  title fontsize is updated
@@ -344,45 +362,98 @@ def plot_roc_curve(tpr, fpr, auc=None, field_names=None, out=None, cmaps=None, a
     if out is not None:
         plt.savefig(out, bbox_inches='tight')
 
-def plot_confusion_matrix(cm, out, 
-                            title="Confusion matrix", 
-                            cmap=None, 
-                            true_tick_labels = None, 
-                            predicted_tick_labels = None, 
-                            ylabel="True labels", 
-                            xlabel="Predicted labels", 
-                            title_font_size=20, 
-                            label_font_size=15):
+def plot_confusion_matrix(
+        confusion_matrix,
+        ax=None,
+        show_cell_labels=True,
+        show_colorbar=True,
+        title="Confusion matrix", 
+        cmap=None, 
+        true_tick_labels = None, 
+        predicted_tick_labels = None, 
+        ylabel="True labels", 
+        xlabel="Predicted labels", 
+        title_font_size=20, 
+        label_font_size=15,
+        true_tick_rotation=None,
+        predicted_tick_rotation=None,
+        out=None):
 
-    import matplotlib
-    matplotlib.use('agg')
-
-    import matplotlib.pyplot as plt
-    import numpy as np
+    """ Plot the given confusion matrix
+    """
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.get_figure()
 
     # a hack to give cmap a default without importing pyplot for arguments
     if cmap == None:
         cmap = plt.cm.Blues
 
-    fig, ax = plt.subplots()
-
-    mappable = ax.imshow(cm, interpolation='nearest', cmap=cmap)
-    fig.colorbar(mappable)
+    mappable = ax.imshow(confusion_matrix, interpolation='nearest', cmap=cmap)
+    
+    if show_colorbar:
+        fig.colorbar(mappable)
     ax.grid(False)
     
-    true_tick_marks = np.arange(cm.shape[0])
+    true_tick_marks = np.arange(confusion_matrix.shape[0])
     ax.set_ylabel(ylabel, fontsize=label_font_size)
     ax.set_yticks(true_tick_marks)
-    ax.set_yticklabels(true_tick_labels, fontsize=label_font_size)
+
+    if true_tick_labels is None:
+        true_tick_labels = list(true_tick_marks)
+
+    ax.set_yticklabels(
+        true_tick_labels,
+        fontsize=label_font_size,
+        rotation=true_tick_rotation
+    )
     
-    predicted_tick_marks = np.arange(cm.shape[1])
+    predicted_tick_marks = np.arange(confusion_matrix.shape[1])
     ax.set_xlabel(xlabel, fontsize=label_font_size)
     ax.set_xticks(predicted_tick_marks)
-    ax.set_xticklabels(predicted_tick_labels, fontsize=label_font_size, rotation='vertical')
+
+    if predicted_tick_labels is None:
+        predicted_tick_labels = list(predicted_tick_marks)
+
+    ax.set_xticklabels(
+        predicted_tick_labels,
+        fontsize=label_font_size,
+        rotation=predicted_tick_rotation
+    )
+
+    if show_cell_labels:
+        # the choice of color is based on this SO thread:
+        # https://stackoverflow.com/questions/2509443
+        color_threshold = 125
+
+        s = confusion_matrix.shape
+        it = itertools.product(range(s[0]), range(s[1]))
+        for i,j in it:
+            
+            val = confusion_matrix[i,j]
+            cell_color = cmap(mappable.norm(val))
+
+            # see the SO thread mentioned above
+            color_intensity = (
+                (255*cell_color[0] * 299) +
+                (255*cell_color[1] * 587) +
+                (255*cell_color[2] * 114)
+            ) / 1000
+
+            
+            font_color = "white"
+            if color_intensity > color_threshold:
+                font_color = "black"
+            text = val
+            ax.text(j, i, text, ha='center', va='center', color=font_color,
+                size=label_font_size)
     
-    fig.suptitle(title, fontsize=title_font_size)
+    ax.set_title(title, fontsize=title_font_size)
     fig.tight_layout()
-    plt.savefig(out, bbox_inches='tight')
+
+    if out is not None:
+        plt.savefig(out, bbox_inches='tight')
 
 def plot_venn_diagram(sets, ax=None, set_labels=None, weighted=False, use_sci_notation=False,
                                labels_fontsize=14, counts_fontsize=12, sci_notation_limit=999):
@@ -824,3 +895,44 @@ def plot_trend_line(ax, x, intercept, slope, power, **kwargs):
 
     #Plot trendline
     ax.plot(x, y, **kwargs)
+
+def draw_rectangle(ax, base_x, base_y, width, height, center_x=False, 
+        center_y=False, **kwargs):
+    """ Draw a rectangle at the given x and y coordinates. Optionally, these
+    can be adjusted such that they are the respective centers rather than edge
+    values.
+
+    Parameters
+    ----------
+    ax: mpl.Axis
+        The axis on which the rectangle will be drawn
+
+    base_{x,y}: number
+        The base x and y coordinates
+
+    width, height: number
+        The width (change in x) and height (change in y) of the rectangle
+
+    center_{x,y}: bool
+        Whether to adjust the x and y coordinates such that they become the
+        center rather than lower left. In particular, if center_x is True, then
+        base_x will be shifted left by width/2; likewise, if center_y is True,
+        then base_y will be shifted down by height/2.
+
+    kwargs: key=value pairs
+        Additional keywords are passed to the patches.Rectangle constructor
+
+    base
+    """
+    y_offset = 0
+    if center_y:
+        y_offset = height/2
+        
+    x_offset = 0
+    if center_x:
+        x_offset = width/2
+        
+    y = base_y - y_offset
+    x = base_x - x_offset
+    ax.add_patch(patches.Rectangle((x,y), width, height, **kwargs))
+    

@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 stan_console_scripts = [
-    'pickle-stan=misc.pickle_stan:main [stan]'
+    'pickle-stan=misc.pickle_stan:main'
 ]
 
 other_console_scripts = [
@@ -18,7 +18,7 @@ def readme():
         return f.read()
 
 setup(name='misc',
-        version='0.2.4',
+        version='0.2.5',
         description="This package contains python3 utilities I find useful.",
         long_description=readme(),
         keywords="utilities",
@@ -34,18 +34,21 @@ setup(name='misc',
             'statsmodels',
             'matplotlib',
             'pandas',
+            'sklearn',
             'fastparquet',
-            'networkx',
+            'more_itertools',
+            'networkx>=2.0',
             'docopt',
             'tqdm',
             'joblib',
             'xlrd',
             'openpyxl',
             'graphviz',
+            'pydot',
             'tables',
             'paramiko',
             'spur',
-            'pystan'
+            'pystan==2.16.0.0'
         ],
         include_package_data=True,
         test_suite='nose.collector',
