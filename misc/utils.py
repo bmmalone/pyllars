@@ -947,6 +947,15 @@ def merge_dicts(*dict_args):
         result.update(dictionary)
     return result
 
+def sort_dict_keys_by_value(d):
+    """ Sort the keys in the dictionary by their value and return as a list
+
+    This function uses `sorted`, so the values should be able to be sorted
+    appropriately by that builtin function.
+    """
+    ret = sorted(d, key=d.get)
+    return ret
+
 def get_type(type_string):
     """ Find the type object corresponding to the fully qualified class
 

@@ -3,16 +3,16 @@ import sklearn.base
 
 from sklearn.utils.validation import check_is_fitted
 
+import copy
 import numpy as np
 import pandas as pd
 
-class MultiColumnCategoricalImputer(sklearn.base.TransformerMixin):
-    """ Replace missing values with the mode using independent categorical
-    imputers (from the sklearn-pandas package)
+class MultiColumnImputer(sklearn.base.TransformerMixin):
+    """ Replace missing values with the mode using independent imputers
 
     Optionally, the columns for imputation can be specified; if they are not
     given, then all missing values in all columns in the data matrix are
-    replaced with the mode (independently).
+    replaced with the given imputation strategy.
 
     A number of similar implementations are available online; this
     implementation keeps the imputers around so that they can be used later,
@@ -23,18 +23,22 @@ class MultiColumnCategoricalImputer(sklearn.base.TransformerMixin):
 
     Parameters
     ----------
+    imputer_template: sklearn.transformer
+        A class which implements the desired imputation strategy. In
+        particular, it must implement the standard sklearn transformer
+        interface and behave as expected with `copy.copy`.
+
     columns: list-like of column identifiers, or None
         A list of the columns for imputation. These should be integer indices
         for np.arrays or string column names for pd.DataFrames.
-
-    missing_values: string or "NaN"
-        The placeholder for missing values. Please see the sklearn-pandas
-        documentation for more details.
     """
 
-    def __init__(self, columns=None, missing_values='NaN'):
+    def __init__(self,
+            imputer_template,
+            columns=None):
+
         self.columns = columns
-        self.missing_values = missing_values
+        self.imputer_template = imputer_template
 
 
     def fit(self, X, *_, **__):
@@ -70,10 +74,7 @@ class MultiColumnCategoricalImputer(sklearn.base.TransformerMixin):
             else:
                 y = X[c]
 
-            imputer = sklearn_pandas.categorical_imputer.CategoricalImputer(
-                missing_values=self.missing_values
-            )
-
+            imputer = copy.copy(self.imputer_template)
             imputer.fit(y)
             self.imputers_[c] = imputer
 
@@ -86,10 +87,7 @@ class MultiColumnCategoricalImputer(sklearn.base.TransformerMixin):
 
         # make a copy to keep around everything we do not impute
         X = X.copy()
-
-        # we will also keep around missing masks so we can inverse_transform
-        self.missing_masks_ = {}
-
+        
         for c in self.columns:
             imputer = self.imputers_[c]
 

@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Utility for supressing pystan (or other compiled function) output. This
     addition is motivated by [an rpbp issue](https://github.com/dieterich-lab/rp-bp/issues/10),
     and the solution is basically [copied from facebook's prophet](https://github.com/facebook/prophet/issues/223#issuecomment-326455744).
+- DatasetManager class to ease reading data and preparing it for sklearn
+- Several changes to the ML helper transformers to make working with mixed
+    data sets (that is, those with categorical and numerical features) easier
 
 ## [0.2.5] - 2017-10-26
 ### Added

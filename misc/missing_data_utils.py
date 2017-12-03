@@ -110,7 +110,7 @@ def get_mcar_incomplete_data(X, missing_likelihood=0.1, random_state=8675309):
         return_mask=True,
         random_state=random_state
     )
-    
+
     return X_incomplete
 
 

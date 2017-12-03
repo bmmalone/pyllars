@@ -33,6 +33,15 @@ class NaNStandardScaler(sklearn.base.TransformerMixin):
                 format(type(X)))
             raise ValueError(msg)
 
+        ###
+        # make sure we have numpy floats. we might not in cases where
+        # the original data matrix contains mixed types (categorical and
+        # numeric types)
+        #
+        # See this SO comment for more details:
+        #   https://stackoverflow.com/questions/18557337/numpy-attributeerror-float-object-has-no-attribute-exp#comment27300354_18557337
+        ###
+        X_cols = X_cols.astype(float)
         self.col_mean_ = np.nanmean(X_cols, axis=0)
         self.col_std_ = np.nanstd(X_cols, axis=0)
         

@@ -2,6 +2,11 @@ import os
 import numpy as np
 import pandas as pd
 
+import misc.utils as utils
+
+import logging
+logger = logging.getLogger(__name__)
+
 class DatasetManager(object):
     """ Handle standard parsing operations for sklearn-style datasets.
 
@@ -38,6 +43,7 @@ class DatasetManager(object):
             target_variable=None,
             drop_rows_with_missing_values=False,
             drop_rows_with_missing_target=True,
+            convert_int_to_float=True,
             *args, **kwargs):
         
         # we must have either a data_path or a df
@@ -84,8 +90,7 @@ class DatasetManager(object):
             m_y_is_missing = ~np.isnan(self.y)
             self.y = self.y[m_y_is_missing]
             self.df = self.df[m_y_is_missing]
-            
-        self.X = self.df.values
+                        
 
         # get the field names for the different types
         numerical_types = ['float64', 'int64']
@@ -118,6 +123,15 @@ class DatasetManager(object):
             f: self.df.columns.get_loc(f) for f in self.timedelta_fields
         }
 
+        # convert int
+        if convert_int_to_float:
+            msg = ("[DatasetManager] converting int columns to floats")
+            logger.info(msg)
+            numerical_fields = self.get_numerical_field_names()
+            self.df[numerical_fields] = self.df[numerical_fields].astype(float)
+
+        self.X = self.df.values
+
     def get_categorical_df(self):
         """ Return a data frame copy containing only the categorical fields
         """
@@ -145,6 +159,65 @@ class DatasetManager(object):
         td_df = self.df[list(self.timedelta_fields.keys())]
         td_df = td_df.copy()
         return td_df
+
+    def get_categorical_field_names(self):
+        """ Return an np.array of the categorical field names.
+
+        The array is sorted by the field index.
+        """
+        return np.array(utils.sort_dict_keys_by_value(self.categorical_fields))
+
+    def get_numerical_field_names(self):
+        """ Return an np.array of the numerical field names.
+
+        The np.array is sorted by the field index.
+        """
+        return np.array(utils.sort_dict_keys_by_value(self.numerical_fields))
+
+    def get_datetime_field_names(self):
+        """ Return an np.array of the datetime field names.
+
+        The np.array is sorted by the field index.
+        """
+        return np.array(utils.sort_dict_keys_by_value(self.datetime_fields))
+
+    def get_timedelta_field_names(self):
+        """ Return an np.array of the timedelta field names.
+
+        The np.array is sorted by the field index.
+        """
+        return np.array(utils.sort_dict_keys_by_value(self.timedelta_fields))
+
+    def get_categorical_field_indices(self):
+        """ Return an np.array of the categorical field indices.
+
+        The array is sorted by the field index.
+        """
+        return np.array(sorted(self.categorical_fields.values()))
+
+    def get_numerical_field_indices(self):
+        """ Return an np.array of the numerical field indices.
+
+        The np.array is sorted by the field index.
+        """
+        return np.array(sorted(self.numerical_fields.values()))
+
+    def get_datetime_field_indices(self):
+        """ Return an np.array of the datetime field indices.
+
+        The np.array is sorted by the field index.
+        """
+        return np.array(sorted(self.datetime_fields.values()))
+
+    def get_timedelta_field_indices(self):
+        """ Return an np.array of the timedelta field indices.
+
+        The np.array is sorted by the field index.
+        """
+        return np.array(sorted(self.timedelta_fields.values()))
+
+
+
 
 
 

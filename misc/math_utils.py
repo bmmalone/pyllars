@@ -20,6 +20,7 @@ from enum import Enum
 
 import more_itertools
 import numpy as np
+import pandas as pd
 import scipy.stats
 import sklearn
 import sklearn.model_selection
@@ -88,7 +89,8 @@ def mask_random_values(X, likelihood=0.1, return_mask=False, random_state=None):
     X: np.array-like
         The data. It must have `shape` and `copy` methods, as well as support
         Boolean mask indexing. Thus, some forms of scipy.sparse_matrix may
-        also work
+        also work. The function also handles pandas data frames (by directly
+        updating the `values`).
 
     likelihood: float between 0 and 1
         The likelihood that each value in X is replaced with np.nan.
@@ -112,10 +114,19 @@ def mask_random_values(X, likelihood=0.1, return_mask=False, random_state=None):
     """
     np.random.seed(random_state)
     missing_mask = np.random.rand(*X.shape) < likelihood
-    X_incomplete = X.copy()
 
     # missing entries indicated with NaN
-    X_incomplete[missing_mask] = np.nan
+    if isinstance(X, pd.DataFrame):
+        ###
+        # see this SO thread for using `where` instead of masking
+        #   https://stackoverflow.com/questions/30519140
+        ###
+
+        #X_incomplete.values[missing_mask] = np.nan
+        X_incomplete = X.where(~missing_mask, other=np.nan)
+    else:
+        X_incomplete = X.copy()
+        X_incomplete[missing_mask] = np.nan
 
     ret = X_incomplete
     if return_mask:
