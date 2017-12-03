@@ -1223,6 +1223,8 @@ def get_kth_fold(X, y, fold, num_folds=10, random_seed=8675309):
     random_seed: int or random state
         The value used a the random seed for the k-fold split
     """
+
+    check_range(fold, 0, num_folds, max_include=False, variable_name='fold')
     
     cv = sklearn.model_selection.StratifiedKFold(
         n_splits=num_folds, random_state=random_seed
