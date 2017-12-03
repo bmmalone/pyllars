@@ -118,3 +118,34 @@ class DatasetManager(object):
             f: self.df.columns.get_loc(f) for f in self.timedelta_fields
         }
 
+    def get_categorical_df(self):
+        """ Return a data frame copy containing only the categorical fields
+        """
+        cat_df = self.df[list(self.categorical_fields.keys())]
+        cat_df = cat_df.copy()
+        return cat_df
+
+    def get_numerical_df(self):
+        """ Return a data frame copy containing only the numerical fields
+        """
+        num_df = self.df[list(self.numerical_fields.keys())]
+        num_df = num_df.copy()
+        return num_df
+
+    def get_datetime_df(self):
+        """ Return a data frame copy containing only the datetime fields
+        """
+        dt_df = self.df[list(self.datetime_fields.keys())]
+        dt_df = dt_df.copy()
+        return dt_df
+
+    def get_timedelta_df(self):
+        """ Return a data frame copy containing only the timedelta_fields
+        """
+        td_df = self.df[list(self.timedelta_fields.keys())]
+        td_df = td_df.copy()
+        return td_df
+
+
+
+
