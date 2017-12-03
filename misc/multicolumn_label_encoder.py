@@ -18,6 +18,13 @@ class MultiColumnLabelEncoder(sklearn.base.TransformerMixin):
 
     It also attempts with both data frames (with named columns) and simpler
     np.arrays (which only have indices).
+
+    Parameters
+    ----------
+    columns: list-like of column identifiers, or None
+        A list of the columns for imputation. These should be integer indices
+        for np.arrays or string column names for pd.DataFrames.
+
     """
 
     def __init__(self, columns=None):
