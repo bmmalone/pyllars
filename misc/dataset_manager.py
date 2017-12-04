@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 
 import misc.utils as utils
+from misc.multicolumn_label_encoder import MultiColumnLabelEncoder
 
 import logging
 logger = logging.getLogger(__name__)
@@ -44,6 +45,7 @@ class DatasetManager(object):
             drop_rows_with_missing_values=False,
             drop_rows_with_missing_target=True,
             convert_int_to_float=True,
+            encode_categorical_fields=True,
             *args, **kwargs):
         
         # we must have either a data_path or a df
@@ -129,6 +131,15 @@ class DatasetManager(object):
             logger.info(msg)
             numerical_fields = self.get_numerical_field_names()
             self.df[numerical_fields] = self.df[numerical_fields].astype(float)
+
+        # encode categorical variables
+        if encode_categorical_fields:
+            label_encoder = MultiColumnLabelEncoder(
+                columns=self.get_categorical_field_names()
+            )
+
+            self.le_ = label_encoder.fit(self.df)
+            self.df = self.le_.transform(self.df)
 
         self.X = self.df.values
 
