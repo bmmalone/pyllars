@@ -1,4 +1,3 @@
-import sklearn_pandas.categorical_imputer
 import sklearn.base
 
 from sklearn.utils.validation import check_is_fitted

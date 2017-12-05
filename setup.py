@@ -48,7 +48,7 @@ setup(name='misc',
             'tables',
             'paramiko',
             'spur',
-            'pystan==2.16.0.0'
+            'pystan==2.16.0.0',
         ],
         include_package_data=True,
         test_suite='nose.collector',
