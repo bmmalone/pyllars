@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - DatasetManager class to ease reading data and preparing it for sklearn
 - Several changes to the ML helper transformers to make working with mixed
     data sets (that is, those with categorical and numerical features) easier
+- Several sklearn transformers which are robust to missing data and preserve
+    the missing data (i.e., `np.nan`s) so downstream processing can account for
+    the missing values appropriately.
 
 ## [0.2.5] - 2017-10-26
 ### Added
