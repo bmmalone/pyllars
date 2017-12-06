@@ -2,6 +2,8 @@ import os
 import numpy as np
 import pandas as pd
 
+import sklearn.exceptions
+
 import misc.utils as utils
 from misc.multicolumn_label_encoder import MultiColumnLabelEncoder
 
@@ -134,14 +136,30 @@ class DatasetManager(object):
 
         # encode categorical variables
         if encode_categorical_fields:
-            label_encoder = MultiColumnLabelEncoder(
-                columns=self.get_categorical_field_names()
-            )
-
-            self.le_ = label_encoder.fit(self.df)
-            self.df = self.le_.transform(self.df)
+           self.encode_categorical_fields()
 
         self.X = self.df.values
+
+    def encode_categorical_fields(self):
+        """ Encode categorical variables and update internal data structures
+
+        Note: this method will issue a warning message and quit if the
+        categorical variables have already been encoded.
+        """
+        if hasattr(self, "le_"):
+            msg = ("[ds_manager]: attempting to encode the categorical fields "
+                "after they have already been encoded. Skipping operation.")
+            logger.warning(msg)
+            return
+
+        label_encoder = MultiColumnLabelEncoder(
+            columns=self.get_categorical_field_names()
+        )
+
+        self.le_ = label_encoder.fit(self.df)
+        self.df = self.le_.transform(self.df)
+        self.X = self.df.values
+
 
     def get_categorical_df(self):
         """ Return a data frame copy containing only the categorical fields
@@ -156,6 +174,13 @@ class DatasetManager(object):
         num_df = self.df[list(self.numerical_fields.keys())]
         num_df = num_df.copy()
         return num_df
+
+    def get_numerical_np(self):
+        """ Return a numpy array copy containing only the numerical fields
+        """
+        num_df = self.get_numerical_df()
+        num_np = num_df.values
+        return num_np
 
     def get_datetime_df(self):
         """ Return a data frame copy containing only the datetime fields
@@ -177,6 +202,36 @@ class DatasetManager(object):
         The array is sorted by the field index.
         """
         return np.array(utils.sort_dict_keys_by_value(self.categorical_fields))
+
+    def get_categories(self, categorical_field):
+        """ Return the categories for the given field
+
+        This method only works if the categorical data was encoded.
+        """
+        if not hasattr(self, 'le_'):
+            msg = ("[dataset_manager]: asked for categories without first "
+                "encoding the categorical variables")
+            raise sklearn.exceptions.NotFittedError(msg)
+
+        # ensure this was actually an encoded field
+        if categorical_field not in self.le_.le_:
+            msg = ("[dataset_manager]: asked for categories for the "
+                "non-categorical field: '{}'".format(categorical_field))
+            raise KeyError(msg)
+
+        # then it is safe to return the categories
+        return self.le_.le_[categorical_field].classes_
+
+    def get_num_categories(self, categorical_field):
+        """ Return the number of categories for the given field
+
+        This is a convenience wrapper around the `get_categories` method, so
+        please see its documentation for more details.
+        """
+
+        return len(self.get_categories(categorical_field))
+
+
 
     def get_numerical_field_names(self):
         """ Return an np.array of the numerical field names.
