@@ -6,7 +6,7 @@ from sklearn.utils.validation import check_is_fitted
 import numpy as np
 import pandas as pd
 
-from misc.nan_label_encoder import NaNLabelEncoder
+from misc.missingdata.nan_label_encoder import NaNLabelEncoder
 
 class MultiColumnLabelEncoder(sklearn.base.TransformerMixin):
     """ Encode multiple columns using independent label encoders
