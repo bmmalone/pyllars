@@ -222,12 +222,21 @@ class DatasetManager(object):
         # then it is safe to return the categories
         return self.le_.le_[categorical_field].classes_
 
-    def get_num_categories(self, categorical_field):
-        """ Return the number of categories for the given field
+    def get_num_categories(self, categorical_field=None):
+        """ Return the number of categories for the given field, or all fields
+        if categorical_field is None
 
         This is a convenience wrapper around the `get_categories` method, so
         please see its documentation for more details.
         """
+
+        if categorical_field is None:
+            num_categories = np.array([
+                self.get_num_categories(f)
+                    for f in self.get_categorical_field_names()
+            ])
+
+            return num_categories
 
         return len(self.get_categories(categorical_field))
 
