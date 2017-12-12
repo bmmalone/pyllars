@@ -90,8 +90,10 @@ class NaNOneHotEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin
 
         X = X.copy()
         X[m] = 0
-
-        self.enc_.fit(X[:,self.categorical_features])
+    
+        # only do something if we have some features
+        if len(self.categorical_features) > 0:
+            self.enc_.fit(X[:,self.categorical_features])
 
         return self
 
