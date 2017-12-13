@@ -10,7 +10,7 @@ import sklearn.neighbors
 from sklearn.utils.validation import check_is_fitted
 
 import misc.math_utils as math_utils
-from misc.nan_standard_scaler import NaNStandardScaler
+from misc.missingdata.nan_standard_scaler import NaNStandardScaler
 
 class NanNearestNeighbors(object):
     """ A simple kNN implementation which handles missing data
