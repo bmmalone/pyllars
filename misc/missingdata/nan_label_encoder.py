@@ -15,16 +15,17 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
 
     Parameters
     ----------
-    missing_values: string
-        A flag value which will be used internally for missing values
+    missing_value_marker: string
+        A flag value which will be used internally for missing values. This
+        value should not appear in the actual data.
 
     labels: list-like of values
         Optionally, a list of values can be given; any values which do not
         appear in the training data, but present in the list, will still be
         accounted for.
     """
-    def __init__(self, missing_values='NaN', labels=None):
-        self.missing_values = missing_values
+    def __init__(self, missing_value_marker='---NaN---', labels=None):
+        self.missing_value_marker = missing_value_marker
         self.labels = labels
         
 
@@ -38,19 +39,42 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
         -------
         self : returns an instance of self.
         """
-        y = sklearn.utils.column_or_1d(y, warn=True)
+        # we cannot use np.nan as the missing value marker
+        if pd.isnull(self.missing_value_marker):
+            msg = ("[nan_label_encoder]: cannot use pd.isnull objects as the "
+                "internal missing value marker")
+            raise ValueError(msg)
+
+        y = sklearn.utils.column_or_1d(y, warn=False)
+
+        if self.missing_value_marker in y:
+            msg = ("[nan_label_encoder]: found the missing value marker in "
+                "the array")
+            raise ValueError(msg)
+
         y = y.copy()
 
         # use our marker for any NaNs
         m_nan = pd.isnull(y)
-        y[m_nan] = self.missing_values
-        self.classes_ = np.unique(y)
+        self.classes_ = np.unique(y[~m_nan])
 
         # and make sure to include the labels we specified
         if self.labels is not None:
             self.classes_ = np.unique(list(self.classes_) + self.labels)
 
+        # update the labels to reflect the classes in the data, plus the labels
+        # that we specified
+        self.labels = self.classes_
+        
+        # add our missing value marker to the end
+        self.classes_ = np.append(self.classes_, [self.missing_value_marker])
+
         return self
+
+    def get_num_classes(self):
+        """ The number of classes, not including the missing value marker
+        """
+        return len(self.labels)
 
     def transform(self, y):
         """Transform labels to normalized encoding.
@@ -68,7 +92,7 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
 
         # use our marker for NaNs
         m_nan = pd.isnull(y)
-        y[m_nan] = self.missing_values
+        y[m_nan] = self.missing_value_marker
 
         classes = np.unique(y)
         if len(np.intersect1d(classes, self.classes_)) < len(classes):
@@ -85,15 +109,21 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
         Parameters
         ----------
         y : numpy array of shape [n_samples]
-            Target values.
+            Encoded target values. That is, these should be integers in
+            the range [0, n_classes].
         Returns
         -------
         y : numpy array of shape [n_samples]
         """
         check_is_fitted(self, 'classes_')
 
-        diff = np.setdiff1d(y, np.arange(len(self.classes_)))
+        # mark the nan's
+        m_nan = pd.isnull(y)
+        y[m_nan] = len(self.classes_)-1
+
+        diff = np.setdiff1d(y[~m_nan], np.arange(len(self.classes_), dtype=object))
         if diff:
-            raise ValueError("y contains new labels: %s" % str(diff))
-        y = np.asarray(y)
+            raise ValueError("y contains new labels: {}".format(str(diff)))
+
+        y = np.asarray(y, dtype=int)
         return self.classes_[y]
