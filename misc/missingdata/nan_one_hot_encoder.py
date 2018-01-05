@@ -63,6 +63,8 @@ class NaNOneHotEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin
 
     In particular, this class will encode missing values as all 0's. Otherwise,
     it follows the same semantics as a normal sklearn.preprocessing.OneHotEncoder.
+
+    N.B. This class is not particularly "copy-efficient".
     """
 
     def __init__(self,
@@ -84,15 +86,24 @@ class NaNOneHotEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin
             sparse = self.sparse,
             handle_unknown = self.handle_unknown
         )
+        
+        X = X.copy()
+
+        # make sure we have a data matrix
+        if len(X.shape) == 1:
+            X = X.reshape(-1, 1)
 
         # just replace all np.nan's with 0
         m = pd.isnull(X)
-
-        X = X.copy()
         X[m] = 0
-    
+
         # only do something if we have some features
         if len(self.categorical_features) > 0:
+            # check if we should use everything
+            if self.categorical_features == 'all':
+                self.categorical_features = np.array(range(X.shape[1]))
+
+            # and encode whatever we had
             self.enc_.fit(X[:,self.categorical_features])
 
         return self
@@ -100,11 +111,19 @@ class NaNOneHotEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin
     def transform(self, X, *_):
         check_is_fitted(self, "enc_")
 
+        X = X.copy()
+
+        # make sure we have a matrix rather than a vector
+        if len(X.shape) == 1:
+            X = X.reshape(-1, 1)
+
         # first, replace the missing categorical values with 0
         masks = {}
         for f in self.categorical_features:
             m = pd.isnull(X[:,f])
-            masks[f] = m            
+            masks[f] = m
+
+            # this overwrites data in the passed array
             X[m,f] = 0
 
         # now, encode the categorical values (ignoring whatever is in the
