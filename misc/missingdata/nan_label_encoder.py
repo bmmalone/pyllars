@@ -88,7 +88,7 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
         """
         check_is_fitted(self, 'classes_')
         y = sklearn.utils.column_or_1d(y, warn=True)
-        y = y.copy()
+        y = np.array(y, dtype=object)
 
         # use our marker for NaNs
         m_nan = pd.isnull(y)
