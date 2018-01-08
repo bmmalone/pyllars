@@ -95,6 +95,9 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
         y[m_nan] = self.missing_value_marker
 
         classes = np.unique(y)
+        msg = ("[nan_label_encoder.transform] classes: {}. self.classes_: {}".
+            format(classes, self.classes_))
+        logger.debug(msg)
         if len(np.intersect1d(classes, self.classes_)) < len(classes):
             diff = np.setdiff1d(classes, self.classes_)
             raise ValueError("y contains new labels: %s" % str(diff))
