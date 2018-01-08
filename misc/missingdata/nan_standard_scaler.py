@@ -19,6 +19,7 @@ class NaNStandardScaler(sklearn.base.TransformerMixin):
             if isinstance(X, pd.DataFrame):
                 self.columns_ = X.columns
             elif isinstance(X, np.ndarray):
+                X = np.atleast_2d(X)
                 self.columns_ = np.arange(X.shape[1])
         else:
             self.columns_ = self.columns
@@ -75,6 +76,7 @@ class NaNStandardScaler(sklearn.base.TransformerMixin):
             X_cols.iloc[:, self.col_ignore_] = 0
  
         elif isinstance(X, np.ndarray):
+            X = np.atleast_2d(X)
             X_cols = X[:,self.columns_]
             X_cols[:,self.col_ignore_] = 0
         else:
