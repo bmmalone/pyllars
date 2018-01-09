@@ -91,9 +91,9 @@ class DatasetManager(object):
             
         # remove rows with missing target variables
         if drop_rows_with_missing_target:
-            m_y_is_missing = ~np.isnan(self.y)
-            self.y = self.y[m_y_is_missing]
-            self.df = self.df[m_y_is_missing]
+            m_y_is_present = ~pd.isnull(self.y)
+            self.y = self.y[m_y_is_present]
+            self.df = self.df[m_y_is_present]
                         
 
         # get the field names for the different types
