@@ -21,7 +21,6 @@ class NaNStandardScaler(sklearn.base.TransformerMixin):
             elif isinstance(X, np.ndarray):
                 if len(X.shape) == 1:
                     X = X.reshape(-1, 1)
-                print("[nan_scaler] X.shape: {}".format(X.shape))
                 self.columns_ = np.arange(X.shape[1])
         else:
             self.columns_ = self.columns
