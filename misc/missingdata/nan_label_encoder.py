@@ -75,6 +75,7 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
         
         # add our missing value marker to the end
         self.classes_ = np.append(self.classes_, [self.missing_value_marker])
+        self.classes_set_ = set(self.classes_)
 
         return self
 
@@ -100,21 +101,25 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
         # use our marker for NaNs
         m_nan = pd.isnull(y)
 
+        # check if we want to treat unknown labels as NaNs
         if self.treat_unknown_as_missing:
-            m_known = np.isin(y, self.classes_)
-            m_nan |= ~m_known
+            m_unknown = np.array([y_i not in self.classes_set_ for y_i in y])
+            m_nan |= m_unknown
 
         y[m_nan] = self.missing_value_marker
     
         # then make sure we know all of the labels
 
-        classes = np.unique(y)
-        msg = ("[nan_label_encoder.transform] classes: {}. self.classes_: {}".
-            format(classes, self.classes_))
+        observed_labels = np.unique(y)
+        msg = ("[nan_label_encoder.transform] observed labels: {}. "
+            "self.classes_: {}".format(observed_labels, self.classes_))
         logger.debug(msg)
-        if len(np.intersect1d(classes, self.classes_)) < len(classes):
-            diff = np.setdiff1d(classes, self.classes_)
-            raise ValueError("y contains new labels: %s" % str(diff))
+
+        unknown_labels = [l for l in observed_labels if l not in self.classes_set_]
+        if len(unknown_labels) > 0:
+            msg = ("[nan_label_encoder.transform] y contains new labels: {}".
+                format(str(unknown_labels)))
+            raise ValueError(msg)
 
 
         # however, put the NaNs back in
