@@ -23,10 +23,17 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
         Optionally, a list of values can be given; any values which do not
         appear in the training data, but present in the list, will still be
         accounted for.
+
+    treat_unknown_as_missing: bool
+        By default, `transform` will fail when attempting to encode a value
+        not seen during fitting. If this flag is `True`, then unknown values
+        will instead be replaced with np.nan during `transform`.
     """
-    def __init__(self, missing_value_marker='---NaN---', labels=None):
+    def __init__(self, missing_value_marker='---NaN---', labels=None,
+            treat_unknown_as_missing=False):
         self.missing_value_marker = missing_value_marker
         self.labels = labels
+        self.treat_unknown_as_missing = treat_unknown_as_missing
         
 
     def fit(self, y):
@@ -92,7 +99,14 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
 
         # use our marker for NaNs
         m_nan = pd.isnull(y)
+
+        if self.treat_unknown_as_missing:
+            m_known = np.isin(y, self.classes_)
+            m_nan |= ~m_known
+
         y[m_nan] = self.missing_value_marker
+    
+        # then make sure we know all of the labels
 
         classes = np.unique(y)
         msg = ("[nan_label_encoder.transform] classes: {}. self.classes_: {}".
@@ -101,6 +115,7 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
         if len(np.intersect1d(classes, self.classes_)) < len(classes):
             diff = np.setdiff1d(classes, self.classes_)
             raise ValueError("y contains new labels: %s" % str(diff))
+
 
         # however, put the NaNs back in
         ret = np.searchsorted(self.classes_, y).astype(float)
