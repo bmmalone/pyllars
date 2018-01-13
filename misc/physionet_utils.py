@@ -2,6 +2,9 @@
 #   This module contains functions for working with datasets from physionet,
 #   including MIMIC and the Computing in Cardiology Challenge datasets.
 ###
+import logging
+logger = logging.getLogger(__name__)
+
 import datetime
 import os
 
