@@ -75,7 +75,11 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
         
         # add our missing value marker to the end
         self.classes_ = np.append(self.classes_, [self.missing_value_marker])
-        self.classes_set_ = set(self.classes_)
+
+        # now, use a dictionary
+        self.classes_ = {
+            c:i for i, c in enumerate(self.classes_)
+        }
 
         return self
 
@@ -103,7 +107,7 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
 
         # check if we want to treat unknown labels as NaNs
         if self.treat_unknown_as_missing:
-            m_unknown = np.array([y_i not in self.classes_set_ for y_i in y])
+            m_unknown = np.array([y_i not in self.classes_ for y_i in y])
             m_nan |= m_unknown
 
         y[m_nan] = self.missing_value_marker
@@ -115,15 +119,17 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
             "self.classes_: {}".format(observed_labels, self.classes_))
         logger.debug(msg)
 
-        unknown_labels = [l for l in observed_labels if l not in self.classes_set_]
+        unknown_labels = [l for l in observed_labels if l not in self.classes_]
         if len(unknown_labels) > 0:
             msg = ("[nan_label_encoder.transform] y contains new labels: {}".
                 format(str(unknown_labels)))
             raise ValueError(msg)
 
-
         # however, put the NaNs back in
-        ret = np.searchsorted(self.classes_, y).astype(float)
+        ret = np.array([
+            self.classes_[y_i] for y_i in y
+        ]).astype(float)
+        #ret = np.searchsorted(self.classes_, y).astype(float)
         ret[m_nan] = np.nan
         return ret
 
