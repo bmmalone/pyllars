@@ -139,3 +139,120 @@ def get_joblib_parallel_backend_context_manager(args):
     backend = parallel_backend(*backend_args, **backend_kwargs)
     return backend
 
+###
+#   Helpers to submit arbitrary jobs to a dask cluster
+###
+
+def apply_iter(it, client, func, *args, return_futures=False,
+        progress_bar=True, **kwargs):
+    """ Call `func` on each item in `it`.
+
+    Additionally, `args` and `kwargs` are passed to the function call.
+
+    N.B. Unlike with the `parallel` module functions, it does not make sense
+
+    Parameters
+    ----------
+    it: an iterable
+        The sequence of inputs for `func`
+
+    client: distributed.client.Client
+        A dask client
+
+    func: function pointer
+        The function to apply to each row in `data_frame`
+
+    args, kwargs
+        The other arguments to pass to `func`
+
+    return_futures: bool
+        Whether to wait for the results (`False`, the default) or return a
+        list of dask futures (when `True`). If a list of futures is returned,
+        the `result` method should be called on each of them at some point
+        before attempting to use the results.
+
+    progress_bar: bool
+        Whether to show a progress bar when waiting for results. The parameter
+        is only relevant when `return_futures` is `False`.
+
+    Returns
+    -------
+    results: list
+        Either the result of each function call or a future which will give
+        the result, depending on the value of `return_futures`
+    """
+
+    ret_list = [
+        client.submit(func, *(i, *args), **kwargs) for i in it
+    ]
+
+    if return_futures:
+        return ret_list
+
+    # add a progress bar if we asked for one
+    if progress_bar:
+        import tqdm
+        ret_list = tqdm.tqdm(ret_list)
+
+    ret_list = [r.result() for r in ret_list]
+    return ret_list
+
+
+def apply_df(data_frame, client, func, *args, return_futures=False,
+        progress_bar=True, **kwargs):
+    """ Call `func` on each row in `data_frame`.
+
+    Additionally, `args` and `kwargs` are passed to the function call.
+
+    N.B. Unlike with the `parallel` module functions, it does not make sense
+
+    Parameters
+    ----------
+    data_frame: pandas.DataFrame
+        A data frame
+
+    client: distributed.client.Client
+        A dask client
+
+    func: function pointer
+        The function to apply to each row in `data_frame`
+
+    args, kwargs
+        The other arguments to pass to `func`
+
+    return_futures: bool
+        Whether to wait for the results (`False`, the default) or return a
+        list of dask futures (when `True`). If a list of futures is returned,
+        the `result` method should be called on each of them at some point
+        before attempting to use the results.
+
+    progress_bar: bool
+        Whether to show a progress bar when waiting for results. The parameter
+        is only relevant when `return_futures` is `False`.
+
+    Returns
+    -------
+    results: list
+        Either the result of each function call or a future which will give
+        the result, depending on the value of `return_futures`
+    """
+
+    if len(data_frame) == 0:
+        return []
+
+    ret_list = [
+        client.submit(func, *(row[1], *args), **kwargs) 
+            for row in data_frame.iterrows()
+    ]
+
+    if return_futures:
+        return ret_list
+
+    # add a progress bar if we asked for one
+    if progress_bar:
+        import tqdm
+        ret_list = tqdm.tqdm(ret_list)
+
+    ret_list = [r.result() for r in ret_list]
+    return ret_list
+
