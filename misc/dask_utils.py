@@ -6,6 +6,8 @@
 import logging
 logger = logging.getLogger(__name__)
 
+import tqdm
+
 def connect(args):
     """ Connect to the dask cluster specifed by the arguments in args
 
@@ -181,6 +183,12 @@ def apply_iter(it, client, func, *args, return_futures=False,
         Either the result of each function call or a future which will give
         the result, depending on the value of `return_futures`
     """
+    msg = ("[dask_utils.parallel] submitting jobs to cluster")
+    logger.debug(msg)
+
+    if progress_bar:
+        it = tqdm.tqdm(it)
+
 
     ret_list = [
         client.submit(func, *(i, *args), **kwargs) for i in it
@@ -189,9 +197,11 @@ def apply_iter(it, client, func, *args, return_futures=False,
     if return_futures:
         return ret_list
 
+    msg = ("[dask_utils.parallel] collecting results from cluster")
+    logger.debug(msg)
+    
     # add a progress bar if we asked for one
     if progress_bar:
-        import tqdm
         ret_list = tqdm.tqdm(ret_list)
 
     ret_list = [r.result() for r in ret_list]
@@ -240,9 +250,13 @@ def apply_df(data_frame, client, func, *args, return_futures=False,
     if len(data_frame) == 0:
         return []
 
+    it = data_frame.iterrows()
+    if progress_bar:
+        it = tqdm.tqdm(it)
+
     ret_list = [
         client.submit(func, *(row[1], *args), **kwargs) 
-            for row in data_frame.iterrows()
+            for row in it
     ]
 
     if return_futures:
@@ -250,7 +264,6 @@ def apply_df(data_frame, client, func, *args, return_futures=False,
 
     # add a progress bar if we asked for one
     if progress_bar:
-        import tqdm
         ret_list = tqdm.tqdm(ret_list)
 
     ret_list = [r.result() for r in ret_list]
