@@ -59,7 +59,10 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
                 "the array")
             raise ValueError(msg)
 
-        y = y.copy()
+        #y = y.copy()
+        y = np.array(y, dtype=object)
+
+        #print("[nan_le.fit] y:", y)
 
         # use our marker for any NaNs
         m_nan = pd.isnull(y)
@@ -68,6 +71,8 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
         # and make sure to include the labels we specified
         if self.labels is not None:
             self.classes_ = np.unique(list(self.classes_) + self.labels)
+
+        #print("[nan_le.fit] classes:", self.classes_)
 
         # update the labels to reflect the classes in the data, plus the labels
         # that we specified
@@ -80,6 +85,9 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
         self.classes_ = {
             c:i for i, c in enumerate(self.classes_)
         }
+
+        msg = ("[nan_le.fit] classes: {}".format(self.classes_))
+        logger.debug(msg)
 
         return self
 
@@ -102,6 +110,8 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
         y = sklearn.utils.column_or_1d(y, warn=True)
         y = np.array(y, dtype=object)
 
+        #print("[nan_le.transform] y: {}".format(y))
+
         # use our marker for NaNs
         m_nan = pd.isnull(y)
 
@@ -113,6 +123,7 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
         y[m_nan] = self.missing_value_marker
     
         # then make sure we know all of the labels
+        #print("[nan_le.transform] y after: {}".format(y))
 
         observed_labels = np.unique(y)
         msg = ("[nan_label_encoder.transform] observed labels: {}. "
