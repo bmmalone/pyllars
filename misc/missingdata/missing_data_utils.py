@@ -75,6 +75,18 @@ import sklearn.model_selection
 import misc.math_utils as math_utils
 import more_itertools
 
+# nan preprocessing
+from misc.missingdata.nan_standard_scaler import NaNStandardScaler
+from misc.missingdata.nan_one_hot_encoder import NaNOneHotEncoder
+
+from misc.multicolumn_imputer import MultiColumnImputer
+from sklearn_pandas.categorical_imputer import CategoricalImputer
+from sklearn.preprocessing import FunctionTransformer
+
+# use our custom version of SimpleFill which implements the transformer interface
+from automlutils.asl_fancyimpute.simple_fill import SimpleFill
+
+
 ###
 #   Functions for creating incomplete datasets according to different
 #   missingness mechanisms
@@ -563,3 +575,100 @@ def train_on_incomplete_data(model, incomplete_data):
     )
     
     return ret
+
+###
+#   Helpers to create preprocessing missing data
+###
+def replace_nans(X, y=None):
+    X = X.copy()
+
+    for col in range(X.shape[1]):
+        c = X[:,col]
+        max_val = np.nanmax(c)
+        missing_flag = max_val + 1
+        m_nan = np.isnan(c)
+        c[m_nan] = missing_flag
+    return X
+
+def get_nan_preprocessing_pipeline(dataset_manager, fill_categoricals="flag",
+        fields_to_ignore=None):
+    """ Retrieve a simple pipeline for preprocessing missing data
+
+    The pipeline includes the following steps:
+
+    1. scale the non-missing numerical values
+    2. zero-fill the missing numerical values
+    3. replace missing categorical values with the mode
+    4. one-hot encode the categorical values
+    """
+
+    allowed_fill_categoricals = set(['flag', 'mode'])
+    if fill_categoricals not in allowed_fill_categoricals:
+        msg = ("[missing_data_utils.get_nan_preprocessing_pipeline] allowed "
+            "`fill_categoricals` are: {}. found: {}".format(
+            allowed_fill_categoricals, fill_categoricals))
+        raise ValueError(msg)
+
+    ###
+    # First, build up the missing data part of the pipeline
+    ###
+
+    # first, scale the numerical values
+    nan_scaler = NaNStandardScaler(
+        columns=dataset_manager.get_numerical_field_indices(fields_to_ignore)
+    )
+
+    # and zero-fill the missing numeric values
+    # due to scaling, this is the same as replacing the values
+    # by the mean, but by scaling first, we do not falsely add
+    # mass around the mean from the missing values
+    num_imputer_template = SimpleFill(fill_method="zero")
+
+    num_imputer = MultiColumnImputer(
+        imputer_template=num_imputer_template,
+        columns=dataset_manager.get_numerical_field_indices(fields_to_ignore)
+    )
+
+    if fill_categoricals == "mode":
+        # replace missing categorical values with the mode
+        cat_imputer_template = CategoricalImputer(
+            missing_values="NaN"
+        )
+    elif fill_categoricals == "flag":
+        cat_imputer_template = FunctionTransformer(
+            func=replace_nans,
+            validate=False
+        )
+
+    cat_imputer = MultiColumnImputer(
+        imputer_template=cat_imputer_template,
+        columns=dataset_manager.get_categorical_field_indices(fields_to_ignore)
+    )
+    
+    # finally, we one-hot encode the categorical variables
+
+    # use the label encoder from the dataset manager to pull out
+    # the number of values for each variable
+    n_values = np.array([
+        len(dataset_manager.le_.le_[f].classes_)
+            for f in dataset_manager.get_categorical_field_names(fields_to_ignore)
+    ])
+
+    one_hot_encoder = NaNOneHotEncoder(
+        categorical_features=dataset_manager.get_categorical_field_indices(fields_to_ignore),
+        sparse=False,
+        n_values=n_values
+        #handle_unknown='ignore'
+    )
+
+    preprocessing = sklearn.pipeline.Pipeline([
+        ("nan_scaler", nan_scaler),
+        ("num_imputer", num_imputer),
+        ("cat_imputer", cat_imputer),
+        ("one_hot_encoder", one_hot_encoder),
+
+    ])
+
+    return preprocessing
+
+
