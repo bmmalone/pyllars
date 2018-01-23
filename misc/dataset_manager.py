@@ -10,6 +10,17 @@ from misc.multicolumn_label_encoder import MultiColumnLabelEncoder
 import logging
 logger = logging.getLogger(__name__)
 
+def _get_values(dic, keys_to_ignore=None):
+    """ Retrieve all values from `dic` except those with the given keys
+    """
+    if keys_to_ignore is None:
+        values = dic.values()
+    else:
+        values = [
+            v for k,v in dic.items() if k not in keys_to_ignore
+        ]
+    return values
+
 class DatasetManager(object):
     """ Handle standard parsing operations for sklearn-style datasets.
 
@@ -196,12 +207,17 @@ class DatasetManager(object):
         td_df = td_df.copy()
         return td_df
 
-    def get_categorical_field_names(self):
+    def get_categorical_field_names(self, fields_to_ignore=None):
         """ Return an np.array of the categorical field names.
 
         The array is sorted by the field index.
         """
-        return np.array(utils.sort_dict_keys_by_value(self.categorical_fields))
+        vals = utils.sort_dict_keys_by_value(self.categorical_fields)
+
+        if fields_to_ignore is not None:
+            vals = [f for f in vals if f not in fields_to_ignore]
+
+        return np.array(vals)
 
     def get_categories(self, categorical_field):
         """ Return the categories for the given field
@@ -242,54 +258,78 @@ class DatasetManager(object):
 
 
 
-    def get_numerical_field_names(self):
+    def get_numerical_field_names(self, fields_to_ignore=None):
         """ Return an np.array of the numerical field names.
 
         The np.array is sorted by the field index.
         """
-        return np.array(utils.sort_dict_keys_by_value(self.numerical_fields))
+        vals = utils.sort_dict_keys_by_value(self.numerical_fields)
 
-    def get_datetime_field_names(self):
+        if fields_to_ignore is not None:
+            vals = [f for f in vals if f not in fields_to_ignore]
+
+        return np.array(vals)
+
+    def get_datetime_field_names(self, fields_to_ignore=None):
         """ Return an np.array of the datetime field names.
 
         The np.array is sorted by the field index.
         """
-        return np.array(utils.sort_dict_keys_by_value(self.datetime_fields))
+        vals = utils.sort_dict_keys_by_value(self.datetime_fields)
 
-    def get_timedelta_field_names(self):
+        if fields_to_ignore is not None:
+            vals = [f for f in vals if f not in fields_to_ignore]
+
+        return np.array(vals)
+
+    def get_timedelta_field_names(self, fields_to_ignore=None):
         """ Return an np.array of the timedelta field names.
 
         The np.array is sorted by the field index.
         """
-        return np.array(utils.sort_dict_keys_by_value(self.timedelta_fields))
+        vals = utils.sort_dict_keys_by_value(self.timedelta_fields)
 
-    def get_categorical_field_indices(self):
+        if fields_to_ignore is not None:
+            vals = [f for f in vals if f not in fields_to_ignore]
+
+        return np.array(vals)
+
+    def get_categorical_field_indices(self, fields_to_ignore=None):
         """ Return an np.array of the categorical field indices.
 
         The array is sorted by the field index.
         """
-        return np.array(sorted(self.categorical_fields.values()))
+        vals = _get_values(self.categorical_fields, fields_to_ignore)
+        indices = np.array(sorted(vals))
+        return indices
 
-    def get_numerical_field_indices(self):
+
+    def get_numerical_field_indices(self, fields_to_ignore=None):
         """ Return an np.array of the numerical field indices.
 
         The np.array is sorted by the field index.
         """
-        return np.array(sorted(self.numerical_fields.values()))
+        vals = _get_values(self.numerical_fields, fields_to_ignore)
+        indices = np.array(sorted(vals))
+        return indices
 
-    def get_datetime_field_indices(self):
+    def get_datetime_field_indices(self, fields_to_ignore=None):
         """ Return an np.array of the datetime field indices.
 
         The np.array is sorted by the field index.
         """
-        return np.array(sorted(self.datetime_fields.values()))
+        vals = _get_values(self.datetime_fields, fields_to_ignore)
+        indices = np.array(sorted(vals))
+        return indices
 
-    def get_timedelta_field_indices(self):
+    def get_timedelta_field_indices(self, fields_to_ignore=None):
         """ Return an np.array of the timedelta field indices.
 
         The np.array is sorted by the field index.
         """
-        return np.array(sorted(self.timedelta_fields.values()))
+        vals = _get_values(self.timedelta_fields, fields_to_ignore)
+        indices = np.array(sorted(vals))
+        return indices
 
 
 
