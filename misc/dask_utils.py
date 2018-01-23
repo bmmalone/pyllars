@@ -269,3 +269,35 @@ def apply_df(data_frame, client, func, *args, return_futures=False,
     ret_list = [r.result() for r in ret_list]
     return ret_list
 
+###
+#   A simple wrapper to submit an sklearn pipeline to a dask cluster for fitting
+###
+
+class dask_pipeline:
+    """ This class is a simple wrapper to submit an sklearn pipeline to a dask
+    cluster for fitting.
+
+    Example usage::
+
+        my_pipeline = sklearn.pipeline.Pipeline(steps)
+        d_pipeline = dask_pipeline(my_pipeline, dask_client)
+        d_pipeline_fit = d_pipeline.fit(X, y)
+        pipeline_fit = d_pipeline_fit.collect_results()
+    """
+    def __init__(self, pipeline, dask_client):
+        self.pipeline = pipeline
+        self.dask_client = dask_client
+
+    def fit(self, X, y):
+        self.d_fit = self.dask_client.submit(self.pipeline.fit, X, y)
+        return self
+
+    def collect_results(self):
+        self.pipeline_fit = self.d_fit.result()
+
+        # and clean up
+        del self.d_fit
+        del self.dask_client
+
+        return self.pipeline_fit
+
