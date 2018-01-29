@@ -151,8 +151,6 @@ def apply_iter(it, client, func, *args, return_futures=False,
 
     Additionally, `args` and `kwargs` are passed to the function call.
 
-    N.B. Unlike with the `parallel` module functions, it does not make sense
-
     Parameters
     ----------
     it: an iterable
@@ -214,8 +212,6 @@ def apply_df(data_frame, client, func, *args, return_futures=False,
 
     Additionally, `args` and `kwargs` are passed to the function call.
 
-    N.B. Unlike with the `parallel` module functions, it does not make sense
-
     Parameters
     ----------
     data_frame: pandas.DataFrame
@@ -268,6 +264,67 @@ def apply_df(data_frame, client, func, *args, return_futures=False,
 
     ret_list = [r.result() for r in ret_list]
     return ret_list
+
+
+def apply_groups(groups, client, func, *args, return_futures=False,
+        progress_bar=True, **kwargs):
+    """ Call `func` on each group in `groups`.
+
+    Additionally, `args` and `kwargs` are passed to the function call.
+
+    Parameters
+    ----------
+    groups: pandas.DataFrameGroupBy
+        The result of a call to `groupby`on a data frame
+
+    client: distributed.client.Client
+        A dask client
+
+    func: function pointer
+        The function to apply to each row in `data_frame`
+
+    args, kwargs
+        The other arguments to pass to `func`
+
+    return_futures: bool
+        Whether to wait for the results (`False`, the default) or return a
+        list of dask futures (when `True`). If a list of futures is returned,
+        the `result` method should be called on each of them at some point
+        before attempting to use the results.
+
+    progress_bar: bool
+        Whether to show a progress bar when waiting for results. The parameter
+        is only relevant when `return_futures` is `False`.
+
+    Returns
+    -------
+    results: list
+        Either the result of each function call or a future which will give
+        the result, depending on the value of `return_futures`
+    """
+
+    if len(groups) == 0:
+        return []
+
+    it = groups
+    if progress_bar:
+        it = tqdm.tqdm(it)
+
+    ret_list = [
+        client.submit(func, *(group, *args), **kwargs) 
+            for name, group in it
+    ]
+
+    if return_futures:
+        return ret_list
+
+    # add a progress bar if we asked for one
+    if progress_bar:
+        ret_list = tqdm.tqdm(ret_list)
+
+    ret_list = [r.result() for r in ret_list]
+    return ret_list
+
 
 ###
 #   A simple wrapper to submit an sklearn pipeline to a dask cluster for fitting
