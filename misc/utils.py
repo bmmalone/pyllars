@@ -1173,30 +1173,37 @@ def replace_none_with_empty_iter(iterator):
         return []
     return iterator
 
-def open(filename, mode='r', compress=False, is_text=True):
-    """ This function returns a file handle to the given file. The only
-        difference between this and the standard open command is that this
-        function transparently opens zip files, if specified. If a gzipped
-        file is to be opened, the mode is adjusted according to the "is_text"
-        flag.
+def open(filename, mode='r', compress=False, is_text=True, *args, **kwargs):
+    """ Return a file handle to the given file. 
+    
+    The only difference between this and the standard open command is that this
+    function transparently opens zip files, if specified. If a gzipped file is
+    to be opened, the mode is adjusted according to the "is_text" flag.
 
-        Args:
-            filename (str): the file to open
+    Parameters
+    ---------
+    filename: string
+        the file to open
 
-            mode (str): the mode to open the file. This *should not* include
-                "t" for opening gzipped text files. That is handled by the
-                "is_text" flag.
+    mode: string
+        the mode to open the file. This *should not* include
+        "t" for opening gzipped text files. That is handled by the
+        "is_text" flag.
 
-            compress (bool): whether to open the file as a gzipped file
+    compress: bool
+        whether to open the file as a gzipped file
 
-            is_text (bool): for gzip files, whether to open in text (True) or
-                binary (False) mode
+    is_text: bool
+        for gzip files, whether to open in text (True) or
+        binary (False) mode
 
-        Returns:
-            file_handle: the file handle to the file
+    args, kwargs
+        Additional arguments are passed to the call to open
 
-        Imports:
-            gzip, if compress is True
+    Returns
+    -------
+    file_handle: the file handle to the file
+
     """
     import builtins
 
@@ -1205,9 +1212,9 @@ def open(filename, mode='r', compress=False, is_text=True):
 
         if is_text:
             mode = mode + "t"
-        out = gzip.open(filename, mode)
+        out = gzip.open(filename, mode, *args, **kwargs)
     else:
-        out = builtins.open(filename, mode)
+        out = builtins.open(filename, mode, *args, **kwargs)
 
     return out
 
