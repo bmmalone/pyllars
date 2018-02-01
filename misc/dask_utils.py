@@ -1,7 +1,6 @@
-###
-#   This module contains helpers for using dask:
-#       https://dask.pydata.org/en/latest/
-###
+"""
+This module contains helpers for using dask: https://dask.pydata.org/en/latest/
+"""
 
 import logging
 logger = logging.getLogger(__name__)
