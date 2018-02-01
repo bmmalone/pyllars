@@ -248,7 +248,7 @@ def apply_df(data_frame, client, func, *args, return_futures=False,
 
     it = data_frame.iterrows()
     if progress_bar:
-        it = tqdm.tqdm(it)
+        it = tqdm.tqdm(it, total=len(data_frame))
 
     ret_list = [
         client.submit(func, *(row[1], *args), **kwargs) 
@@ -260,7 +260,7 @@ def apply_df(data_frame, client, func, *args, return_futures=False,
 
     # add a progress bar if we asked for one
     if progress_bar:
-        ret_list = tqdm.tqdm(ret_list)
+        ret_list = tqdm.tqdm(ret_list, total=len(data_frame))
 
     ret_list = [r.result() for r in ret_list]
     return ret_list
