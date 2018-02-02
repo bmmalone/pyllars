@@ -936,6 +936,25 @@ def list_to_dict(l, f=None):
     d = {k:f(v) for k, v in zip(keys, values)}
     return d
 
+def merge_sets(*set_args):
+    """ Given any number of sets, merge them into a single set
+
+    N.B. This function only performs a "shallow" merge. It does not handle
+    nested containers within the "outer" sets.
+
+    Parameters
+    ----------
+    set_args: iterable of sets
+        The sets to merge
+
+    Returns
+    -------
+    merged_set: set
+        A single set containing unique elements from each of the input sets
+    """
+    ret = {item for s in set_args for item in s}
+    return ret
+
 def merge_dicts(*dict_args):
     """ Given any number of dicts, shallow copy and merge into a new dict,
     precedence goes to key value pairs in latter dicts.
