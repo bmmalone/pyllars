@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Several sklearn transformers which are robust to missing data and preserve
     the missing data (i.e., `np.nan`s) so downstream processing can account for
     the missing values appropriately.
-- Utilities for working with text (`misc.nlp_utils`)
+- Utilities for working with text (`misc.nlp_utils`, 
+    `misc.incremental_count_vectorizer`)
 
 ## [0.2.5] - 2017-10-26
 ### Added
