@@ -101,7 +101,7 @@ class DatasetManager(object):
             self.df = self.df.drop([target_variable], axis=1)
             
         # remove rows with missing target variables
-        if drop_rows_with_missing_target:
+        if drop_rows_with_missing_target and (self.target_variable is not None):
             m_y_is_present = ~pd.isnull(self.y)
             self.y = self.y[m_y_is_present]
             self.df = self.df[m_y_is_present]
