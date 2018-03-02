@@ -936,6 +936,25 @@ def list_to_dict(l, f=None):
     d = {k:f(v) for k, v in zip(keys, values)}
     return d
 
+def merge_sets(*set_args):
+    """ Given any number of sets, merge them into a single set
+
+    N.B. This function only performs a "shallow" merge. It does not handle
+    nested containers within the "outer" sets.
+
+    Parameters
+    ----------
+    set_args: iterable of sets
+        The sets to merge
+
+    Returns
+    -------
+    merged_set: set
+        A single set containing unique elements from each of the input sets
+    """
+    ret = {item for s in set_args for item in s}
+    return ret
+
 def merge_dicts(*dict_args):
     """ Given any number of dicts, shallow copy and merge into a new dict,
     precedence goes to key value pairs in latter dicts.
@@ -946,6 +965,15 @@ def merge_dicts(*dict_args):
     for dictionary in dict_args:
         result.update(dictionary)
     return result
+
+def sort_dict_keys_by_value(d):
+    """ Sort the keys in the dictionary by their value and return as a list
+
+    This function uses `sorted`, so the values should be able to be sorted
+    appropriately by that builtin function.
+    """
+    ret = sorted(d, key=d.get)
+    return ret
 
 def get_type(type_string):
     """ Find the type object corresponding to the fully qualified class
@@ -1164,30 +1192,37 @@ def replace_none_with_empty_iter(iterator):
         return []
     return iterator
 
-def open(filename, mode='r', compress=False, is_text=True):
-    """ This function returns a file handle to the given file. The only
-        difference between this and the standard open command is that this
-        function transparently opens zip files, if specified. If a gzipped
-        file is to be opened, the mode is adjusted according to the "is_text"
-        flag.
+def open(filename, mode='r', compress=False, is_text=True, *args, **kwargs):
+    """ Return a file handle to the given file. 
+    
+    The only difference between this and the standard open command is that this
+    function transparently opens zip files, if specified. If a gzipped file is
+    to be opened, the mode is adjusted according to the "is_text" flag.
 
-        Args:
-            filename (str): the file to open
+    Parameters
+    ---------
+    filename: string
+        the file to open
 
-            mode (str): the mode to open the file. This *should not* include
-                "t" for opening gzipped text files. That is handled by the
-                "is_text" flag.
+    mode: string
+        the mode to open the file. This *should not* include
+        "t" for opening gzipped text files. That is handled by the
+        "is_text" flag.
 
-            compress (bool): whether to open the file as a gzipped file
+    compress: bool
+        whether to open the file as a gzipped file
 
-            is_text (bool): for gzip files, whether to open in text (True) or
-                binary (False) mode
+    is_text: bool
+        for gzip files, whether to open in text (True) or
+        binary (False) mode
 
-        Returns:
-            file_handle: the file handle to the file
+    args, kwargs
+        Additional arguments are passed to the call to open
 
-        Imports:
-            gzip, if compress is True
+    Returns
+    -------
+    file_handle: the file handle to the file
+
     """
     import builtins
 
@@ -1196,9 +1231,9 @@ def open(filename, mode='r', compress=False, is_text=True):
 
         if is_text:
             mode = mode + "t"
-        out = gzip.open(filename, mode)
+        out = gzip.open(filename, mode, *args, **kwargs)
     else:
-        out = builtins.open(filename, mode)
+        out = builtins.open(filename, mode, *args, **kwargs)
 
     return out
 

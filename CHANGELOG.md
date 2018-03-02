@@ -4,6 +4,20 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.2.6] - 2018-03-02
+### Added
+- Utility for supressing pystan (or other compiled function) output. This
+    addition is motivated by [an rpbp issue](https://github.com/dieterich-lab/rp-bp/issues/10),
+    and the solution is basically [copied from facebook's prophet](https://github.com/facebook/prophet/issues/223#issuecomment-326455744).
+- DatasetManager class to ease reading data and preparing it for sklearn
+- Several changes to the ML helper transformers to make working with mixed
+    data sets (that is, those with categorical and numerical features) easier
+- Several sklearn transformers which are robust to missing data and preserve
+    the missing data (i.e., `np.nan`s) so downstream processing can account for
+    the missing values appropriately.
+- Utilities for working with text (`misc.nlp_utils`, 
+    `misc.incremental_count_vectorizer`)
+
 ## [0.2.5] - 2017-10-26
 ### Added
 - Utilities for working with the [Computing in Cardiology Challenge 2012

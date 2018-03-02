@@ -1,10 +1,11 @@
-###
-#   This module contains helpers for using dask:
-#       https://dask.pydata.org/en/latest/
-###
+"""
+This module contains helpers for using dask: https://dask.pydata.org/en/latest/
+"""
 
 import logging
 logger = logging.getLogger(__name__)
+
+import tqdm
 
 def connect(args):
     """ Connect to the dask cluster specifed by the arguments in args
@@ -138,4 +139,221 @@ def get_joblib_parallel_backend_context_manager(args):
 
     backend = parallel_backend(*backend_args, **backend_kwargs)
     return backend
+
+###
+#   Helpers to submit arbitrary jobs to a dask cluster
+###
+
+def apply_iter(it, client, func, *args, return_futures=False,
+        progress_bar=True, **kwargs):
+    """ Call `func` on each item in `it`.
+
+    Additionally, `args` and `kwargs` are passed to the function call.
+
+    Parameters
+    ----------
+    it: an iterable
+        The sequence of inputs for `func`
+
+    client: distributed.client.Client
+        A dask client
+
+    func: function pointer
+        The function to apply to each row in `data_frame`
+
+    args, kwargs
+        The other arguments to pass to `func`
+
+    return_futures: bool
+        Whether to wait for the results (`False`, the default) or return a
+        list of dask futures (when `True`). If a list of futures is returned,
+        the `result` method should be called on each of them at some point
+        before attempting to use the results.
+
+    progress_bar: bool
+        Whether to show a progress bar when waiting for results. The parameter
+        is only relevant when `return_futures` is `False`.
+
+    Returns
+    -------
+    results: list
+        Either the result of each function call or a future which will give
+        the result, depending on the value of `return_futures`
+    """
+    msg = ("[dask_utils.parallel] submitting jobs to cluster")
+    logger.debug(msg)
+
+    if progress_bar:
+        it = tqdm.tqdm(it)
+
+
+    ret_list = [
+        client.submit(func, *(i, *args), **kwargs) for i in it
+    ]
+
+    if return_futures:
+        return ret_list
+
+    msg = ("[dask_utils.parallel] collecting results from cluster")
+    logger.debug(msg)
+    
+    # add a progress bar if we asked for one
+    if progress_bar:
+        ret_list = tqdm.tqdm(ret_list)
+
+    ret_list = [r.result() for r in ret_list]
+    return ret_list
+
+
+def apply_df(data_frame, client, func, *args, return_futures=False,
+        progress_bar=True, **kwargs):
+    """ Call `func` on each row in `data_frame`.
+
+    Additionally, `args` and `kwargs` are passed to the function call.
+
+    Parameters
+    ----------
+    data_frame: pandas.DataFrame
+        A data frame
+
+    client: distributed.client.Client
+        A dask client
+
+    func: function pointer
+        The function to apply to each row in `data_frame`
+
+    args, kwargs
+        The other arguments to pass to `func`
+
+    return_futures: bool
+        Whether to wait for the results (`False`, the default) or return a
+        list of dask futures (when `True`). If a list of futures is returned,
+        the `result` method should be called on each of them at some point
+        before attempting to use the results.
+
+    progress_bar: bool
+        Whether to show a progress bar when waiting for results. The parameter
+        is only relevant when `return_futures` is `False`.
+
+    Returns
+    -------
+    results: list
+        Either the result of each function call or a future which will give
+        the result, depending on the value of `return_futures`
+    """
+
+    if len(data_frame) == 0:
+        return []
+
+    it = data_frame.iterrows()
+    if progress_bar:
+        it = tqdm.tqdm(it, total=len(data_frame))
+
+    ret_list = [
+        client.submit(func, *(row[1], *args), **kwargs) 
+            for row in it
+    ]
+
+    if return_futures:
+        return ret_list
+
+    # add a progress bar if we asked for one
+    if progress_bar:
+        ret_list = tqdm.tqdm(ret_list, total=len(data_frame))
+
+    ret_list = [r.result() for r in ret_list]
+    return ret_list
+
+
+def apply_groups(groups, client, func, *args, return_futures=False,
+        progress_bar=True, **kwargs):
+    """ Call `func` on each group in `groups`.
+
+    Additionally, `args` and `kwargs` are passed to the function call.
+
+    Parameters
+    ----------
+    groups: pandas.DataFrameGroupBy
+        The result of a call to `groupby`on a data frame
+
+    client: distributed.client.Client
+        A dask client
+
+    func: function pointer
+        The function to apply to each row in `data_frame`
+
+    args, kwargs
+        The other arguments to pass to `func`
+
+    return_futures: bool
+        Whether to wait for the results (`False`, the default) or return a
+        list of dask futures (when `True`). If a list of futures is returned,
+        the `result` method should be called on each of them at some point
+        before attempting to use the results.
+
+    progress_bar: bool
+        Whether to show a progress bar when waiting for results. The parameter
+        is only relevant when `return_futures` is `False`.
+
+    Returns
+    -------
+    results: list
+        Either the result of each function call or a future which will give
+        the result, depending on the value of `return_futures`
+    """
+
+    if len(groups) == 0:
+        return []
+
+    it = groups
+    if progress_bar:
+        it = tqdm.tqdm(it)
+
+    ret_list = [
+        client.submit(func, *(group, *args), **kwargs) 
+            for name, group in it
+    ]
+
+    if return_futures:
+        return ret_list
+
+    # add a progress bar if we asked for one
+    if progress_bar:
+        ret_list = tqdm.tqdm(ret_list)
+
+    ret_list = [r.result() for r in ret_list]
+    return ret_list
+
+
+###
+#   A simple wrapper to submit an sklearn pipeline to a dask cluster for fitting
+###
+
+class dask_pipeline:
+    """ This class is a simple wrapper to submit an sklearn pipeline to a dask
+    cluster for fitting.
+
+    Example usage::
+
+        my_pipeline = sklearn.pipeline.Pipeline(steps)
+        d_pipeline = dask_pipeline(my_pipeline, dask_client)
+        d_pipeline_fit = d_pipeline.fit(X, y)
+        pipeline_fit = d_pipeline_fit.collect_results()
+    """
+    def __init__(self, pipeline, dask_client):
+        self.pipeline = pipeline
+        self.dask_client = dask_client
+
+    def fit(self, X, y):
+        self.d_fit = self.dask_client.submit(self.pipeline.fit, X, y)
+        return self
+
+    def collect_results(self):
+        self.pipeline_fit = self.d_fit.result()
+
+        # and clean up
+        del self.d_fit
+        del self.dask_client
+
+        return self.pipeline_fit
 

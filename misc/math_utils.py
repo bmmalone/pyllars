@@ -14,11 +14,16 @@
 #   while that module considers data frames more like database tables which
 #   hold various types of records.
 ###
+import collections
 import itertools
 from enum import Enum
+
+import more_itertools
 import numpy as np
+import pandas as pd
 import scipy.stats
 import sklearn
+import sklearn.model_selection
 
 import logging
 logger = logging.getLogger(__name__)
@@ -84,7 +89,8 @@ def mask_random_values(X, likelihood=0.1, return_mask=False, random_state=None):
     X: np.array-like
         The data. It must have `shape` and `copy` methods, as well as support
         Boolean mask indexing. Thus, some forms of scipy.sparse_matrix may
-        also work
+        also work. The function also handles pandas data frames (by directly
+        updating the `values`).
 
     likelihood: float between 0 and 1
         The likelihood that each value in X is replaced with np.nan.
@@ -108,10 +114,19 @@ def mask_random_values(X, likelihood=0.1, return_mask=False, random_state=None):
     """
     np.random.seed(random_state)
     missing_mask = np.random.rand(*X.shape) < likelihood
-    X_incomplete = X.copy()
 
     # missing entries indicated with NaN
-    X_incomplete[missing_mask] = np.nan
+    if isinstance(X, pd.DataFrame):
+        ###
+        # see this SO thread for using `where` instead of masking
+        #   https://stackoverflow.com/questions/30519140
+        ###
+
+        #X_incomplete.values[missing_mask] = np.nan
+        X_incomplete = X.where(~missing_mask, other=np.nan)
+    else:
+        X_incomplete = X.copy()
+        X_incomplete[missing_mask] = np.nan
 
     ret = X_incomplete
     if return_mask:
@@ -1189,4 +1204,49 @@ def calc_provost_and_domingos_auc(y_true, y_score):
         m += a_c
         
     return m
+    
+
+fold_tuple_fields = [
+    'X_train',
+    'y_train',
+    'X_test',
+    'y_test'
+]
+fold_tuple = collections.namedtuple('fold', ' '.join(fold_tuple_fields))
+
+def get_kth_fold(X, y, fold, num_folds=10, random_seed=8675309):
+    """ Select the kth cross-validation fold using stratified CV
+    
+    In partcular, this function uses `sklearn.model_selection.StratifiedKFold`
+    to split the data. It then selects the training and testing splits
+    from the k^th fold.
+    
+    Parameters
+    ----------
+    X, y: sklearn-formated data matrices
+    
+    fold: int
+        The cv fold
+        
+    num_folds: int
+        The total number of folds
+        
+    random_seed: int or random state
+        The value used a the random seed for the k-fold split
+    """
+
+    check_range(fold, 0, num_folds, max_inclusive=False, variable_name='fold')
+    
+    cv = sklearn.model_selection.StratifiedKFold(
+        n_splits=num_folds, random_state=random_seed
+    ) 
+    
+    splits = cv.split(X, y)
+    train, test = more_itertools.nth(splits, fold)
+
+    X_train, y_train = X[train], y[train]
+    X_test, y_test = X[test], y[test]
+    
+    ret = fold_tuple(X_train, y_train, X_test, y_test)
+    return ret
     

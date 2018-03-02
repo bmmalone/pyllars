@@ -2,6 +2,9 @@
 #   This module contains functions for working with datasets from physionet,
 #   including MIMIC and the Computing in Cardiology Challenge datasets.
 ###
+import logging
+logger = logging.getLogger(__name__)
+
 import datetime
 import os
 
@@ -71,7 +74,7 @@ def fix_mimic_icds(icds, num_cpus=1):
     return fixed_icds
 
 
-def get_admissions(mimic_base, to_pandas=True):
+def get_admissions(mimic_base, to_pandas=True, **kwargs):
     """ Load the ADMISSIONS table
 
     Parameters
@@ -82,23 +85,34 @@ def get_admissions(mimic_base, to_pandas=True):
     to_pandas: bool
         Whether to read the table as a pandas (True) or dask (False) data frame
 
+    kwargs: key=value pairs
+        Additional key words to pass to the appropriate `read` function
+
     Returns
     -------
     admissions: pd.DataFrame or dd.DataFrame
         The admissions table as either a pandas or dask data frame,
             depending on the value of to_pandas
     """
+    date_cols = [
+        'ADMITTIME',
+        'DISCHTIME',
+        'DEATHTIME',
+        'EDREGTIME',
+        'EDOUTTIME'
+    ]
     admissions = os.path.join(mimic_base, "ADMISSIONS.csv.gz")
 
     if to_pandas:
-        admissions = pd_utils.read_df(admissions)
+        admissions = pd_utils.read_df(admissions, parse_dates=date_cols, **kwargs)
     else:
-        admissions = dd.read_csv(admissions)
+        admissions = dd.read_csv(admissions, parse_dates=date_cols, **kwargs)
 
     return admissions
 
 
-def get_diagnosis_icds(mimic_base, to_pandas=True, fix_icds=False):
+def get_diagnosis_icds(mimic_base, to_pandas=True,
+    drop_incomplete_records=False, fix_icds=False):
     """ Load the DIAGNOSES_ICDS table
 
     Parameters
@@ -108,6 +122,10 @@ def get_diagnosis_icds(mimic_base, to_pandas=True, fix_icds=False):
 
     to_pandas: bool
         Whether to read the table as a pandas (True) or dask (False) data frame
+
+    drop_incomplete_records: bool
+        Some of the ICD codes are missing. If this flag is `True`, then those
+        records will be removed.
 
     fix_icds: bool
         Whether to add the decimal point in the correct position for the
@@ -133,10 +151,160 @@ def get_diagnosis_icds(mimic_base, to_pandas=True, fix_icds=False):
         fixed_icds = fix_mimic_icds(diagnosis_icds['ICD9_CODE'])
         diagnosis_icds['ICD9_CODE'] = fixed_icd
 
+    if drop_incomplete_records:
+        msg = "[mimic_utils]: removing incomplete diagnosis ICD records"
+        logger.debug(msg)
+
+        diagnosis_icds = diagnosis_icds.dropna()
+
     return diagnosis_icds
 
+def get_icu_stays(mimic_base, to_pandas=True, **kwargs):
+    """ Load the ICUSTAYS table
 
-def get_patients(mimic_base, to_pandas=True):
+    Parameters
+    ----------
+    mimic_base: path-like
+        The path to the main MIMIC folder
+
+    to_pandas: bool
+        Whether to read the table as a pandas (True) or dask (False) data frame
+
+    kwargs: key=value pairs
+        Additional keywords to pass to the appropriate `read` function
+
+    Returns
+    -------
+    patients: pd.DataFrame or dd.DataFrame
+        The patients table as either a pandas or dask data frame,
+            depending on the value of to_pandas
+    """
+    date_cols = [
+        'INTIME',
+        'OUTTIME'
+    ]
+    icu_stays = os.path.join(mimic_base, "ICUSTAYS.csv.gz")
+
+    if to_pandas:
+        icu_stays = pd_utils.read_df(icu_stays, parse_dates=date_cols, **kwargs)
+    else:
+        icu_stays = dd.read_csv(icu_stays, parse_dates=date_cols, **kwargs)
+
+    return icu_stays
+
+
+def get_lab_events(mimic_base, to_pandas=True, drop_missing_admission=False,
+        parse_dates=True, **kwargs):
+    """ Load the LABEVENTS table
+
+    Parameters
+    ----------
+    mimic_base: path-like
+        The path to the main MIMIC folder
+
+    to_pandas: bool
+        Whether to read the table as a pandas (True) or dask (False) data frame
+
+    drop_missing_admission: bool
+        About 20% of the lab events do not have an associated HADM_ID. If this
+        flag is True, then those will be removed.
+
+    parse_dates: bool
+        Whether to directly parse `CHARTTIME` as a date. The main reason to
+        skip this (when `parse_dates` is `False`) is if the `CHARTTIME` column
+        is skipped (using the `usecols` parameter).
+
+    kwargs: key=value pairs
+        Additional keywords to pass to the appropriate `read` function
+
+    Returns
+    -------
+    lab_events: pd.DataFrame or dd.DataFrame
+        The notes table as either a pandas or dask data frame,
+            depending on the value of to_pandas
+    """
+    date_cols = []
+    if parse_dates:
+        date_cols = ['CHARTTIME']
+
+    lab_events = os.path.join(mimic_base, "LABEVENTS.csv.gz")
+
+    if to_pandas:
+        lab_events = pd_utils.read_df(lab_events, parse_dates=date_cols, **kwargs)
+    else:
+        lab_events = dd.read_csv(lab_events, parse_dates=date_cols, **kwargs)
+
+    if drop_missing_admission:
+        msg = ("[physionet.get_lab_events] removing lab events with no "
+            "associated hospital admission")
+        logger.debug(msg)
+        lab_events = lab_events.dropna(subset=['HADM_ID'])
+
+    return lab_events
+
+
+def get_lab_items(mimic_base, to_pandas=True, **kwargs):
+    """ Load the D_LABITEMS table
+
+    Parameters
+    ----------
+    mimic_base: path-like
+        The path to the main MIMIC folder
+
+    to_pandas: bool
+        Whether to read the table as a pandas (True) or dask (False) data frame
+
+    kwargs: key=value pairs
+        Additional keywords to pass to the appropriate `read` function
+
+    Returns
+    -------
+    diagnosis_icds: pd.DataFrame or dd.DataFrame
+        The notes table as either a pandas or dask data frame,
+            depending on the value of to_pandas
+    """
+    lab_items = os.path.join(mimic_base, "D_LABITEMS.csv.gz")
+
+    if to_pandas:
+        lab_items = pd_utils.read_df(lab_items, **kwargs)
+    else:
+        lab_items = dd.read_csv(lab_items, **kwargs)
+
+    return lab_items
+
+
+def get_notes(mimic_base, to_pandas=True, **kwargs):
+    """ Load the NOTEEVENTS table
+
+    Parameters
+    ----------
+    mimic_base: path-like
+        The path to the main MIMIC folder
+
+    to_pandas: bool
+        Whether to read the table as a pandas (True) or dask (False) data frame
+
+    kwargs: key=value pairs
+        Additional keywords to pass to the appropriate `read` function
+
+    Returns
+    -------
+    diagnosis_icds: pd.DataFrame or dd.DataFrame
+        The notes table as either a pandas or dask data frame,
+            depending on the value of to_pandas
+    """
+    note_events = os.path.join(mimic_base, "NOTEEVENTS.csv.gz")
+
+    if to_pandas:
+        note_events = pd_utils.read_df(note_events, **kwargs)
+    else:
+        note_events = dd.read_csv(note_events, **kwargs)
+
+    return note_events
+
+
+
+def get_patients(mimic_base, to_pandas=True, **kwargs):
     """ Load the PATIENTS table
 
     Parameters
@@ -147,18 +315,27 @@ def get_patients(mimic_base, to_pandas=True):
     to_pandas: bool
         Whether to read the table as a pandas (True) or dask (False) data frame
 
+    kwargs: key=value pairs
+        Additional keywords to pass to the appropriate `read` function
+
     Returns
     -------
     patients: pd.DataFrame or dd.DataFrame
         The patients table as either a pandas or dask data frame,
             depending on the value of to_pandas
     """
+    date_cols = [
+        "DOB",
+        "DOD",
+        "DOD_HOSP",
+        "DOD_SSN"
+    ]
     patients = os.path.join(mimic_base, "PATIENTS.csv.gz")
 
     if to_pandas:
-        patients = pd_utils.read_df(patients)
+        patients = pd_utils.read_df(patients, parse_dates=date_cols, **kwargs)
     else:
-        patients = dd.read_csv(patients)
+        patients = dd.read_csv(patients, parse_dates=date_cols, **kwargs)
 
     return patients
 
