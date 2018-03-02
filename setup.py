@@ -18,7 +18,7 @@ def readme():
         return f.read()
 
 setup(name='misc',
-        version='0.2.5',
+        version='0.2.6',
         description="This package contains python3 utilities I find useful.",
         long_description=readme(),
         keywords="utilities",
@@ -48,7 +48,7 @@ setup(name='misc',
             'tables',
             'paramiko',
             'spur',
-            'pystan==2.16.0.0',
+            'pystan',
         ],
         include_package_data=True,
         test_suite='nose.collector',
