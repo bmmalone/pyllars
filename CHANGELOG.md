@@ -4,6 +4,12 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.2.7] - In progress
+### Added
+- Helper for creating chunks of groups from a data frame. This utility can
+    make submitting jobs to dask and other parallel schedulers more efficient.
+
+
 ## [0.2.6] - 2018-03-02
 ### Added
 - Utility for supressing pystan (or other compiled function) output. This
