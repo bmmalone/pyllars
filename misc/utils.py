@@ -413,7 +413,7 @@ def ensure_path_to_file_exists(f):
     # if we are given just a filename, do not do anything
     if len(out_dir) > 0:
         msg = "Ensuring directory exists: {}".format(out_dir)
-        logger.info(msg)
+        logger.debug(msg)
         os.makedirs(out_dir, exist_ok=True)
 
 def check_files_exist(files, raise_on_error=True, logger=logger, 
