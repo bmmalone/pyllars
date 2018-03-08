@@ -1,8 +1,5 @@
 from setuptools import find_packages, setup
 
-stan_console_scripts = [
-    'pickle-stan=misc.pickle_stan:main'
-]
 
 other_console_scripts = [
     'call-sbatch=misc.call_sbatch:main',
@@ -11,14 +8,15 @@ other_console_scripts = [
     'call-program=misc.call_program:main'
 ]
 
-console_scripts = stan_console_scripts + other_console_scripts
+# previously, there were other types of scripts
+console_scripts = other_console_scripts
 
 def readme():
     with open('README.md') as f:
         return f.read()
 
 setup(name='misc',
-        version='0.2.6',
+        version='0.2.7',
         description="This package contains python3 utilities I find useful.",
         long_description=readme(),
         keywords="utilities",
@@ -48,7 +46,6 @@ setup(name='misc',
             'tables',
             'paramiko',
             'spur',
-            'pystan',
         ],
         include_package_data=True,
         test_suite='nose.collector',
