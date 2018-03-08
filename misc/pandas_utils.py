@@ -347,6 +347,42 @@ def split_df(df:pd.DataFrame, num_groups:int):
     split_groups = df.groupby(parallel_indices)
     return split_groups
 
+def group_and_chunk_df(df, groupby_field, chunk_size):
+    """ Group `df` using then given field, and then create "groups of groups"
+    with `chunk_size` groups in each outer group
+    
+    Parameters
+    ----------
+    df: pd.DataFrame
+        the data frame
+        
+    groupby_field: string
+        the field for creating the initial grouping
+
+    chunk_size: int
+        the number of groups in each outer group     
+    """
+    
+    # first, pull out the unique values for the groupby field
+    df_chunks = pd.DataFrame(columns=[groupby_field],data=df[groupby_field].unique())
+    
+    # now, create a map from each unique groupby value to its chunk
+    chunk_indices = np.arange(len(df_chunks)) // chunk_size
+    df_chunks['chunk'] = chunk_indices
+    stays_chunk_map = dataframe_to_dict(
+        df_chunks,
+        key_field=groupby_field,
+        value_field='chunk'
+    )
+    
+    # finally, determine the chunk of each row in the original data frame
+    group_chunks = df[groupby_field].map(stays_chunk_map)
+    
+    # and create the group chunks
+    group_chunks = df.groupby(group_chunks)
+    
+    return group_chunks
+
 def get_group_extreme(df:pd.DataFrame, ex_field:str, ex_type:str="max",
         group_fields=None, groups:pd.core.groupby.GroupBy=None):
     """ Find the row in each group of df with an extreme value for ex_field.
