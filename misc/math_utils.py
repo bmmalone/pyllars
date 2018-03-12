@@ -1220,6 +1220,8 @@ def get_kth_fold(X, y, fold, num_folds=10, random_seed=8675309):
     In partcular, this function uses `sklearn.model_selection.StratifiedKFold`
     to split the data. It then selects the training and testing splits
     from the k^th fold.
+
+    N.B. If `y` is None, the simple `KFold` is used instead.
     
     Parameters
     ----------
@@ -1236,17 +1238,29 @@ def get_kth_fold(X, y, fold, num_folds=10, random_seed=8675309):
     """
 
     check_range(fold, 0, num_folds, max_inclusive=False, variable_name='fold')
-    
-    cv = sklearn.model_selection.StratifiedKFold(
-        n_splits=num_folds, random_state=random_seed
-    ) 
+
+    if y is None:
+        cv = sklearn.model_selection.KFold(
+            n_splits=num_folds, random_state=random_seed
+        )
+    else:        
+        cv = sklearn.model_selection.StratifiedKFold(
+            n_splits=num_folds, random_state=random_seed
+        ) 
     
     splits = cv.split(X, y)
     train, test = more_itertools.nth(splits, fold)
 
-    X_train, y_train = X[train], y[train]
-    X_test, y_test = X[test], y[test]
-    
+    X_train = X[train]
+    X_test = X[test]
+
+    if y is None:
+        y_train = None
+        y_test = None
+    else:
+        y_train = y[train]
+        y_test = y[test]
+        
     ret = fold_tuple(X_train, y_train, X_test, y_test)
     return ret
     
