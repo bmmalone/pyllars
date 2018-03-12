@@ -6,6 +6,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 class NaNStandardScaler(sklearn.base.TransformerMixin):
+    """ Scale the specified columns to zero mean and unit variance while
+    ignoring np.nan's.
+
+    This is expected to make more of a difference when there are many np.nan
+    values which may incorrectly suggest a smaller empirical variance if just
+    replaced by the mean.
+
+    Additionally, this class maintains the presence of the np.nan's, so
+    downstream tasks can handle them as appropriate.
+    """
     
     def __init__(self, columns=None):
         self.col_mean_ = None

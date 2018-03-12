@@ -1,10 +1,8 @@
-#! /usr/bin/env python3
-
-###
-#   This class stores a dense list of sparse matrices. For external memory 
-#   usage, it writes each sparse matrix to a matrix market format file in a
-#   directory. Then, that directory is gzipped to make the file a bit portable.
-###
+"""
+This class stores a dense list of sparse matrices. For external memory 
+usage, it writes each sparse matrix to a matrix market format file in a
+directory. Then, that directory is gzipped to make the file a bit portable.
+"""
 
 import os
 import shutil

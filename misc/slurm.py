@@ -1,3 +1,9 @@
+"""
+Utilities to make submitting scripts to slurm easier. These functions mostly
+add standard slurm options to an `argparse.ArgumentParser`, parse them, and
+direct the execution to slurm as specified.
+"""
+
 import logging
 
 import os

@@ -22,14 +22,6 @@ This package contains helpers for a wide variety of python applications.
 
 #### PyData stack utilities
 
-* `automl_utils`. Utilities for AutoML. This mostly contains wrappers for
-    working with [`auto-sklearn`](https://github.com/automl/auto-sklearn)
-    and related projects, including the algorithm selection framework provided
-    by the [`ASlib`](https://github.com/mlindauer/ASlibScenario) project.
-    
-    **N.B.** This module has been deprecated. Please use the new version in
-    the [`automl-utils` repo](https://github.com/bmmalone/automl-utils).
-
 * `dask_utils`. Utilities for working with [dask](https://dask.pydata.org/en/latest/).
     For example, this include functions for easily specifying connection, etc.,
     information for a dask cluster from the command line.
@@ -50,9 +42,20 @@ This package contains helpers for a wide variety of python applications.
     * A Bayesian test to determine if the means of two populations differ
         significantly (that is, something like a Bayesian t-test)
         
-* `missing_data_utils`. Utilities for removing data according to different
+* `missingdata`. A subpackage containing utilities for handling data. This
+    includes minor variants on `sklearn` preprocessing components that handle
+    `np.nan`s in the input in a reasonable way, as well as utilities for 
+    removing data according to different
     missingness mechanisms, including missing at random (MAR), missing
     completely at random (MCAR), and not missing at random (NMAR).
+    
+    * `nan_nearest_neighbors`. A simple k-NN algorithm which handles features with
+        missing values represented as `np.nan`s.
+    
+    * `nan_standard_scaler`. An `sklearn` transformer which scales features by the
+        observed mean and standard deviation of the training data; in contrast to
+        the normal `StandardScaler`, this class ignores `nan`s, `inf`s and other
+        typically-problematic values.
 
 * `mpl_utils`. Utilities for manipulating object-oriented matplotlib plots, that
     is, those which uses `Axes` objects.
@@ -60,19 +63,36 @@ This package contains helpers for a wide variety of python applications.
 * `multicolumn_label_encoder`. An `sklearn` transformer which wraps label
     encoders for multiple columns.
     
-* `nan_nearest_neighbors`. A simple k-NN algorithm which handles features with
-    missing values represented as `np.nan`s.
-    
-* `nan_standard_scaler`. An `sklearn` transformer which scales features by the
-    observed mean and standard deviation of the training data; in contrast to
-    the normal `StandardScaler`, this class ignores `nan`s, `inf`s and other
-    typically-problematic values.
+* `nlp_utils`. Utilities for interacting with `nltk`.
     
 * `pandas_utils`. Utilities for working with pandas data frames, such as
     seamless file-IO for a variety of formats like parquet, hdf5 and excel.
     
 * `sparse_vector`. A class which wraps a `scipy.sparse_matrix` to reduce the
     notational burden for working with sparse vectors.
+    
+#### `scikit-learn` utilities
+
+These are helpers which are specifically for use within `sklearn` workflows.
+Of course, it is also part of the PyData stack, but there are many of these.
+
+* `column_selector`. An `sklearn.Transformer` for selecting specific columns
+    in a pipeline. This is deprecated in favor of the more robust implementation
+    available in [mlxtend](https://rasbt.github.io/mlxtend/user_guide/feature_selection/ColumnSelector/).
+
+* `dataset_manager`. A class for managing datasets with various modalities.
+
+* `incremental_count_vectorizer`. An `sklearn.CountVectorizer` which can operate
+    in parallel and does not requires storing the entire set of documents at
+    once.
+    
+* `multicolumn_imputer`. An `sklearn.Transformer` for replacing missing data
+    in multiple columns at once. The fitted imputers are kept around for use
+    on test data. An independent imputer is fit for each column.
+    
+* `multicolumn_label_encoder`. An `sklearn.Transformer` for encoding categorical
+    in multiple columns at once. The fitted encoders are kept around for use
+    on test data. The encoders are independent for each column.
     
 #### Domain-specific utilities
 
@@ -89,8 +109,6 @@ This package contains helpers for a wide variety of python applications.
 * `logging_utils`. Utilities for easily controlling logging behavior from the
     command line.
     
-* `mysql_db`. Utilities for interacting with MySQL databases.
-    
 * `parallel`. Utilities for parallel processing, especially focusing on data
     frames and iterators. These functions are largely wrappers around
     [`joblib`](https://pythonhosted.org/joblib/); they tend to be more
@@ -103,6 +121,10 @@ This package contains helpers for a wide variety of python applications.
     
 * `ssh_utils`. Utilities for distributing jobs across a cluster, etc., using
     password-less SSH.
+    
+* `suppress_stdout_stderr`. A context manager for suppressing stdout and stderr.
+    This is useful for calls into compiled C/Fortran where the standard logging
+    mechanisms do not work well.
 
 * `utils`. Utilities for working with built-in python types, simple file system
     operations, as well as a variety of other utilities. Many of the functions
@@ -125,9 +147,6 @@ This package contains helpers for a wide variety of python applications.
 
 
 #### Other small programs
-
-* `pickle-stan`. A simple script to compile and pickle a
-    [Stan](http://mc-stan.org/) model.
     
 * `test-gzip`. A simple script which reads and writes a gzipped file to and from
     disk many times. It verifies the integrity of the file after each iteration,
