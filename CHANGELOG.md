@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Updated
 - Cross-validation helper to work with unsupervised learning
 
+### Removed
+- mysql helpers
+- automl helpers. These are now available in the [automl-utils](https://github.com/bmmalone/automl-utils)
+    package.
+
 ## [0.2.7] - 2018-03-08
 ### Added
 - Helper for creating chunks of groups from a data frame. This utility can
