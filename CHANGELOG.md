@@ -4,6 +4,10 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.2.8] - In progress
+### Updated
+- Cross-validation helper to work with unsupervised learning
+
 ## [0.2.7] - 2018-03-08
 ### Added
 - Helper for creating chunks of groups from a data frame. This utility can
