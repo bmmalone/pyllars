@@ -83,10 +83,6 @@ from misc.multicolumn_imputer import MultiColumnImputer
 from sklearn_pandas.categorical_imputer import CategoricalImputer
 from sklearn.preprocessing import FunctionTransformer
 
-# use our custom version of SimpleFill which implements the transformer interface
-from automlutils.asl_fancyimpute.simple_fill import SimpleFill
-
-
 ###
 #   Functions for creating incomplete datasets according to different
 #   missingness mechanisms
