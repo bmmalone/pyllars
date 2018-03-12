@@ -1,10 +1,10 @@
-###
-#   This module contains functions for distribution jobs to clusters over ssh,
-#   and related ssh utilities.
-#
-#   These functions are largely wrappers around spur: 
-#       https://pypi.python.org/pypi/spur
-###
+"""
+This module contains functions for distribution jobs to clusters over ssh,
+and related ssh utilities.
+
+These functions are largely wrappers around spur: 
+    https://pypi.python.org/pypi/spur
+"""
 
 import logging
 

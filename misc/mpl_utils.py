@@ -1,6 +1,7 @@
-###
-#   This module contains a number of helper functions for matplotlib.
-###
+"""
+This module contains a number of helper functions for matplotlib.
+"""
+
 import itertools
 
 import matplotlib

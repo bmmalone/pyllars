@@ -1,15 +1,13 @@
-#! /usr/bin/env python3
+"""
+This class is a thin wrapper around scipy.sparse.lil_matrix to reduce
+the notational burden when dealing with sparse vectors. Internally, they
+are simply stored as sparse matrices.
 
-###
-#   This class is a thin wrapper around scipy.sparse.lil_matrix to reduce
-#   the notational burden when dealing with sparse vectors. Internally, they
-#   are simply stored as sparse matrices.
-#
-#   By default, the sparse vectors are created as integer row matrices. The
-#   scipy.sparse.lil_matrix representation is used.
-#
-#   THIS CLASS HAS NOT BEEN TESTED EXTENSIVELY.
-###
+By default, the sparse vectors are created as integer row matrices. The
+scipy.sparse.lil_matrix representation is used.
+
+THIS CLASS HAS NOT BEEN TESTED EXTENSIVELY.
+"""
 
 import scipy.sparse
 

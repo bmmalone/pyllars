@@ -1,7 +1,7 @@
-###
-# This module contains helper functions for interacting with the shell and
-# file system.
-###
+"""
+This module contains helper functions for interacting with the shell and
+file system.
+"""
 
 import os
 import subprocess

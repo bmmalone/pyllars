@@ -1,11 +1,11 @@
-###
-#   This module contains utilities for data frame manipulation. 
-# 
-#   This module differs from math_utils because that module treats pandas
-#   data frames as data matrices (in a statistical/machine learning sense),
-#   while this module considers data frames more like database tables which
-#   hold various types of records.
-###
+"""
+This module contains utilities for data frame manipulation. 
+ 
+This module differs from math_utils because that module treats pandas
+data frames as data matrices (in a statistical/machine learning sense),
+while this module considers data frames more like database tables which
+hold various types of records.
+"""
 
 import functools
 import gzip
