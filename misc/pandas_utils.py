@@ -329,6 +329,48 @@ def append_to_xlsx(df, xlsx, sheet='Sheet_1', **kwargs):
         # then we can just create it fresh
         write_df(df, xlsx, sheet=sheet, **kwargs)
 
+def apply(df:pd.DataFrame, func, *args, progress_bar:bool=False,
+        **kwargs) -> typing.List:
+    """ Apply func to each row in the data frame
+    
+    Unlike pd.DataFrame.apply, this function does not attempt to
+    "interpret" the results.
+    
+    Parameters
+    ----------
+    df: pd.DataFrame
+        the data frame
+        
+    func: function pointer
+        The function to apply to each row in `data_frame`
+
+    args, kwargs
+        The other arguments to pass to `func`
+
+    return_futures: bool
+        Whether to wait for the results (`False`, the default) or return a
+        list of dask futures (when `True`). If a list of futures is returned,
+        the `result` method should be called on each of them at some point
+        before attempting to use the results.
+
+    progress_bar: bool
+        Whether to show a progress bar when waiting for results. The parameter
+        is only relevant when `return_futures` is `False`.
+
+    Returns
+    -------
+    results: list
+        The result of each function call
+    """    
+    it = df.iterrows()
+    if progress_bar:
+        it = tqdm.tqdm(it, total=len(df))
+
+    ret_list = [
+        func(*(row[1], *args), **kwargs) for row in it
+    ]
+    
+    return ret_list
 
 
 def split_df(df:pd.DataFrame, num_groups:int):
@@ -481,7 +523,7 @@ def join_df_list(dfs:typing.List[pd.DataFrame], join_col:StrOrList, *args,
         adjusted according to the standard pandas suffix approach.
     """
     joined_df = functools.reduce(
-        lambda left,right: pd.merge(left,right,on=join_col), dfs)
+        lambda left,right: pd.merge(left,right,on=join_col, *args, **kwargs), dfs)
 
     return joined_df
 
