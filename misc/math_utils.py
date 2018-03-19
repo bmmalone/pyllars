@@ -1,19 +1,18 @@
-###
-#   This module contains utilities which simplify working with the numpy stack:
-#     * numpy
-#     * pandas (but see the note below about pandas_utils)
-#     * scipy
-#     * sklearn
-#
-#   It also contains other math helpers.
-#
-#   The misc.mpl_utils module contains helpers for working with plotting.
-#
-#   This module differs from pandas_utils because this module treats pandas
-#   data frames as data matrices (in a statistical/machine learning sense),
-#   while that module considers data frames more like database tables which
-#   hold various types of records.
-###
+"""
+This module contains utilities which simplify working with the numpy stack:
+    * numpy
+    * pandas (but see the note below about pandas_utils)
+    * scipy
+    * sklearn
+
+It also contains other math helpers.
+
+This module differs from pandas_utils because this module treats pandas
+data frames as data matrices (in a statistical/machine learning sense),
+while that module considers data frames more like database tables which
+hold various types of records.
+"""
+
 import collections
 import itertools
 from enum import Enum

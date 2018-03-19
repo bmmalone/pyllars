@@ -1,3 +1,6 @@
+"""
+Utilities for programmatically constructing a latex document
+"""
 
 def vspace(out, vspace):
     out.write("\n\\vspace{")

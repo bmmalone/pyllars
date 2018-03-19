@@ -1,9 +1,7 @@
-###
-#
-#   This class implements incremental mean and variance estimation. It is bsaed
-#   on code that is available here: http://www.johndcook.com/blog/standard_deviation/
-#
-###
+"""
+This class implements incremental mean and variance estimation. It is bsaed
+on code that is available here: http://www.johndcook.com/blog/standard_deviation/
+"""
 
 class IncrementalGaussianEstimator:
     def __init__(self):

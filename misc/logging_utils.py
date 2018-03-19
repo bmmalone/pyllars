@@ -1,5 +1,12 @@
+"""
+Utilities for interacting with the python logging module. Mostly, this module
+provides functions for easily adding command line options to an
+`argparse.ArgumentParser` and then setting logging parameters accordingly.
+"""
+
 import logging
 import sys
+
 
 def add_logging_options(parser, default_log_file=""):
     """ This function add options for logging to an argument parser. In 

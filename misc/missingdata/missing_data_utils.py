@@ -66,9 +66,12 @@ Example::
         y
     )
 """
+import logging
+logger = logging.getLogger(__name__)
 
 import collections
 import numpy as np
+import pandas as pd
 import scipy.sparse
 import sklearn.model_selection
 
@@ -81,11 +84,7 @@ from misc.missingdata.nan_one_hot_encoder import NaNOneHotEncoder
 
 from misc.multicolumn_imputer import MultiColumnImputer
 from sklearn_pandas.categorical_imputer import CategoricalImputer
-from sklearn.preprocessing import FunctionTransformer
-
-# use our custom version of SimpleFill which implements the transformer interface
-from automlutils.asl_fancyimpute.simple_fill import SimpleFill
-
+from sklearn.preprocessing import FunctionTransformer 
 
 ###
 #   Functions for creating incomplete datasets according to different
@@ -579,7 +578,7 @@ def train_on_incomplete_data(model, incomplete_data):
 ###
 #   Helpers to create preprocessing missing data
 ###
-def replace_nans(X, y=None):
+def replace_nans_with_flag(X, y=None):
     X = X.copy()
 
     for col in range(X.shape[1]):
@@ -589,6 +588,13 @@ def replace_nans(X, y=None):
         m_nan = np.isnan(c)
         c[m_nan] = missing_flag
     return X
+
+def replace_nans_with_zero(X, y=None):
+    X = X.copy()
+    m_nan = pd.isnull(X)
+    X[m_nan] = 0
+    return X
+
 
 def get_nan_preprocessing_pipeline(dataset_manager, fill_categoricals="flag",
         fields_to_ignore=None):
@@ -601,6 +607,8 @@ def get_nan_preprocessing_pipeline(dataset_manager, fill_categoricals="flag",
     3. replace missing categorical values with the mode
     4. one-hot encode the categorical values
     """
+
+    preprocessing = []
 
     allowed_fill_categoricals = set(['flag', 'mode'])
     if fill_categoricals not in allowed_fill_categoricals:
@@ -622,53 +630,64 @@ def get_nan_preprocessing_pipeline(dataset_manager, fill_categoricals="flag",
     # due to scaling, this is the same as replacing the values
     # by the mean, but by scaling first, we do not falsely add
     # mass around the mean from the missing values
-    num_imputer_template = SimpleFill(fill_method="zero")
+    num_imputer_template = FunctionTransformer(
+        func=replace_nans_with_zero,
+        validate=False
+    )
 
     num_imputer = MultiColumnImputer(
         imputer_template=num_imputer_template,
         columns=dataset_manager.get_numerical_field_indices(fields_to_ignore)
     )
 
-    if fill_categoricals == "mode":
-        # replace missing categorical values with the mode
-        cat_imputer_template = CategoricalImputer(
-            missing_values="NaN"
+    preprocessing.append(("nan_scaler", nan_scaler))
+    preprocessing.append(("num_imputer", num_imputer))
+
+
+    # only add the categorical part if there are encoded categoricals
+    if hasattr(dataset_manager, "le_"):
+        if fill_categoricals == "mode":
+            # replace missing categorical values with the mode
+            cat_imputer_template = CategoricalImputer(
+                missing_values="NaN"
+            )
+        elif fill_categoricals == "flag":
+            cat_imputer_template = FunctionTransformer(
+                func=replace_nans_with_flag,
+                validate=False
+            )
+
+        cat_imputer = MultiColumnImputer(
+            imputer_template=cat_imputer_template,
+            columns=dataset_manager.get_categorical_field_indices(fields_to_ignore)
         )
-    elif fill_categoricals == "flag":
-        cat_imputer_template = FunctionTransformer(
-            func=replace_nans,
-            validate=False
+        
+        # finally, we one-hot encode the categorical variables
+
+        # use the label encoder from the dataset manager to pull out
+        # the number of values for each variable
+        n_values = np.array([
+            len(dataset_manager.le_.le_[f].classes_)
+                for f in dataset_manager.get_categorical_field_names(fields_to_ignore)
+        ])
+
+        one_hot_encoder = NaNOneHotEncoder(
+            categorical_features=dataset_manager.get_categorical_field_indices(fields_to_ignore),
+            sparse=False,
+            n_values=n_values
+            #handle_unknown='ignore'
         )
+        
+        preprocessing.append(("cat_imputer", cat_imputer))
+        preprocessing.append(("one_hot_encoder", one_hot_encoder))
 
-    cat_imputer = MultiColumnImputer(
-        imputer_template=cat_imputer_template,
-        columns=dataset_manager.get_categorical_field_indices(fields_to_ignore)
-    )
-    
-    # finally, we one-hot encode the categorical variables
+    else:
+        msg = ("[missing_data_utils.get_nan_preprocessing_pipeline]: did not "
+            "find a label encoder in the dataset manager, so not attempting "
+            "to handle categorical variables")
+        logger.warning(msg)
 
-    # use the label encoder from the dataset manager to pull out
-    # the number of values for each variable
-    n_values = np.array([
-        len(dataset_manager.le_.le_[f].classes_)
-            for f in dataset_manager.get_categorical_field_names(fields_to_ignore)
-    ])
-
-    one_hot_encoder = NaNOneHotEncoder(
-        categorical_features=dataset_manager.get_categorical_field_indices(fields_to_ignore),
-        sparse=False,
-        n_values=n_values
-        #handle_unknown='ignore'
-    )
-
-    preprocessing = sklearn.pipeline.Pipeline([
-        ("nan_scaler", nan_scaler),
-        ("num_imputer", num_imputer),
-        ("cat_imputer", cat_imputer),
-        ("one_hot_encoder", one_hot_encoder),
-
-    ])
-
+    preprocessing = sklearn.pipeline.Pipeline(preprocessing)
     return preprocessing
 
 

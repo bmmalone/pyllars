@@ -1,3 +1,7 @@
+"""
+A hodgepodge of utilities, most of which concern working with basic types.
+"""
+
 import logging
 logger = logging.getLogger(__name__)
 

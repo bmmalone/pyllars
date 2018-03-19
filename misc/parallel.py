@@ -1,9 +1,7 @@
-###
-#
-#   This library contains various helper functions for parallelizing independent loops.
-#   The functions mostly wrap joblib.Parallel.
-#
-###
+"""
+This module contains various helper functions for parallelizing independent
+loops. The functions mostly wrap joblib.Parallel.
+"""
 
 import logging
 import sys 
