@@ -885,6 +885,48 @@ def l1_distance(p, q):
     diff = np.abs(p - q)
     return np.sum(diff)
 
+def get_categorical_mle_estimates(
+        observations,
+        cardinality=None,
+        use_laplacian_smoothing=False):
+    """ Calculate the MLE estimates for the categorical observations
+    
+    Parameters
+    ----------
+    observations: iterable of ints
+        The observed values. These are taken to already be "label encoded",
+        so they should be integers in [0,cardinality).
+        
+    cardinality: int or None
+        The cardinality of the categorical variable. If `None`, then this
+        is taken as the number of unique values in `observations`.
+        
+    use_laplacian_smoothing: bool
+        Whether to use Laplacian ("add one") smoothing for the estimates.
+        This can also be interpreted as a symmetric Dirichlet prior with 
+        a concentration parameter of 1.
+        
+    Returns
+    -------
+    mle_estimates: np.array of size `cardinality`
+        The estimates
+    """
+    indices, counts = np.unique(observations, return_counts=True)
+    
+    if cardinality is None:
+        cardinality = np.max(indices) + 1
+        
+    mle_estimates = np.zeros(shape=cardinality)
+    
+    for i,c in zip(indices, counts):
+        mle_estimates[i] += c
+        
+    if use_laplacian_smoothing:
+        mle_estimates += 1
+        
+    mle_estimates = mle_estimates / np.sum(mle_estimates)
+    return mle_estimates
+    
 
 def collect_binary_classification_metrics(y_true, y_probas_pred, threshold=0.5,
         pos_label=1):

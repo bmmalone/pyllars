@@ -4,6 +4,10 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.2.9] - In progress
+### Added
+- Helper to estimate categorical variable MLEs
+
 ## [0.2.8] - 2018-03-12
 ### Updated
 - Cross-validation helper to work with unsupervised learning
