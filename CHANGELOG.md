@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Helper to estimate categorical variable MLEs
 - Utilities for working with the SCIP solver
+- Helper to check if class attributes have been initialized similar to
+    `check_is_fitted` in sklearn
 
 ## [0.2.8] - 2018-03-12
 ### Updated
