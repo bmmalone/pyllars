@@ -316,38 +316,37 @@ def is_monotonic(x, increasing=True):
 def check_range(val, min_, max_, min_inclusive=True, max_inclusive=True, 
         variable_name=None, raise_on_invalid=True, logger=logger):
 
-    """ This function checks whether the given value falls within the
-        specified range. If not, either an exception is raised or a
-        warning is logged.
+    """ Checks whether `val` falls within the specified range
+    
+    If not, either raise a ValueError or log a warning depending on the value
+    of `raise_on_invalid`.
 
-        Args:
-            val (number): the value to check
+    Parameters
+    ----------
+    val (number): the value to check
 
-            min_, max_ (numbers): the acceptable range
+    min_, max_ (numbers): the acceptable range
 
-            min_inclusive, max_inclusive (bools): whether the end
-                points are included in the acceptable range
+    min_inclusive, max_inclusive (bools): whether the end
+        points are included in the acceptable range
 
-            variable_name (string): for the exception/warning, the
-                name to use in the message
+    variable_name (string): for the exception/warning, the
+        name to use in the message
 
-            raise_on_invalid (bool): whether to raise an exception (True)
-                or issue a warning (False) when the value is invalid
+    raise_on_invalid (bool): whether to raise an exception (True)
+        or issue a warning (False) when the value is invalid
 
-            logger (logging.Logger): the logger to use in case a
-                warning is issued
+    logger (logging.Logger): the logger to use in case a
+        warning is issued
 
-        Returns:
-            None
-
-        Raises:
-            ValueError, if val is not within the valid range and
-                raise_on_invalid is True
-
-        Imports:
-            operator
+    Returns
+    -------
+    in_range: bool
+        Whether `val` is in the allowed range
     """
     import operator
+
+    in_range = True
 
     # first, check min
     min_op = operator.le
@@ -355,6 +354,7 @@ def check_range(val, min_, max_, min_inclusive=True, max_inclusive=True,
         min_op = operator.lt
 
     if min_op(val, min_):
+        in_range = False
         msg = ("Variable: {}. The given value ({}) was less than the "
             "acceptable minimum ({})".format(variable_name, val, min_))
 
@@ -369,6 +369,7 @@ def check_range(val, min_, max_, min_inclusive=True, max_inclusive=True,
         max_op = operator.gt
 
     if max_op(val, max_):
+        in_range = False
         msg = ("Variable: {}. The given value ({}) was greater than the "
             "acceptable maximum ({})".format(variable_name, val, max_))
 
@@ -376,6 +377,8 @@ def check_range(val, min_, max_, min_inclusive=True, max_inclusive=True,
             raise ValueError(msg)
         else:
             logger.warning(msg)
+
+    return in_range
 
 
 def write_sparse_matrix(target, a, compress=True, **kwargs):
