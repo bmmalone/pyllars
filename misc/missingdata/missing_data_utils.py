@@ -589,10 +589,23 @@ def replace_nans_with_flag(X, y=None):
         c[m_nan] = missing_flag
     return X
 
-def replace_nans_with_zero(X, y=None):
-    X = X.copy()
+def replace_nans_with_zero(X, y=None, try_cast=True):
+    if try_cast:
+        try:
+            X = X.astype(float)
+        except TypeError as te:
+            msg = ("[replace_nans_with_zero] the input data type could not "
+                "be cast as a floating type. Please check the input type.")
+            raise TypeError(msg)
+
+    else:
+        X = X.copy()
+    
     m_nan = pd.isnull(X)
     X[m_nan] = 0
+
+    m_finite = np.isfinite(X)
+    X[~m_finite] = 0
     return X
 
 
