@@ -48,6 +48,11 @@ class DatasetManager(object):
 
         Dictionaries mapping from a field name to the original dataset index
         of the respective types
+        
+    remove_columns: list of strings
+        Names of columns which were originally in `df` but have been removed.
+        There is no way to recover these columns; this is just a record that
+        they have been removed.
     """
     
     def __init__(self, 
@@ -55,6 +60,7 @@ class DatasetManager(object):
             df=None,
             cleanup=None,
             target_variable=None,
+            columns_to_remove=None,
             drop_rows_with_missing_values=False,
             drop_rows_with_missing_target=True,
             convert_int_to_float=True,
@@ -86,6 +92,10 @@ class DatasetManager(object):
             
         if cleanup is not None:            
             self.df = self.df.replace(cleanup)
+            
+        self.removed_columns = columns_to_remove
+        if columns_to_remove is not None:
+            self.df = self.df.drop(columns=columns_to_remove)
             
         # ignore missing values for now
         if drop_rows_with_missing_values:
@@ -331,9 +341,14 @@ class DatasetManager(object):
         indices = np.array(sorted(vals))
         return indices
 
+    def get_column_index(self, column_name):
+        """ Return the index in `self.df` of `column_name`
+        """
+        return self.df.columns.get_loc(column_name)
 
-
-
-
-
+    def replace_inf_with_nan(self):
+        """ Replace all instances of +- np.inf with np.nan
+        """
+        self.df = self.df.replace([np.inf, -np.inf], np.nan)
+        self.X = self.df.values
 
