@@ -891,7 +891,8 @@ def l1_distance(p, q):
 def get_categorical_mle_estimates(
         observations,
         cardinality=None,
-        use_laplacian_smoothing=False):
+        use_laplacian_smoothing=False,
+        base_1=False):
     """ Calculate the MLE estimates for the categorical observations
     
     Parameters
@@ -908,12 +909,19 @@ def get_categorical_mle_estimates(
         Whether to use Laplacian ("add one") smoothing for the estimates.
         This can also be interpreted as a symmetric Dirichlet prior with 
         a concentration parameter of 1.
+
+    base_1: bool
+        Whether the observations are base 1. If so, then the range is taken
+        as [1, cardinality].
         
     Returns
     -------
     mle_estimates: np.array of size `cardinality`
         The estimates
     """
+    if base_1:
+        observations = np.array(observations) - 1
+
     indices, counts = np.unique(observations, return_counts=True)
     
     if cardinality is None:
