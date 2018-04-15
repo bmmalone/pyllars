@@ -330,7 +330,7 @@ def append_to_xlsx(df, xlsx, sheet='Sheet_1', **kwargs):
         # then we can just create it fresh
         write_df(df, xlsx, sheet=sheet, **kwargs)
 
-def apply(df:pd.DataFrame, func, *args, progress_bar:bool=False,
+def apply(df:pd.DataFrame, func:typing.Callable, *args, progress_bar:bool=False,
         **kwargs) -> typing.List:
     """ Apply func to each row in the data frame
     
@@ -348,15 +348,8 @@ def apply(df:pd.DataFrame, func, *args, progress_bar:bool=False,
     args, kwargs
         The other arguments to pass to `func`
 
-    return_futures: bool
-        Whether to wait for the results (`False`, the default) or return a
-        list of dask futures (when `True`). If a list of futures is returned,
-        the `result` method should be called on each of them at some point
-        before attempting to use the results.
-
     progress_bar: bool
-        Whether to show a progress bar when waiting for results. The parameter
-        is only relevant when `return_futures` is `False`.
+        Whether to show a progress bar when waiting for results.
 
     Returns
     -------
@@ -372,6 +365,44 @@ def apply(df:pd.DataFrame, func, *args, progress_bar:bool=False,
     ]
     
     return ret_list
+
+
+def apply_groups(groups:pd.core.groupby.DataFrameGroupBy, func:typing.Callable,
+        *args, progress_bar:bool=False, **kwargs) -> typing.List:
+    """ Apply func to each group
+    
+    Unlike pd.GroupBy.apply, this function does not attempt to
+    "interpret" the results.
+    
+    Parameters
+    ----------
+    groups: pd.DataFrameGroupBy
+        the groups
+        
+    func: function pointer
+        The function to apply to each row in `data_frame`
+
+    args, kwargs
+        The other arguments to pass to `func`
+
+    progress_bar: bool
+        Whether to show a progress bar when waiting for results.
+
+    Returns
+    -------
+    results: list
+        The result of each function call
+    """    
+    it = groups
+    if progress_bar:
+        it = tqdm.tqdm(it, total=len(groups))
+
+    ret_list = [
+        func(*(group, *args), **kwargs) for name, group in it
+    ]
+    
+    return ret_list
+
 
 
 def split_df(df:pd.DataFrame, num_groups:int=None, chunk_size:int=None):
