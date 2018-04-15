@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 
+from misc.deprecated_decorator import deprecated
 import misc.shell_utils as shell_utils
 
 def check_is_fitted(estimator, attributes, msg=None, all_or_any=all):
@@ -1007,6 +1008,7 @@ def merge_sets(*set_args):
     ret = {item for s in set_args for item in s}
     return ret
 
+@deprecated("[utils.merge_dicts]: please use `toolz.dicttolz.merge` instead")
 def merge_dicts(*dict_args):
     """ Given any number of dicts, shallow copy and merge into a new dict,
     precedence goes to key value pairs in latter dicts.
@@ -1172,6 +1174,7 @@ def list_insert_list(l, to_insert, index):
     ret[index:index] = list(to_insert)
     return ret
 
+@deprecated("[utils.remove_keys]: please use `toolz.dicttolz.dissoc` instead")
 def remove_keys(d, to_remove):
     """ This function removes the given keys from the dictionary d. N.B.,
         "not in" is used to match the keys.
