@@ -14,6 +14,7 @@ import sys
 from misc.deprecated_decorator import deprecated
 import misc.shell_utils as shell_utils
 
+@deprecated("[utils.check_is_fitted] Please use the version in `validation_utils`")
 def check_is_fitted(estimator, attributes, msg=None, all_or_any=all):
     """Perform is_fitted validation for estimator.
 
