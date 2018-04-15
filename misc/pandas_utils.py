@@ -374,7 +374,7 @@ def apply(df:pd.DataFrame, func, *args, progress_bar:bool=False,
     return ret_list
 
 
-def split_df(df:pd.DataFrame, num_groups:int):
+def split_df(df:pd.DataFrame, num_groups:int=None, chunk_size:int=None):
     """ Split the df into num_groups roughly equal-sized groups. The groups are
     contiguous rows in the data frame.
 
@@ -384,8 +384,21 @@ def split_df(df:pd.DataFrame, num_groups:int):
         the data frame
 
     num_groups: int
-        the number of groups        
+        the number of groups
+
+    chunk_size: int
+        the size of each group. If given, `num_groups` groups has precedence
+        over chunk_size
     """
+
+    if num_groups is None:
+        if chunk_size is not None:
+            num_groups = int(df.shape[0] / chunk_size)
+        else:
+            msg = ("[pd_utils.split_df] one of `num_groups` and `chunk_size` "
+                "must be provided")
+            raise ValueError(msg)
+
     parallel_indices = np.arange(len(df)) // (len(df) / num_groups)
     split_groups = df.groupby(parallel_indices)
     return split_groups
