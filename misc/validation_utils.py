@@ -2,6 +2,11 @@
 This module contains helpers for typical validation routines.
 """
 
+import numpy as np
+import scipy.sparse
+
+import misc.utils as utils
+
 def _raise_value_error(msg, name="array", caller=None):
     """ Raise a ValueError with the given message
 
