@@ -86,8 +86,12 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
             c:i for i, c in enumerate(self.classes_)
         }
 
-        msg = ("[nan_le.fit] classes: {}".format(self.classes_))
-        logger.debug(msg)
+        if len(self.classes_) < 20:
+            msg = ("[nan_le.fit] classes: {}".format(self.classes_))
+            logger.debug(msg)
+        else:
+            msg = ("[nan_le.fit] too many classes to print mapping")
+            logger.debug(msg)
 
         return self
 
