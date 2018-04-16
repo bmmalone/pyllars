@@ -1341,7 +1341,9 @@ fold_tuple_fields = [
     'X_train',
     'y_train',
     'X_test',
-    'y_test'
+    'y_test',
+    'train_indices',
+    'test_indices'
 ]
 fold_tuple = collections.namedtuple('fold', ' '.join(fold_tuple_fields))
 
@@ -1387,7 +1389,7 @@ def get_kth_fold(X, y, fold, num_folds=10, use_stratified=True,
     
     splits = cv.split(X, y)
     train, test = more_itertools.nth(splits, fold)
-
+    
     X_train = X[train]
     X_test = X[test]
 
@@ -1398,6 +1400,6 @@ def get_kth_fold(X, y, fold, num_folds=10, use_stratified=True,
         y_train = y[train]
         y_test = y[test]
         
-    ret = fold_tuple(X_train, y_train, X_test, y_test)
+    ret = fold_tuple(X_train, y_train, X_test, y_test, train, test)
     return ret
     
