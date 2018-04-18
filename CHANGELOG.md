@@ -4,7 +4,7 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [0.2.9] - In progress
+## [0.2.9] - 2018-04-18
 ### Added
 - Helper to estimate categorical variable MLEs
 - Utilities for working with the SCIP solver
