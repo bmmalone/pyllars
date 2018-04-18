@@ -6,7 +6,7 @@ This project contains many python3 utilities that I find useful.
 This package is written in python3. `pip` can be used to install it:
 
 ```
-git clone git@github.com:bmmalone/pymisc-utils.git
+git clone https://github.com/bmmalone/pymisc-utils
 cd pymisc-utils
 pip3 install .
 ```

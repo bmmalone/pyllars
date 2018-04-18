@@ -21,6 +21,7 @@ install_requires = [
     'matplotlib_venn',
     'pandas',
     'sklearn',
+    'sklearn_pandas',
     'fastparquet',
     'more_itertools',
     'networkx>=2.0',
@@ -76,7 +77,7 @@ def readme():
         return f.read()
 
 setup(name='misc',
-        version='0.2.8',
+        version='0.2.9',
         description="This package contains python3 utilities I find useful.",
         long_description=readme(),
         keywords="utilities",

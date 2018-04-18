@@ -24,6 +24,8 @@ import scipy.stats
 import sklearn
 import sklearn.model_selection
 
+import misc.validation_utils as validation_utils
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -316,38 +318,37 @@ def is_monotonic(x, increasing=True):
 def check_range(val, min_, max_, min_inclusive=True, max_inclusive=True, 
         variable_name=None, raise_on_invalid=True, logger=logger):
 
-    """ This function checks whether the given value falls within the
-        specified range. If not, either an exception is raised or a
-        warning is logged.
+    """ Checks whether `val` falls within the specified range
+    
+    If not, either raise a ValueError or log a warning depending on the value
+    of `raise_on_invalid`.
 
-        Args:
-            val (number): the value to check
+    Parameters
+    ----------
+    val (number): the value to check
 
-            min_, max_ (numbers): the acceptable range
+    min_, max_ (numbers): the acceptable range
 
-            min_inclusive, max_inclusive (bools): whether the end
-                points are included in the acceptable range
+    min_inclusive, max_inclusive (bools): whether the end
+        points are included in the acceptable range
 
-            variable_name (string): for the exception/warning, the
-                name to use in the message
+    variable_name (string): for the exception/warning, the
+        name to use in the message
 
-            raise_on_invalid (bool): whether to raise an exception (True)
-                or issue a warning (False) when the value is invalid
+    raise_on_invalid (bool): whether to raise an exception (True)
+        or issue a warning (False) when the value is invalid
 
-            logger (logging.Logger): the logger to use in case a
-                warning is issued
+    logger (logging.Logger): the logger to use in case a
+        warning is issued
 
-        Returns:
-            None
-
-        Raises:
-            ValueError, if val is not within the valid range and
-                raise_on_invalid is True
-
-        Imports:
-            operator
+    Returns
+    -------
+    in_range: bool
+        Whether `val` is in the allowed range
     """
     import operator
+
+    in_range = True
 
     # first, check min
     min_op = operator.le
@@ -355,6 +356,7 @@ def check_range(val, min_, max_, min_inclusive=True, max_inclusive=True,
         min_op = operator.lt
 
     if min_op(val, min_):
+        in_range = False
         msg = ("Variable: {}. The given value ({}) was less than the "
             "acceptable minimum ({})".format(variable_name, val, min_))
 
@@ -369,6 +371,7 @@ def check_range(val, min_, max_, min_inclusive=True, max_inclusive=True,
         max_op = operator.gt
 
     if max_op(val, max_):
+        in_range = False
         msg = ("Variable: {}. The given value ({}) was greater than the "
             "acceptable maximum ({})".format(variable_name, val, max_))
 
@@ -376,6 +379,8 @@ def check_range(val, min_, max_, min_inclusive=True, max_inclusive=True,
             raise ValueError(msg)
         else:
             logger.warning(msg)
+
+    return in_range
 
 
 def write_sparse_matrix(target, a, compress=True, **kwargs):
@@ -885,6 +890,133 @@ def l1_distance(p, q):
     diff = np.abs(p - q)
     return np.sum(diff)
 
+def get_categorical_mle_estimates(
+        observations,
+        cardinality=None,
+        use_laplacian_smoothing=False,
+        base_1=False):
+    """ Calculate the MLE estimates for the categorical observations
+    
+    Parameters
+    ----------
+    observations: iterable of ints
+        The observed values. These are taken to already be "label encoded",
+        so they should be integers in [0,cardinality).
+        
+    cardinality: int or None
+        The cardinality of the categorical variable. If `None`, then this
+        is taken as the number of unique values in `observations`.
+        
+    use_laplacian_smoothing: bool
+        Whether to use Laplacian ("add one") smoothing for the estimates.
+        This can also be interpreted as a symmetric Dirichlet prior with 
+        a concentration parameter of 1.
+
+    base_1: bool
+        Whether the observations are base 1. If so, then the range is taken
+        as [1, cardinality].
+        
+    Returns
+    -------
+    mle_estimates: np.array of size `cardinality`
+        The estimates
+    """
+    if base_1:
+        observations = np.array(observations) - 1
+
+    indices, counts = np.unique(observations, return_counts=True)
+    
+    if cardinality is None:
+        cardinality = np.max(indices) + 1
+        
+    mle_estimates = np.zeros(shape=cardinality)
+    
+    for i,c in zip(indices, counts):
+        mle_estimates[i] += c
+        
+    if use_laplacian_smoothing:
+        mle_estimates += 1
+        
+    mle_estimates = mle_estimates / np.sum(mle_estimates)
+    return mle_estimates
+   
+def collect_regression_metrics(y_true, y_pred):
+    """ Collect various classification performance metrics for the predictions
+
+    Parameters
+    ----------
+    y_true: np.array of real values
+        The true value of each instance
+
+    y_pred: np.array of floats
+        The prediction for each instance
+    
+    Returns
+    -------
+    metrics: dict
+        A mapping from the metric name to the respective value
+    """
+    validation_utils.validate_equal_shape(y_true, y_pred)
+
+    ret = {
+        "explained_variance": sklearn.metrics.explained_variance_score(y_true, y_pred),
+        "mean_absolute_error": sklearn.metrics.mean_absolute_error(y_true, y_pred),
+        "mean_squared_error": sklearn.metrics.mean_squared_error(y_true, y_pred),
+        #"mean_squared_log_error": sklearn.metrics.mean_squared_log_error(y_true, y_pred),
+        "median_absolute_error": sklearn.metrics.median_absolute_error(y_true, y_pred),
+        "r2": sklearn.metrics.r2_score(y_true, y_pred)
+    }
+
+    return ret
+
+
+def collect_multiclass_classification_metrics(y_true, y_score):
+    """ Calculate various multi-class classification performance metrics
+    
+    Parameters
+    ----------
+    y_true: np.array with shape [n_samples]
+        The true label of each instance. The labels are assumed to be encoded 
+        with integers [0, 1, ... n_classes-1]. The respective columns in
+        y_score should give the scores of the matching label.
+        
+    y_score: np.array with shape [n_samples, n_classes]
+        The score predictions for each class, e.g., from pred_proba, though
+        they are not required to be probabilities
+        
+    Returns
+    -------
+    metrics: dict
+        A mapping from the metric name to the respective value
+    """
+
+    # make hard predictions
+    y_pred = np.argmax(y_score, axis=1)
+
+    # now collect all statistics
+    ret = {
+         "cohen_kappa":  sklearn.metrics.cohen_kappa_score(y_true, y_pred),
+         "matthews_corrcoef":  sklearn.metrics.matthews_corrcoef(y_true, y_pred),
+         "accuracy":  sklearn.metrics.accuracy_score(y_true, y_pred),
+         "micro_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
+            average='micro'),
+         "macro_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
+            average='macro'),
+         "hamming_loss":  sklearn.metrics.hamming_loss(y_true, y_pred),
+         "micro_precision":  sklearn.metrics.precision_score(y_true, y_pred,
+            average='micro'),
+         "macro_precision":  sklearn.metrics.precision_score(y_true, y_pred,
+            average='macro'),
+         "micro_recall":  sklearn.metrics.recall_score(y_true, y_pred,
+            average='micro'),
+         "macro_recall":  sklearn.metrics.recall_score(y_true, y_pred,
+            average='macro'),
+         "hand_and_till_m_score": calc_hand_and_till_m_score(y_true, y_score),
+         "provost_and_domingos_auc": calc_provost_and_domingos_auc(y_true, y_score)
+    }
+
+    return ret
+
 
 def collect_binary_classification_metrics(y_true, y_probas_pred, threshold=0.5,
         pos_label=1):
@@ -1209,18 +1341,22 @@ fold_tuple_fields = [
     'X_train',
     'y_train',
     'X_test',
-    'y_test'
+    'y_test',
+    'train_indices',
+    'test_indices'
 ]
 fold_tuple = collections.namedtuple('fold', ' '.join(fold_tuple_fields))
 
-def get_kth_fold(X, y, fold, num_folds=10, random_seed=8675309):
-    """ Select the kth cross-validation fold using stratified CV
+def get_kth_fold(X, y, fold, num_folds=10, use_stratified=True,
+        random_seed=8675309):
+    """ Select the kth cross-validation fold using (stratified) CV
     
     In partcular, this function uses `sklearn.model_selection.StratifiedKFold`
     to split the data. It then selects the training and testing splits
     from the k^th fold.
 
-    N.B. If `y` is None, the simple `KFold` is used instead.
+    N.B. If `y` is None, or `use_stratified` is False, then simple `KFold` is
+    used instead.
     
     Parameters
     ----------
@@ -1231,6 +1367,10 @@ def get_kth_fold(X, y, fold, num_folds=10, random_seed=8675309):
         
     num_folds: int
         The total number of folds
+
+    use_stratified: bool
+        Whether to use stratified cross-validation. For example, this may be
+        set to False if choosing folds for regression.
         
     random_seed: int or random state
         The value used a the random seed for the k-fold split
@@ -1238,7 +1378,7 @@ def get_kth_fold(X, y, fold, num_folds=10, random_seed=8675309):
 
     check_range(fold, 0, num_folds, max_inclusive=False, variable_name='fold')
 
-    if y is None:
+    if (y is None) or (not use_stratified):
         cv = sklearn.model_selection.KFold(
             n_splits=num_folds, random_state=random_seed
         )
@@ -1249,7 +1389,7 @@ def get_kth_fold(X, y, fold, num_folds=10, random_seed=8675309):
     
     splits = cv.split(X, y)
     train, test = more_itertools.nth(splits, fold)
-
+    
     X_train = X[train]
     X_test = X[test]
 
@@ -1260,6 +1400,6 @@ def get_kth_fold(X, y, fold, num_folds=10, random_seed=8675309):
         y_train = y[train]
         y_test = y[test]
         
-    ret = fold_tuple(X_train, y_train, X_test, y_test)
+    ret = fold_tuple(X_train, y_train, X_test, y_test, train, test)
     return ret
     

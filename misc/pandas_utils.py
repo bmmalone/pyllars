@@ -14,6 +14,7 @@ import shutil
 
 import numpy as np
 import pandas as pd
+import tqdm
 
 import openpyxl
 
@@ -329,9 +330,82 @@ def append_to_xlsx(df, xlsx, sheet='Sheet_1', **kwargs):
         # then we can just create it fresh
         write_df(df, xlsx, sheet=sheet, **kwargs)
 
+def apply(df:pd.DataFrame, func:typing.Callable, *args, progress_bar:bool=False,
+        **kwargs) -> typing.List:
+    """ Apply func to each row in the data frame
+    
+    Unlike pd.DataFrame.apply, this function does not attempt to
+    "interpret" the results.
+    
+    Parameters
+    ----------
+    df: pd.DataFrame
+        the data frame
+        
+    func: function pointer
+        The function to apply to each row in `data_frame`
+
+    args, kwargs
+        The other arguments to pass to `func`
+
+    progress_bar: bool
+        Whether to show a progress bar when waiting for results.
+
+    Returns
+    -------
+    results: list
+        The result of each function call
+    """    
+    it = df.iterrows()
+    if progress_bar:
+        it = tqdm.tqdm(it, total=len(df))
+
+    ret_list = [
+        func(*(row[1], *args), **kwargs) for row in it
+    ]
+    
+    return ret_list
 
 
-def split_df(df:pd.DataFrame, num_groups:int):
+def apply_groups(groups:pd.core.groupby.DataFrameGroupBy, func:typing.Callable,
+        *args, progress_bar:bool=False, **kwargs) -> typing.List:
+    """ Apply func to each group
+    
+    Unlike pd.GroupBy.apply, this function does not attempt to
+    "interpret" the results.
+    
+    Parameters
+    ----------
+    groups: pd.DataFrameGroupBy
+        the groups
+        
+    func: function pointer
+        The function to apply to each row in `data_frame`
+
+    args, kwargs
+        The other arguments to pass to `func`
+
+    progress_bar: bool
+        Whether to show a progress bar when waiting for results.
+
+    Returns
+    -------
+    results: list
+        The result of each function call
+    """    
+    it = groups
+    if progress_bar:
+        it = tqdm.tqdm(it, total=len(groups))
+
+    ret_list = [
+        func(*(group, *args), **kwargs) for name, group in it
+    ]
+    
+    return ret_list
+
+
+
+def split_df(df:pd.DataFrame, num_groups:int=None, chunk_size:int=None):
     """ Split the df into num_groups roughly equal-sized groups. The groups are
     contiguous rows in the data frame.
 
@@ -341,8 +415,21 @@ def split_df(df:pd.DataFrame, num_groups:int):
         the data frame
 
     num_groups: int
-        the number of groups        
+        the number of groups
+
+    chunk_size: int
+        the size of each group. If given, `num_groups` groups has precedence
+        over chunk_size
     """
+
+    if num_groups is None:
+        if chunk_size is not None:
+            num_groups = int(df.shape[0] / chunk_size)
+        else:
+            msg = ("[pd_utils.split_df] one of `num_groups` and `chunk_size` "
+                "must be provided")
+            raise ValueError(msg)
+
     parallel_indices = np.arange(len(df)) // (len(df) / num_groups)
     split_groups = df.groupby(parallel_indices)
     return split_groups
@@ -481,7 +568,7 @@ def join_df_list(dfs:typing.List[pd.DataFrame], join_col:StrOrList, *args,
         adjusted according to the standard pandas suffix approach.
     """
     joined_df = functools.reduce(
-        lambda left,right: pd.merge(left,right,on=join_col), dfs)
+        lambda left,right: pd.merge(left,right,on=join_col, *args, **kwargs), dfs)
 
     return joined_df
 
