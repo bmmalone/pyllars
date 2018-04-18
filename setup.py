@@ -21,6 +21,7 @@ install_requires = [
     'matplotlib_venn',
     'pandas',
     'sklearn',
+    'sklearn_pandas',
     'fastparquet',
     'more_itertools',
     'networkx>=2.0',
