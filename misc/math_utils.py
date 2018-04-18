@@ -996,7 +996,7 @@ def collect_multiclass_classification_metrics(y_true, y_score):
     # now collect all statistics
     ret = {
          "cohen_kappa":  sklearn.metrics.cohen_kappa_score(y_true, y_pred),
-         "matthews_corrcoef":  sklearn.metrics.matthews_corrcoef(y_true, y_pred),
+         #"matthews_corrcoef":  sklearn.metrics.matthews_corrcoef(y_true, y_pred),
          "accuracy":  sklearn.metrics.accuracy_score(y_true, y_pred),
          "micro_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
             average='micro'),
