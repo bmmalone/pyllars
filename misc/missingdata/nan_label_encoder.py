@@ -130,9 +130,15 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
         #print("[nan_le.transform] y after: {}".format(y))
 
         observed_labels = np.unique(y)
-        msg = ("[nan_label_encoder.transform] observed labels: {}. "
-            "self.classes_: {}".format(observed_labels, self.classes_))
-        logger.debug(msg)
+
+        if len(self.classes_) < 20:
+            msg = ("[nan_label_encoder.transform] observed labels: {}. "
+                "self.classes_: {}".format(observed_labels, self.classes_))
+            logger.debug(msg)
+        else:
+            msg = ("[nan_le.transform] too many classes to print observed "
+                "labels")
+            logger.debug(msg)
 
         unknown_labels = [l for l in observed_labels if l not in self.classes_]
         if len(unknown_labels) > 0:
