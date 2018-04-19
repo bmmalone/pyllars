@@ -2,6 +2,9 @@
 This module contains helpers for typical validation routines.
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 import numpy as np
 import scipy.sparse
 
@@ -266,11 +269,21 @@ def validate_is_sequence_of_integers(sequence, name="sequence", caller=None):
 
 
     """
+    msg = ("validate_is_integral. sequence: {}".format(sequence))
+    logger.info(msg)
+
     if isinstance(sequence, np.ndarray) or scipy.sparse.issparse(sequence):
-        if not np.issubdtype(sequence.dtype, np.integer):
+        if sequence.dtype == object:
+            # then assume this is a ragged array
+            for c in sequence:
+                validate_is_sequence_of_integers(c)
+        elif not np.issubdtype(sequence.dtype, np.integer):
             msg = ("invalid dtype for integral sequences. found: {}".format(
                 sequence.dtype))
             _raise_value_error(msg, name, caller)
+        else:
+            # then this validates
+            return
 
     elif np.issubdtype(type(sequence), np.integer):
         # then this validates

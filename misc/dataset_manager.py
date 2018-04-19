@@ -4,6 +4,7 @@ import pandas as pd
 
 import sklearn.exceptions
 
+import misc.math_utils as math_utils
 import misc.utils as utils
 from misc.multicolumn_label_encoder import MultiColumnLabelEncoder
 
@@ -351,4 +352,17 @@ class DatasetManager(object):
         """
         self.df = self.df.replace([np.inf, -np.inf], np.nan)
         self.X = self.df.values
+
+    def get_train_test_split(self, m_train):
+        """ Get a `math_utils.fold_tuple` object for the implied train-test split
+        """
+        X_train, y_train = self.X[m_train], self.y[m_train]
+        X_test, y_test = self.X[~m_train], self.y[~m_train]
+        
+        train_indices = np.where(m_train)[0]
+        test_indices = np.where(~m_train)[0]
+ 
+        ret = math_utils.fold_tuple(X_train, y_train, X_test, y_test,
+            train_indices, test_indices)
+        return ret
 
