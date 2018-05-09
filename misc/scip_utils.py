@@ -3,6 +3,7 @@ Utilities for working with SCIP: http://scip.zib.de/
 """
 
 import misc.utils as utils
+import toolz.dicttoolz
 
 ###
 # Parsing output logs
@@ -43,7 +44,7 @@ def get_solving_status(log_file):
             for sw, f in STARTS_WITH_MAP.items():
                 if line.startswith(sw):
                     ret.append(f(line))
-    ret = utils.merge_dicts(*ret)
+    ret = toolz.dicttoolz.merge(*ret)
     ret['log_file'] = log_file
     ret['problem'] = utils.get_basename(log_file)
     return ret
