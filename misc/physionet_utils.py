@@ -400,6 +400,14 @@ CinC_2012_ICU_TYPE_MAP = {
     np.nan: np.nan
 }
 
+CinC_2012_TIME_SERIES_MEASUREMENTS = [
+    'ALP', 'ALT', 'AST', 'Albumin', 'BUN', 'Bilirubin',
+    'Creatinine', 'DiasABP', 'FiO2', 'GCS', 'Glucose', 'HCO3', 'HCT', 'HR',
+    'K', 'Lactate', 'MAP', 'MechVent', 'Mg', 'NIDiasABP', 'NIMAP',
+    'NISysABP', 'Na', 'PaCO2', 'PaO2', 'Platelets', 'SaO2', 'SysABP',
+    'Temp', 'Urine', 'WBC', 'pH'
+]
+
 
 def get_cinc_2012_outcomes(cinc_2012_base, to_pandas=True):
     """ Load the Outcomes-a.txt file.
