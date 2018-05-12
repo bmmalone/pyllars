@@ -10,6 +10,7 @@ import datetime
 import os
 
 import dask
+import joblib
 import numpy as np
 import pandas as pd
 from dask import dataframe as dd
@@ -159,6 +160,23 @@ def get_diagnosis_icds(mimic_base, to_pandas=True,
         diagnosis_icds = diagnosis_icds.dropna()
 
     return diagnosis_icds
+
+def get_followups(mimic_base):
+    """ Load the (constructed) FOLLOWUPS table
+
+    Parameters
+    ----------
+    mimic_base: path-like
+        The path to the main MIMIC folder
+
+    Returns
+    -------
+    df_followups: pd.DataFrame
+        A data frame containing the followup information
+    """
+    followups = os.path.join(mimic_base, 'FOLLOWUPS.jpkl.gz')
+    df_followups = joblib.load(followups)
+    return df_followups
 
 def get_icu_stays(mimic_base, to_pandas=True, **kwargs):
     """ Load the ICUSTAYS table
@@ -367,6 +385,67 @@ def get_procedure_icds(mimic_base, to_pandas=True):
         procedure_icds = dd.read_csv(procedure_icds)
 
     return procedure_icds
+
+###
+# Creating the FOLLOWUPS table
+###
+def _get_followups(g):
+    subject_id = g.iloc[0]['SUBJECT_ID']
+    g = g.sort_values('ADMITTIME')
+
+    # just move the id's up one
+    followup_hadm_ids = g['HADM_ID'].shift(-1)
+
+    # set the followup of the last admission to -1
+    followup_hadm_ids = followup_hadm_ids.fillna(-1)
+
+    # and make them integral
+    followup_hadm_ids = followup_hadm_ids.astype(int)
+
+
+    df_followups = pd.DataFrame()
+    df_followups['HADM_ID'] = g['HADM_ID'].copy()
+    df_followups['FOLLOWUP_HADM_ID'] = followup_hadm_ids
+    df_followups['FOLLOWUP_TIME'] = g['ADMITTIME'].shift(-1) - g['DISCHTIME']
+    df_followups['SUBJECT_ID'] = subject_id
+    
+    return df_followups
+
+def create_followups_table(mimic_base, progress_bar=True):
+    """ Create the FOLLOWUPS table, based on the admissions
+
+    In particular, the table has the following columns:
+        * HADM_ID
+        * FOLLOWUP_HADM_ID
+        * FOLLOWUP_TIME: the difference between the discharge time of the
+            first admission and the admit time of the second admission
+        * SUBJECT_ID
+
+    Parameters
+    ----------
+    mimic_base: path-like
+        The path to the main MIMIC folder
+
+    progress_bar: bool
+        Whether to show a progress bar for creating the table
+
+    Returns
+    -------
+    df_followups: pd.DataFrame
+        The data frame constructed as described above. Currently, there is
+        no need to create this table more than once. It can just be written
+        to disk and loaded using `get_followups` after the initial creation.
+    """
+    df_admissions = physionet_utils.get_admissions(mimic_basepath)
+    g_admissions = df_admissions.groupby('SUBJECT_ID')
+    all_followup_dfs = pd_utils.apply_groups(
+        g_admissions,
+        _get_followups,
+        progress_bar=progress_bar
+    )
+    
+    df_followups = pd.concat(all_followup_dfs)
+    return df_followups
 
 ###
 # CinC 2012: https://physionet.org/challenge/2012/

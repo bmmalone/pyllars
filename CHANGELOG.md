@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [0.2.10] - In progress
+### Added
+- Followup table construction for MIMIC
+
 ### Updated
 - Dataset manager to optionally encode the target variable
 
