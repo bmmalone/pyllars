@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [0.2.10] - In progress
 ### Added
 - Followup table construction for MIMIC
+- Helpers for MIMIC waveform database
 
 ### Updated
 - Dataset manager to optionally encode the target variable
+
+### Fixed
+- SCIP output parsing for instances where SCIP crashed
 
 ## [0.2.9] - 2018-04-18
 ### Added
