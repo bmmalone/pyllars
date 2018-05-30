@@ -5,6 +5,7 @@ This module contains helpers for using dask: https://dask.pydata.org/en/latest/
 import logging
 logger = logging.getLogger(__name__)
 
+import collections
 import tqdm
 
 def connect(args):
@@ -323,6 +324,25 @@ def apply_groups(groups, client, func, *args, return_futures=False,
 
     ret_list = [r.result() for r in ret_list]
     return ret_list
+    
+def check_status(f_list):
+    """ Collect the status counts of a list of futures
+    
+    This is primarily intended to check the status of jobs submitted with the
+    various `apply` functions when `return_futures` is `True`.
+    
+    Parameters
+    ----------
+    f_list: list of dask futures (distributed.client.Future)
+    
+    Returns
+    -------
+    status_counter: collections.Counter
+        The number of futures with each status
+    """
+    counter = collections.Counter([f.status for f in f_list])
+    return counter
+    
 
 
 ###
