@@ -17,7 +17,8 @@ def _parse_status_line(l):
     return {
         "was_solved": was_solved,
         "time_out": time_out,
-        "mem_out": mem_out
+        "mem_out": mem_out,
+        "has_error": False
     }
 
 def _parse_solving_time_line(l):
@@ -38,12 +39,25 @@ STARTS_WITH_MAP = {
 }
 
 def get_solving_status(log_file):
-    ret = []
+    # initially, assume some error happened
+    ret = {
+        'was_solved': False,
+        'time_out': False,
+        'mem_out': False,
+        'has_error': True,
+    }
+    ret = [ret]
+
     with open(log_file) as lf:
         for line in lf:
             for sw, f in STARTS_WITH_MAP.items():
                 if line.startswith(sw):
                     ret.append(f(line))
+
+    # if we found a valid status line, then that will overwrite the initial
+    # error entries since "[l]ater dictionaries have precedence"
+    #
+    # http://toolz.readthedocs.io/en/latest/api.html#toolz.dicttoolz.merge
     ret = toolz.dicttoolz.merge(*ret)
     ret['log_file'] = log_file
     ret['problem'] = utils.get_basename(log_file)
