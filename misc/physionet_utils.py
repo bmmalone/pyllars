@@ -17,6 +17,7 @@ from dask import dataframe as dd
 
 import misc.pandas_utils as pd_utils
 import misc.parallel as parallel
+import misc.utils as utils
 
 ###
 # MIMIC
@@ -446,6 +447,65 @@ def create_followups_table(mimic_base, progress_bar=True):
     
     df_followups = pd.concat(all_followup_dfs)
     return df_followups
+    
+###
+# waveform database
+###
+
+def parse_rdsamp_datetime(fname, version=2):
+    """ Extract the identifying information from the filename of the MIMIC-III
+    header (*hea) files
+
+    In this project, we refer to each of these files as an "episode".
+
+    Parameters
+    ----------
+    fname: string
+        The name of the file. It should be of the form:
+            
+            version 1:
+                /path/to/my/s09870-2111-11-04-12-36.hea
+                /path/to/my/s09870-2111-11-04-12-36n.hea
+                
+            version 2:
+                /path/to/my/p000020-2183-04-28-17-47.hea
+                /path/to/my/p000020-2183-04-28-17-47n.hea
+
+    Returns
+    -------
+    episode_timestap: dict
+        A dictionary containing the time stamp and subject id for this episode.
+        Specifically, it includes the following keys:
+
+        * SUBJECT_ID: the patient identifier
+        * EPISODE_ID: the identifier for this episode
+        * EPISODE_BEGIN_TIME: the beginning time for this episode
+    """
+    if version == 1:
+        end = 6
+    elif version == 2:
+        end = 7
+    else:
+        msg = "[parse_rdsamp_datetime] unknown version: {}".format(version)
+        raise ValueError(msg)
+        
+    dt_fmt = "%Y-%m-%d-%H-%M"
+    basename = utils.get_basename(fname)
+    episode_id = basename
+    subject_id = basename[1:end]
+    subject_id = int(subject_id)
+    dt = basename[end+1:]
+    
+    # in case dt still has the "n" at the end, remove it
+    dt = dt.replace("n", "")
+    dt_p = datetime.datetime.strptime(dt, dt_fmt)
+    ret = {
+        "SUBJECT_ID": subject_id,
+        "EPISODE_BEGIN_TIME": dt_p,
+        "EPISODE_ID": episode_id
+    }
+    
+    return ret
 
 ###
 # CinC 2012: https://physionet.org/challenge/2012/
