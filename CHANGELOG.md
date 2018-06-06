@@ -4,6 +4,18 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.2.10] - 2018-06-06
+### Added
+- Followup table construction for MIMIC
+- Helpers for MIMIC waveform database
+- Additional validation helpers
+
+### Updated
+- Dataset manager to optionally encode the target variable
+
+### Fixed
+- SCIP output parsing for instances where SCIP crashed
+
 ## [0.2.9] - 2018-04-18
 ### Added
 - Helper to estimate categorical variable MLEs

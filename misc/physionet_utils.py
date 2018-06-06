@@ -10,12 +10,14 @@ import datetime
 import os
 
 import dask
+import joblib
 import numpy as np
 import pandas as pd
 from dask import dataframe as dd
 
 import misc.pandas_utils as pd_utils
 import misc.parallel as parallel
+import misc.utils as utils
 
 ###
 # MIMIC
@@ -159,6 +161,23 @@ def get_diagnosis_icds(mimic_base, to_pandas=True,
         diagnosis_icds = diagnosis_icds.dropna()
 
     return diagnosis_icds
+
+def get_followups(mimic_base):
+    """ Load the (constructed) FOLLOWUPS table
+
+    Parameters
+    ----------
+    mimic_base: path-like
+        The path to the main MIMIC folder
+
+    Returns
+    -------
+    df_followups: pd.DataFrame
+        A data frame containing the followup information
+    """
+    followups = os.path.join(mimic_base, 'FOLLOWUPS.jpkl.gz')
+    df_followups = joblib.load(followups)
+    return df_followups
 
 def get_icu_stays(mimic_base, to_pandas=True, **kwargs):
     """ Load the ICUSTAYS table
@@ -369,6 +388,126 @@ def get_procedure_icds(mimic_base, to_pandas=True):
     return procedure_icds
 
 ###
+# Creating the FOLLOWUPS table
+###
+def _get_followups(g):
+    subject_id = g.iloc[0]['SUBJECT_ID']
+    g = g.sort_values('ADMITTIME')
+
+    # just move the id's up one
+    followup_hadm_ids = g['HADM_ID'].shift(-1)
+
+    # set the followup of the last admission to -1
+    followup_hadm_ids = followup_hadm_ids.fillna(-1)
+
+    # and make them integral
+    followup_hadm_ids = followup_hadm_ids.astype(int)
+
+
+    df_followups = pd.DataFrame()
+    df_followups['HADM_ID'] = g['HADM_ID'].copy()
+    df_followups['FOLLOWUP_HADM_ID'] = followup_hadm_ids
+    df_followups['FOLLOWUP_TIME'] = g['ADMITTIME'].shift(-1) - g['DISCHTIME']
+    df_followups['SUBJECT_ID'] = subject_id
+    
+    return df_followups
+
+def create_followups_table(mimic_base, progress_bar=True):
+    """ Create the FOLLOWUPS table, based on the admissions
+
+    In particular, the table has the following columns:
+        * HADM_ID
+        * FOLLOWUP_HADM_ID
+        * FOLLOWUP_TIME: the difference between the discharge time of the
+            first admission and the admit time of the second admission
+        * SUBJECT_ID
+
+    Parameters
+    ----------
+    mimic_base: path-like
+        The path to the main MIMIC folder
+
+    progress_bar: bool
+        Whether to show a progress bar for creating the table
+
+    Returns
+    -------
+    df_followups: pd.DataFrame
+        The data frame constructed as described above. Currently, there is
+        no need to create this table more than once. It can just be written
+        to disk and loaded using `get_followups` after the initial creation.
+    """
+    df_admissions = physionet_utils.get_admissions(mimic_basepath)
+    g_admissions = df_admissions.groupby('SUBJECT_ID')
+    all_followup_dfs = pd_utils.apply_groups(
+        g_admissions,
+        _get_followups,
+        progress_bar=progress_bar
+    )
+    
+    df_followups = pd.concat(all_followup_dfs)
+    return df_followups
+    
+###
+# waveform database
+###
+
+def parse_rdsamp_datetime(fname, version=2):
+    """ Extract the identifying information from the filename of the MIMIC-III
+    header (*hea) files
+
+    In this project, we refer to each of these files as an "episode".
+
+    Parameters
+    ----------
+    fname: string
+        The name of the file. It should be of the form:
+            
+            version 1:
+                /path/to/my/s09870-2111-11-04-12-36.hea
+                /path/to/my/s09870-2111-11-04-12-36n.hea
+                
+            version 2:
+                /path/to/my/p000020-2183-04-28-17-47.hea
+                /path/to/my/p000020-2183-04-28-17-47n.hea
+
+    Returns
+    -------
+    episode_timestap: dict
+        A dictionary containing the time stamp and subject id for this episode.
+        Specifically, it includes the following keys:
+
+        * SUBJECT_ID: the patient identifier
+        * EPISODE_ID: the identifier for this episode
+        * EPISODE_BEGIN_TIME: the beginning time for this episode
+    """
+    if version == 1:
+        end = 6
+    elif version == 2:
+        end = 7
+    else:
+        msg = "[parse_rdsamp_datetime] unknown version: {}".format(version)
+        raise ValueError(msg)
+        
+    dt_fmt = "%Y-%m-%d-%H-%M"
+    basename = utils.get_basename(fname)
+    episode_id = basename
+    subject_id = basename[1:end]
+    subject_id = int(subject_id)
+    dt = basename[end+1:]
+    
+    # in case dt still has the "n" at the end, remove it
+    dt = dt.replace("n", "")
+    dt_p = datetime.datetime.strptime(dt, dt_fmt)
+    ret = {
+        "SUBJECT_ID": subject_id,
+        "EPISODE_BEGIN_TIME": dt_p,
+        "EPISODE_ID": episode_id
+    }
+    
+    return ret
+
+###
 # CinC 2012: https://physionet.org/challenge/2012/
 #
 #   "cinc_2012"
@@ -399,6 +538,14 @@ CinC_2012_ICU_TYPE_MAP = {
     None: np.nan,
     np.nan: np.nan
 }
+
+CinC_2012_TIME_SERIES_MEASUREMENTS = [
+    'ALP', 'ALT', 'AST', 'Albumin', 'BUN', 'Bilirubin',
+    'Creatinine', 'DiasABP', 'FiO2', 'GCS', 'Glucose', 'HCO3', 'HCT', 'HR',
+    'K', 'Lactate', 'MAP', 'MechVent', 'Mg', 'NIDiasABP', 'NIMAP',
+    'NISysABP', 'Na', 'PaCO2', 'PaO2', 'Platelets', 'SaO2', 'SysABP',
+    'Temp', 'Urine', 'WBC', 'pH'
+]
 
 
 def get_cinc_2012_outcomes(cinc_2012_base, to_pandas=True):

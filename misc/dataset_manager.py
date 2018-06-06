@@ -6,6 +6,8 @@ import sklearn.exceptions
 
 import misc.math_utils as math_utils
 import misc.utils as utils
+
+from misc.missingdata.nan_label_encoder import NaNLabelEncoder
 from misc.multicolumn_label_encoder import MultiColumnLabelEncoder
 
 import logging
@@ -66,6 +68,7 @@ class DatasetManager(object):
             drop_rows_with_missing_target=True,
             convert_int_to_float=True,
             encode_categorical_fields=True,
+            encode_target_variable=False,
             *args, **kwargs):
         
         # we must have either a data_path or a df
@@ -110,6 +113,9 @@ class DatasetManager(object):
             self.target_variable = target_variable
             self.y = self.df[target_variable].values
             self.df = self.df.drop([target_variable], axis=1)
+            
+            if encode_target_variable:
+                self.encode_target_variable()
             
         # remove rows with missing target variables
         if drop_rows_with_missing_target and (self.target_variable is not None):
@@ -181,6 +187,19 @@ class DatasetManager(object):
         self.le_ = label_encoder.fit(self.df)
         self.df = self.le_.transform(self.df)
         self.X = self.df.values
+        
+    def encode_target_variable(self):
+        """ Encode the target variable
+        """
+        
+        if hasattr(self, "target_le_"):
+            msg = ("[ds_manager]: attempting to encode the target variable "
+                "after it has already been encoded. Skipping operations.")
+            logger.warning(msg)
+            return
+            
+        self.target_le_ = NaNLabelEncoder().fit(self.y)
+        self.y = self.target_le_.transform(self.y)
 
 
     def get_categorical_df(self):

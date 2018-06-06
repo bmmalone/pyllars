@@ -137,9 +137,37 @@ def validate_all_finite(array, name="array", caller=None):
         _raise_value_error("{caller}{name} is not allowed to include "
             "non-finite values", name, caller)
 
-                    
+              
+def validate_all_non_negative(array, name="array", caller=None):
+    """ Ensure that all values in `array` are non-negative.
+
+    If any values in `array` are negative, then raise a ValueError.
+    
+    So, for example, "0"s cause this validation to fail.
+
+    Parameters
+    ----------
+    array: np.array or scipy.sparse.matrix
+        A numpy array or sparse matrix
+
+    name: string
+        A name for the variable in the error message
+
+    caller: string
+        A name for the caller in the error message
+    """
+    if scipy.sparse.issparse(array):
+        min_val = array.min()
+        if min_val < 0:
+            _raise_value_error("{caller}{name} is not allowed to include "
+                "negative values", name, caller)
+    else:
+        if np.any(array < 0):
+            _raise_value_error("{caller}{name} is not allowed to include "
+                "negative values", name, caller)
+            
 def validate_all_positive(array, name="array", caller=None):
-    """ Ensure that all values in `array` are unique
+    """ Ensure that all values in `array` are positive
 
     If any values in `array` are non-positive, then raise a ValueError.
     
@@ -156,6 +184,7 @@ def validate_all_positive(array, name="array", caller=None):
     caller: string
         A name for the caller in the error message
     """
+    
     if np.any(array <= 0):
         _raise_value_error("{caller}{name} is not allowed to include "
             "non-positive values", name, caller)
@@ -295,7 +324,28 @@ def validate_is_sequence_of_integers(sequence, name="sequence", caller=None):
         msg = ("unrecognized data type for (sequence of) integers: value: {}. "
             "type: {}".format(sequence, type(sequence)))
         _raise_value_error(msg, name, caller)
+    
+def validate_numeric(array, name="array", caller=None):
+    """ Ensure that the array has some numeric dtype
 
+    If the shapes are not equal, then raise a ValueError.
+
+    Parameters
+    ----------
+    array: np.array
+        A numpy array
+    
+    name: string
+        A name for the variable in the error message
+
+    caller: string
+        A name for the caller in the error message
+    """
+    if not np.issubdtype(array.dtype, np.number):
+        msg = ("invalid dtype for numeric sequences. found: {}".format(
+            array.dtype))
+        _raise_value_error(msg, name, caller)
+            
 def validate_unique(array, name="array", caller=None):
     """ Ensure that all values in `array` are unique
 
