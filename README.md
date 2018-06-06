@@ -60,9 +60,6 @@ This package contains helpers for a wide variety of python applications.
 * `mpl_utils`. Utilities for manipulating object-oriented matplotlib plots, that
     is, those which uses `Axes` objects.
     
-* `multicolumn_label_encoder`. An `sklearn` transformer which wraps label
-    encoders for multiple columns.
-    
 * `nlp_utils`. Utilities for interacting with `nltk`.
     
 * `pandas_utils`. Utilities for working with pandas data frames, such as
@@ -131,6 +128,8 @@ Of course, it is also part of the PyData stack, but there are many of these.
     in other modules began here and were migrated after a sufficient number of
     related functions had been added. Thus, many functions from this module
     issue deprecation warnings when called.
+
+* `validation_utils`. Utilities for standard validation tasks.
     
 #### Slurm command line utilities
 
