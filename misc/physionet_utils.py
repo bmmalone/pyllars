@@ -386,6 +386,40 @@ def get_procedure_icds(mimic_base, to_pandas=True):
         procedure_icds = dd.read_csv(procedure_icds)
 
     return procedure_icds
+    
+def get_transfers(mimic_base, to_pandas=True, **kwargs):
+    """ Load the TRANSFERS table
+
+    Parameters
+    ----------
+    mimic_base: path-like
+        The path to the main MIMIC folder
+
+    to_pandas: bool
+        Whether to read the table as a pandas (True) or dask (False) data frame
+
+
+    kwargs: key=value pairs
+        Additional keywords to pass to the appropriate `read` function
+        
+    Returns
+    -------
+    transfers: pd.DataFrame or dd.DataFrame
+        The transfers table as either a pandas or dask data frame,
+            depending on the value of to_pandas
+    """
+    date_cols = [
+        "INTIME",
+        "OUTTIME"
+    ]
+    transfers = os.path.join(mimic_base, "TRANSFERS.csv.gz")
+
+    if to_pandas:
+        transfers = pd_utils.read_df(transfers, parse_dates=date_cols, **kwargs)
+    else:
+        transfers = dd.read_csv(transfers, parse_dates=date_cols, **kwargs)
+
+    return transfers
 
 ###
 # Creating the FOLLOWUPS table
