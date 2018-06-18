@@ -342,7 +342,32 @@ def check_status(f_list):
     """
     counter = collections.Counter([f.status for f in f_list])
     return counter
+   
+def collect_results(f_list, finished_only=True):
+    """ Collect the results from a list of futures
     
+    By default, only results from finished tasks will be collected. Thus, the
+    function is (more or less) non-blocking.
+    
+    Parameters
+    ----------
+    f_list: list of dask futures (distributed.client.Future)
+
+    finished_only: bool
+        Whether to collect only results for jobs whose status is 'finished'
+    
+    Returns
+    -------
+    results: list
+        The results for each (finished, if specified) task
+    """
+
+    if finished_only:
+        ret = [f.result() for f in f_list if f.status == 'finished']
+    else:
+        ret = [f.result() for f in f_list]
+
+    return ret
 
 
 ###
