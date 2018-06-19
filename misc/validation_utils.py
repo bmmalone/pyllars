@@ -10,8 +10,8 @@ import scipy.sparse
 
 import misc.utils as utils
 
-def _raise_value_error(msg, name="array", caller=None):
-    """ Raise a ValueError with the given message
+def _raise_value_error(msg, name="array", caller=None, error_type=ValueError):
+    """ Raise an `error_type` error with the given message
 
     This internal helper formats the message nicely using `name` and `caller`
     appropriately.
@@ -27,6 +27,9 @@ def _raise_value_error(msg, name="array", caller=None):
 
     caller: string
         A name for the caller in the error message
+        
+    error_type: Error type
+        The type of error to raise
     """
 
     s = ""
@@ -34,8 +37,114 @@ def _raise_value_error(msg, name="array", caller=None):
         s = "[{}]: ".format(caller)
 
     msg = msg.format(caller=s, name=name)
-    raise ValueError(msg)
+    raise error_type(msg)
 
+    
+def check_range(val, min_, max_, min_inclusive=True, max_inclusive=True, 
+        variable_name=None, raise_on_invalid=True, logger=logger):
+    """ Checks whether `val` falls within the specified range
+    
+    If not, either raise a ValueError or log a warning depending on the value
+    of `raise_on_invalid`.
+
+    Parameters
+    ----------
+    val (number): the value to check
+
+    min_, max_ (numbers): the acceptable range
+
+    min_inclusive, max_inclusive (bools): whether the end
+        points are included in the acceptable range
+
+    variable_name (string): for the exception/warning, the
+        name to use in the message
+
+    raise_on_invalid (bool): whether to raise an exception (True)
+        or issue a warning (False) when the value is invalid
+
+    logger (logging.Logger): the logger to use in case a
+        warning is issued
+
+    Returns
+    -------
+    in_range: bool
+        Whether `val` is in the allowed range
+    """
+    import operator
+
+    in_range = True
+
+    # first, check min
+    min_op = operator.le
+    if min_inclusive:
+        min_op = operator.lt
+
+    if min_op(val, min_):
+        in_range = False
+        msg = ("Variable: {}. The given value ({}) was less than the "
+            "acceptable minimum ({})".format(variable_name, val, min_))
+
+        if raise_on_invalid:
+            raise ValueError(msg)
+        else:
+            logger.warning(msg)
+
+    # now max
+    max_op = operator.ge
+    if max_inclusive:
+        max_op = operator.gt
+
+    if max_op(val, max_):
+        in_range = False
+        msg = ("Variable: {}. The given value ({}) was greater than the "
+            "acceptable maximum ({})".format(variable_name, val, max_))
+
+        if raise_on_invalid:
+            raise ValueError(msg)
+        else:
+            logger.warning(msg)
+
+    return in_range
+
+def check_keys_exist(d, keys, name="array", caller=None):
+    """ Ensures the given keys are present in the dictionary
+
+    It does not other validate the type, value, etc., of the keys or their
+    values. If a key is not present, a KeyError is raised.
+
+    The motivation behind this function is to verify that a config dictionary
+    read in at the beginning of a program contains all of the required values.
+    Thus, the program will immediately detect when a required config value is
+    not present and quit.
+
+    Parameters
+    ----------
+    d: dictionary
+        The dictionary
+
+    keys: iterable
+        A list of keys to check
+
+    name: string
+        A name for the variable in the error message
+
+    caller: string
+        A name for the caller in the error message
+        
+    Returns
+    -------
+    missing_keys: list of strings
+        The keys which were not present in the dictionary. However, since a
+        KeyError is raised, it must be caught for this to be used.            
+    """
+    missing_keys = [k for k in keys if k not in d]
+
+    if len(missing_keys) > 0:
+        missing_keys = ' '.join(missing_keys)
+        msg = "{caller}{name} the following keys were not found: " + missing_keys
+        _raise_value_error(msg, name, caller, KeyError)
+
+    return missing_keys
 
 
 
@@ -345,6 +454,32 @@ def validate_numeric(array, name="array", caller=None):
         msg = ("invalid dtype for numeric sequences. found: {}".format(
             array.dtype))
         _raise_value_error(msg, name, caller)
+            
+def validate_type(var, allowed_types, name="var", caller=None):
+    """ Ensure `var` has one of the allowed types
+    
+    If var is not an instance of one of the allowed types, then raise a TypeError.
+    
+    Parameters
+    ----------
+    var: object
+        A variable
+        
+    allowed_types: iterable of types
+        The allowed types for `var`
+    
+    name: string
+        A name for the variable in the error message
+
+    caller: string
+        A name for the caller in the error message
+    """
+    
+    is_valid = any(isinstance(var,t) for t in allowed_types)
+    if not is_valid:
+        msg = ("invalid type. found: {}. allowed: {}".format(type(var),
+            allowed_types))
+        _raise_value_error(msg, name, caller, TypeError)
             
 def validate_unique(array, name="array", caller=None):
     """ Ensure that all values in `array` are unique
