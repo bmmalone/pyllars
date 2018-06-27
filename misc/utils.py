@@ -1011,6 +1011,24 @@ def merge_sets(*set_args):
     """
     ret = {item for s in set_args for item in s}
     return ret
+    
+def reverse_dict(d):
+    """ Create a new dictionary in which the keys and values of d are switched
+    
+    In the case of duplicate values, it is arbitrary which will be retained.
+    
+    Parameters
+    ----------
+    d : dictionary
+        The dictionary
+        
+    Returns
+    -------
+    reversed_d : dictionary
+        A dictionary in which the values of `d` now map to the keys
+    """
+    reverse_d = {v:k for k,v in d.items()}    
+    return reverse_d
 
 @deprecated("[utils.merge_dicts]: please use `toolz.dicttoolz.merge` instead")
 def merge_dicts(*dict_args):
