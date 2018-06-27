@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Helpers for checking and collecting dask futures
 - Validation helpers for non-pydata types
 
+### Fixed
+- Missing data one hot encoder to handle sparse inputs
+
 ## [0.2.10] - 2018-06-06
 ### Added
 - Followup table construction for MIMIC
