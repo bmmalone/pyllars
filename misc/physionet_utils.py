@@ -547,13 +547,25 @@ def parse_rdsamp_datetime(fname, version=2):
 #   "cinc_2012"
 ###
 
-CinC_2012_DESCRIPTOR_FIELDS = {
+CinC_2012_BOOKKEEPING_FIELDS = {
+    'HADM_ID'
+}
+
+_CinC_2012_DESCRIPTOR_FIELDS = {
     'RecordID',
     'Age',
     'Gender',
     'Height',
     'ICUType',
     'Weight'
+}
+
+CinC_2012_DESCRIPTOR_FIELDS = {
+    'AGE',
+    'GENDER',
+    'HEIGHT',
+    'ICU_TYPE',
+    'WEIGHT'
 }
 
 CinC_2012_GENDER_MAP = {
@@ -580,6 +592,14 @@ CinC_2012_TIME_SERIES_MEASUREMENTS = [
     'NISysABP', 'Na', 'PaCO2', 'PaO2', 'Platelets', 'SaO2', 'SysABP',
     'Temp', 'Urine', 'WBC', 'pH'
 ]
+
+CinC_2012_OUTCOME_FIELDS = {
+    'ADMISSION_ELAPSED_TIME',
+    'EXPIRED',
+    'SAPS-I',
+    'SOFA',
+    'SURVIVAL'
+}
 
 
 def get_cinc_2012_outcomes(cinc_2012_base, to_pandas=True):
@@ -649,7 +669,7 @@ def _get_cinc_2012_record_descriptor(record_file_df):
     """
 
     # first, only look for the specified fields
-    m_icu_fields = record_file_df['Parameter'].isin(CinC_2012_DESCRIPTOR_FIELDS)
+    m_icu_fields = record_file_df['Parameter'].isin(_CinC_2012_DESCRIPTOR_FIELDS)
 
     # and at time "00:00"
     m_time = record_file_df['Time'] == "00:00"
@@ -750,7 +770,7 @@ def get_cinc_2012_record(cinc_2012_base, record_id, wide=True):
     # and now the observations
 
     # first, discard the descriptor fields
-    m_d = observations['Parameter'].isin(CinC_2012_DESCRIPTOR_FIELDS)
+    m_d = observations['Parameter'].isin(_CinC_2012_DESCRIPTOR_FIELDS)
     observations = observations[~m_d]
 
     # It is possible we actually do not have any observations besides the
