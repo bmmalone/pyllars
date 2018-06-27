@@ -573,7 +573,11 @@ CinC_2012_GENDER_MAP = {
     1: 'male',
     2: np.nan,
     None: np.nan,
-    np.nan: np.nan
+    np.nan: np.nan,
+    'female': 0,
+    'FEMALE': 0,
+    'male': 1,
+    'MALE': 1
 }
 
 CinC_2012_ICU_TYPE_MAP = {
@@ -582,7 +586,11 @@ CinC_2012_ICU_TYPE_MAP = {
     3: "medical_icu",
     4: "surgical_icu",
     None: np.nan,
-    np.nan: np.nan
+    np.nan: np.nan,
+    "coronary_care_unit": 1,
+    "cardiac_surgery_recovery_unit": 2,
+    "medical_icu": 3,
+    "surgical_icu": 4
 }
 
 CinC_2012_TIME_SERIES_MEASUREMENTS = [
