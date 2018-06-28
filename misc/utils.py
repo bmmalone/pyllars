@@ -141,6 +141,7 @@ def is_int(s):
     	return s[1:].isdigit()
     return s.isdigit()
 
+@deprecated("[utils.check_keys_exist] Please use the version in `validation_utils`")
 def check_keys_exist(d, keys):
     """ This function ensures the given keys are present in the dictionary. It
         does not other validate the type, value, etc., of the keys or their

@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 import misc.utils as utils
 
 import numpy as np
+import operator
 import scipy.sparse
 
 def _raise_value_error(msg, name="array", caller=None, error_type=ValueError):
@@ -71,7 +72,6 @@ def check_range(val, min_, max_, min_inclusive=True, max_inclusive=True,
     in_range: bool
         Whether `val` is in the allowed range
     """
-    import operator
 
     in_range = True
 
@@ -146,7 +146,6 @@ def check_keys_exist(d, keys, name="array", caller=None):
         _raise_value_error(msg, name, caller, KeyError)
 
     return missing_keys
-
 
 def validate_1d(array, name="array", caller=None):
     """ Ensure that `array` is 1-dimensional
