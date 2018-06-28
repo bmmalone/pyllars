@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Helpers for checking and collecting dask futures
 - Validation helpers for non-pydata types
 
+### Updated
+- k-fold splitter to include validation set
+
 ### Fixed
 - Missing data one hot encoder to handle sparse inputs
 

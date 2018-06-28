@@ -1342,41 +1342,60 @@ fold_tuple_fields = [
     'y_train',
     'X_test',
     'y_test',
+    'X_validation',
+    'y_validation',
     'train_indices',
-    'test_indices'
+    'test_indices',
+    'validation_indices'
 ]
 fold_tuple = collections.namedtuple('fold', ' '.join(fold_tuple_fields))
 
 def get_kth_fold(X, y, fold, num_folds=10, use_stratified=True,
-        random_seed=8675309):
+        include_validation=True, random_seed=8675309):
     """ Select the kth cross-validation fold using (stratified) CV
     
-    In partcular, this function uses `sklearn.model_selection.StratifiedKFold`
-    to split the data. It then selects the training and testing splits
-    from the k^th fold.
+    In particular, this function uses `sklearn.model_selection.StratifiedKFold`
+    to split the data. It then selects the training, testing, and (optionally)
+    validation splits from the k^th fold.
 
     N.B. If `y` is None, or `use_stratified` is False, then simple `KFold` is
     used instead.
     
     Parameters
     ----------
-    X, y: sklearn-formated data matrices
+    X, y : sklearn-formated data matrices
     
-    fold: int
+    fold : int
         The cv fold
         
-    num_folds: int
+    num_folds : int
         The total number of folds
 
-    use_stratified: bool
+    use_stratified : bool
         Whether to use stratified cross-validation. For example, this may be
         set to False if choosing folds for regression.
         
-    random_seed: int or random state
+    include_validation : bool
+        Whether to include a validation set. If so, the training set will
+        consist of `num_folds-2` folds, and the validation and test sets will
+        each contain one fold. Otherwise, the training set will contain 
+        `num_folds-1` folds, and the test set will contain the other fold.
+        
+    random_seed : int or random state
         The value used a the random seed for the k-fold split
+        
+    Returns
+    -------
+    folds : a named tuple with the following fields.
+    
+    {X,y}_{train,test,validation} : the respective data splites
+    
+    {train,test,validation}_indices : the indices of the respective data points
+        from the original data set
     """
 
-    check_range(fold, 0, num_folds, max_inclusive=False, variable_name='fold')
+    validation_utils.check_range(fold, 0, num_folds, max_inclusive=False,
+        variable_name='fold')
 
     if (y is None) or (not use_stratified):
         cv = sklearn.model_selection.KFold(
@@ -1400,6 +1419,49 @@ def get_kth_fold(X, y, fold, num_folds=10, use_stratified=True,
         y_train = y[train]
         y_test = y[test]
         
-    ret = fold_tuple(X_train, y_train, X_test, y_test, train, test)
+    if include_validation:
+        # wrap around if we used the last fold for testing
+        if fold == num_folds-1:
+            fold = 0
+            
+        # again select the correct type of split
+        if (y is None) or (not use_stratified):
+            train_validation_cv = sklearn.model_selection.KFold(
+                n_splits=num_folds-1, random_state=random_seed
+            )
+        else:        
+            train_validation_cv = sklearn.model_selection.StratifiedKFold(
+                n_splits=num_folds-1, random_state=random_seed
+            )
+            
+        # further split the training set
+        train_validation_splits = train_validation_cv.split(X_train, y_train)
+        
+        # select the proper indices
+        train, validation = more_itertools.nth(train_validation_splits, fold)
+
+        # use a temporary view so the validation indices are... valid
+        X_tr = X_train[train]
+        X_validation = X_train[validation]
+
+        y_tr = y_train[train]
+        y_validation = y_train[validation]
+        
+        # now overwrite so we use the correct names below
+        X_train = X_tr
+        y_train = y_tr
+        
+    else:
+        X_validation = None
+        y_validation = None
+        validation = None
+        
+    ret = fold_tuple(
+        X_train, y_train,
+        X_test, y_test,
+        X_validation, y_validation,
+        train, test, validation
+    )
+    
     return ret
     
