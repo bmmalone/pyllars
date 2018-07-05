@@ -386,6 +386,40 @@ def get_procedure_icds(mimic_base, to_pandas=True):
         procedure_icds = dd.read_csv(procedure_icds)
 
     return procedure_icds
+    
+def get_transfers(mimic_base, to_pandas=True, **kwargs):
+    """ Load the TRANSFERS table
+
+    Parameters
+    ----------
+    mimic_base: path-like
+        The path to the main MIMIC folder
+
+    to_pandas: bool
+        Whether to read the table as a pandas (True) or dask (False) data frame
+
+
+    kwargs: key=value pairs
+        Additional keywords to pass to the appropriate `read` function
+        
+    Returns
+    -------
+    transfers: pd.DataFrame or dd.DataFrame
+        The transfers table as either a pandas or dask data frame,
+            depending on the value of to_pandas
+    """
+    date_cols = [
+        "INTIME",
+        "OUTTIME"
+    ]
+    transfers = os.path.join(mimic_base, "TRANSFERS.csv.gz")
+
+    if to_pandas:
+        transfers = pd_utils.read_df(transfers, parse_dates=date_cols, **kwargs)
+    else:
+        transfers = dd.read_csv(transfers, parse_dates=date_cols, **kwargs)
+
+    return transfers
 
 ###
 # Creating the FOLLOWUPS table
@@ -513,7 +547,11 @@ def parse_rdsamp_datetime(fname, version=2):
 #   "cinc_2012"
 ###
 
-CinC_2012_DESCRIPTOR_FIELDS = {
+CinC_2012_BOOKKEEPING_FIELDS = {
+    'HADM_ID'
+}
+
+_CinC_2012_DESCRIPTOR_FIELDS = {
     'RecordID',
     'Age',
     'Gender',
@@ -522,12 +560,24 @@ CinC_2012_DESCRIPTOR_FIELDS = {
     'Weight'
 }
 
+CinC_2012_DESCRIPTOR_FIELDS = {
+    'AGE',
+    'GENDER',
+    'HEIGHT',
+    'ICU_TYPE',
+    'WEIGHT'
+}
+
 CinC_2012_GENDER_MAP = {
     0: 'female',
     1: 'male',
     2: np.nan,
     None: np.nan,
-    np.nan: np.nan
+    np.nan: np.nan,
+    'female': 0,
+    'FEMALE': 0,
+    'male': 1,
+    'MALE': 1
 }
 
 CinC_2012_ICU_TYPE_MAP = {
@@ -536,7 +586,11 @@ CinC_2012_ICU_TYPE_MAP = {
     3: "medical_icu",
     4: "surgical_icu",
     None: np.nan,
-    np.nan: np.nan
+    np.nan: np.nan,
+    "coronary_care_unit": 1,
+    "cardiac_surgery_recovery_unit": 2,
+    "medical_icu": 3,
+    "surgical_icu": 4
 }
 
 CinC_2012_TIME_SERIES_MEASUREMENTS = [
@@ -546,6 +600,14 @@ CinC_2012_TIME_SERIES_MEASUREMENTS = [
     'NISysABP', 'Na', 'PaCO2', 'PaO2', 'Platelets', 'SaO2', 'SysABP',
     'Temp', 'Urine', 'WBC', 'pH'
 ]
+
+CinC_2012_OUTCOME_FIELDS = {
+    'ADMISSION_ELAPSED_TIME',
+    'EXPIRED',
+    'SAPS-I',
+    'SOFA',
+    'SURVIVAL'
+}
 
 
 def get_cinc_2012_outcomes(cinc_2012_base, to_pandas=True):
@@ -615,7 +677,7 @@ def _get_cinc_2012_record_descriptor(record_file_df):
     """
 
     # first, only look for the specified fields
-    m_icu_fields = record_file_df['Parameter'].isin(CinC_2012_DESCRIPTOR_FIELDS)
+    m_icu_fields = record_file_df['Parameter'].isin(_CinC_2012_DESCRIPTOR_FIELDS)
 
     # and at time "00:00"
     m_time = record_file_df['Time'] == "00:00"
@@ -716,7 +778,7 @@ def get_cinc_2012_record(cinc_2012_base, record_id, wide=True):
     # and now the observations
 
     # first, discard the descriptor fields
-    m_d = observations['Parameter'].isin(CinC_2012_DESCRIPTOR_FIELDS)
+    m_d = observations['Parameter'].isin(_CinC_2012_DESCRIPTOR_FIELDS)
     observations = observations[~m_d]
 
     # It is possible we actually do not have any observations besides the

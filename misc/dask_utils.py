@@ -369,6 +369,29 @@ def collect_results(f_list, finished_only=True):
 
     return ret
 
+def cancel_all(f_list, pending_only=True):
+    """ Cancel all (pending) tasks in the list
+
+    By default, only pending tasks are cancelled.
+
+    Parameters
+    ----------
+    f_list : list of dask futures (distributed.client.Future)
+
+    pending_only : bool
+        Whether to cancel only tasks whose status is 'pending'
+
+    Returns
+    -------
+    None, but the specified tasks are cancelled
+    """
+    if pending_only:
+        for f in f_list:
+            if f.status == 'pending':
+                f.cancel()
+    else:
+        for f in f_list:
+            f.cancel()
 
 ###
 #   A simple wrapper to submit an sklearn pipeline to a dask cluster for fitting

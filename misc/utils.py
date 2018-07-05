@@ -5,12 +5,15 @@ A hodgepodge of utilities, most of which concern working with basic types.
 import logging
 logger = logging.getLogger(__name__)
 
+import collections
 import itertools
 import os
 import shutil
 import subprocess
 import sys
 import typing
+
+import numpy as np
 
 from misc.deprecated_decorator import deprecated
 import misc.shell_utils as shell_utils
@@ -139,6 +142,7 @@ def is_int(s):
     	return s[1:].isdigit()
     return s.isdigit()
 
+@deprecated("[utils.check_keys_exist] Please use the version in `validation_utils`")
 def check_keys_exist(d, keys):
     """ This function ensures the given keys are present in the dictionary. It
         does not other validate the type, value, etc., of the keys or their
@@ -1053,6 +1057,24 @@ def merge_sets(*set_args):
     """
     ret = {item for s in set_args for item in s}
     return ret
+    
+def reverse_dict(d):
+    """ Create a new dictionary in which the keys and values of d are switched
+    
+    In the case of duplicate values, it is arbitrary which will be retained.
+    
+    Parameters
+    ----------
+    d : dictionary
+        The dictionary
+        
+    Returns
+    -------
+    reversed_d : dictionary
+        A dictionary in which the values of `d` now map to the keys
+    """
+    reverse_d = {v:k for k,v in d.items()}    
+    return reverse_d
 
 @deprecated("[utils.merge_dicts]: please use `toolz.dicttoolz.merge` instead")
 def merge_dicts(*dict_args):
@@ -1104,27 +1126,23 @@ def get_type(type_string):
 
     return class_
 
+
 def is_sequence(maybe_sequence):
-    """ This function is a light wrapper around collections.Sequence to check
-        if the provided object is a sequence-like object. It also checks for
-        numpy arrays.
+    """ Check whether `maybe_sequence` is a `collections.Sequence` or `np.ndarray`
 
-        The function specifically checks is maybe_sequence is an instance of a
-        string and returns False if it is a string.
+    The function specifically checks is maybe_sequence is an instance of a
+    string and returns False in that case.
 
-        Args:
-            maybe_sequence (object) an object which may be a list-like
+    Parameters
+    ----------
+    maybe_sequence:
+        an object which may be a list-like
 
-        Returns:
-            bool: whether the object is recognized as an instance of
-                collections.Sequence or numpy.ndarray
-
-        Imports:
-            collections
-            numpy
+    Returns
+    -------
+    is_sequence: bool
+        Whether the object is a sequence (as described above)
     """
-    import collections
-    import numpy
 
     if isinstance(maybe_sequence, str):
         return False
@@ -1133,26 +1151,27 @@ def is_sequence(maybe_sequence):
     is_ndarray = isinstance(maybe_sequence, numpy.ndarray)
     return  is_sequence or is_ndarray
 
-def wrap_in_list(maybe_list):
-    """ This function checks if maybe_list is a list (or anything derived
-        from list). If not, it wraps it in a list.
+def wrap_string_in_list(maybe_string):
+    """ If maybe_string is a string, wrap it in a list
 
-        The motivation for this function is that some functions return either
-        a single object (e.g., a dictionary) or a list of those objects. The
-        return value of this function can be iterated over safely.
+    The motivation for this function is that some functions return either a
+    single string or multiple strings as a list. The return value of this
+    function can be iterated over safely.
 
-        N.B. This function would not be helpful for ensuring something is a
-        list of lists, for example.
+    Parameters
+    ----------
+    maybe_string: obj
+        An object which may be a string
 
-        Args:
-            maybe_list (obj): an object which may be a list
-
-        Returns:
-            either maybe_list if it is a list, or maybe_list wrapped in a list
+    Returns
+    -------
+    l: list
+        Either the original object, or maybe_string wrapped in a list, if
+            it was a string
     """
-    if isinstance(maybe_list, list):
-        return maybe_list
-    return [maybe_list]
+    if isinstance(maybe_string, str):
+        return [maybe_string]
+    return maybe_string
 
 def wrap_string_in_list(maybe_string):
     """ This function checks if maybe_string is a string (or anything derived
@@ -1174,13 +1193,19 @@ def wrap_string_in_list(maybe_string):
     return maybe_string
 
 def flatten_lists(list_of_lists):
-    """ This function flattens a list of lists into a single list.
+    """ Flatten a list of lists into a single list
+    
+    This function does not further flatten inner lists.
 
-        Args:
-            list_of_lists (list): the list to flatten
+    Parameters
+    ----------
+    list_of_lists: iterable
+        The iterable to flatten
 
-        Returns:
-            list: the flattened list
+    Returns
+    -------
+    flattened_list: list
+        The flattened list
     """
     return [item for sublist in list_of_lists for item in sublist]
 
