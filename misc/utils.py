@@ -11,6 +11,7 @@ import os
 import shutil
 import subprocess
 import sys
+import typing
 
 import numpy as np
 
@@ -956,6 +957,50 @@ def append_to_xlsx(df, xlsx, sheet='Sheet_1', **kwargs):
 ###
 #   Functions to help with built-in (ish) data structures
 ###
+
+
+def apply_no_return(items:typing.Iterable, func:typing.Callable, *args,
+        progress_bar:bool=False, total_items=None, **kwargs) -> None:
+    """ Apply func to each item in the list
+    
+    Unlike `map`, this function does not return anything.
+    
+    Parameters
+    ----------
+    items : iterable
+        An iterable
+        
+    func : function pointer
+        The function to apply to each item
+
+    args, kwargs
+        The other arguments to pass to `func`
+
+    progress_bar : bool
+        Whether to show a progress bar when waiting for results.
+
+    total_items : int
+        The number of items in `items`. If not given, `len` is used.
+        Presumably, this is used when `items` is a generator and `len` does
+        not work.
+
+    Returns
+    -------
+    None
+        If a return value is expected, use list comprehension instead
+    """    
+    if progress_bar:
+
+        if total_items is None:
+            items = tqdm.tqdm(items, total=total_items)
+        else:
+            items = tqdm.tqdm(items, total=len(items))
+
+    for i in items:
+        func(*(i, *args), **kwargs)
+    
+    return None
+
 
 def list_to_dict(l, f=None):
     """ Convert the list to a dictionary in which keys and values are adjacent
