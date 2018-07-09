@@ -5,7 +5,9 @@ class is that it allows passing dense numeric matrices and sparse bag-of-word
 matrices simultaneously. Thus, for downstream estimators which can accept sparse
 matrices, there is never any need for the BoW data to be densified.
 """
+import scipy.sparse
 
+import sklearn
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import Imputer, StandardScaler
 from sklearn.feature_extraction.text import TfidfTransformer
@@ -54,7 +56,7 @@ class SimpleNumericBoWUnion(object):
         self.num_data = num_data
         self.bow_tokens = bow_tokens
         self.num_pipeline = num_pipeline
-        self.text_pipeline = text_pipeline
+        self.bow_pipeline = bow_pipeline
         
     def fit(self, *_, **__):
         """ Fit the respective pipelines to the data provided in the constructor
@@ -73,18 +75,19 @@ class SimpleNumericBoWUnion(object):
     def transform(self, *_, **__):
         """ Transform the data provided to the constructor
         """
-        validation_utils.check_is_fitted(self, ["num_pipeline_", "bow_pipeline_"])
+        validation_utils.check_is_fitted(self, ["num_pipeline_", "bow_pipelines_"])
         
         Xt_num = self.num_pipeline_.transform(self.num_data)
         Xt_num = scipy.sparse.csr_matrix(Xt_num)
         
-        it = zip(self.bow_pipeline_, self.bow_tokens)
+        it = zip(self.bow_pipelines_, self.bow_tokens)
         Xt = [
             p.transform(nt) for p, nt in it
         ]
         
         Xt.append(Xt_num)
         Xt = scipy.sparse.hstack(Xt)
+        Xt = Xt.tocsr()
         
         return Xt
         
@@ -137,6 +140,7 @@ class SimpleNumericBoWUnion(object):
             **preprocessor_hyperparameters
         )
         
+        estimator = sklearn.clone(estimator_template)
         pipeline = Pipeline([
             ('preprocessor', preprocessor),
             ('estimator', estimator)
