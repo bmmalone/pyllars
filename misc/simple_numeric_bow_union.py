@@ -87,10 +87,6 @@ class SimpleNumericBoWUnion(object):
         ]
         
         Xt.append(Xt_num)
-        
-        for x in Xt:
-            print(x.shape)
-        
         Xt = scipy.sparse.hstack(Xt)
         
         # we generally want to index, so convert to csr
@@ -147,8 +143,7 @@ class SimpleNumericBoWUnion(object):
             **preprocessor_hyperparameters
         )
         
-        estimator = sklearn.base.clone(estimator_template)
-        
+        estimator = sklearn.clone(estimator_template)
         pipeline = Pipeline([
             ('preprocessor', preprocessor),
             ('estimator', estimator)
