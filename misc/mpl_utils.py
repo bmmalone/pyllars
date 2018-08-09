@@ -936,4 +936,52 @@ def draw_rectangle(ax, base_x, base_y, width, height, center_x=False,
     y = base_y - y_offset
     x = base_x - x_offset
     ax.add_patch(patches.Rectangle((x,y), width, height, **kwargs))
+   
+
+def plot_sorted_values(values, ymin=None, ymax=None, kwargs={}, ax=None):
+    """ Sort `values` and plot them
+
+    Parameters
+    ----------
+    values : list-like of numbers
+        The values to plot
+
+    y{min,max} : floats
+        The min and max values for the y-axis. If not given, then these
+        default to the minimum and maximum values in the list.
+
+    kwargs : dictionary
+        Additional keyword arguments to pass to `ax.plot`
+
+    ax : mpl.Axis
+        The axis on which to plot. If `None`, then an axis will be created
+
+    Returns
+    -------
+    fig : mpl.Figure
+        The Figure associated with `ax`, or a new Figure
+
+    ax : mpl.Axis
+        Either `ax` or a new Axis
+    """
     
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.figure
+        
+    y = np.sort(values)
+    x = np.arange(len(y))
+    
+    ax.plot(x,y, **kwargs)
+
+    if ymin is None:
+        ymin = y[0]
+
+    if ymax is None:
+        ymax = y[-1]
+    
+    ax.set_ylim((ymin, ymax))
+    ax.set_xlim((0, len(y)))
+    
+    return fig, ax 
