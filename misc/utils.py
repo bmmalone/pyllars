@@ -636,7 +636,6 @@ def create_symlink(src, dst, remove=True, create=False, call=True):
 
 
 def to_dense(data, row, dtype=float, length=-1):
-    import numpy as np
     d = data.getrow(row).todense()
     d = np.squeeze(np.asarray(d, dtype=dtype))
 
@@ -1148,7 +1147,7 @@ def is_sequence(maybe_sequence):
         return False
 
     is_sequence = isinstance(maybe_sequence, collections.Sequence)
-    is_ndarray = isinstance(maybe_sequence, numpy.ndarray)
+    is_ndarray = isinstance(maybe_sequence, np.ndarray)
     return  is_sequence or is_ndarray
 
 def wrap_string_in_list(maybe_string):
@@ -1287,7 +1286,6 @@ def remove_nones(l, return_np_array=False):
         Imports:
             numpy
     """
-    import numpy as np
 
     ret = [i for i in l if i is not None]
 
