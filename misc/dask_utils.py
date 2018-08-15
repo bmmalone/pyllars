@@ -145,35 +145,39 @@ def get_joblib_parallel_backend_context_manager(args):
 #   Helpers to submit arbitrary jobs to a dask cluster
 ###
 
-def apply_iter(it, client, func, *args, return_futures=False,
-        progress_bar=True, **kwargs):
+def apply_iter(it, client, func, *args, return_futures:bool=False,
+        progress_bar:bool=True, priority:int=0, **kwargs):
     """ Call `func` on each item in `it`.
 
     Additionally, `args` and `kwargs` are passed to the function call.
 
     Parameters
     ----------
-    it: an iterable
+    it : an iterable
         The sequence of inputs for `func`
 
-    client: distributed.client.Client
+    client : distributed.client.Client
         A dask client
 
-    func: function pointer
+    func : function pointer
         The function to apply to each row in `data_frame`
 
     args, kwargs
         The other arguments to pass to `func`
 
-    return_futures: bool
+    return_futures : bool
         Whether to wait for the results (`False`, the default) or return a
         list of dask futures (when `True`). If a list of futures is returned,
         the `result` method should be called on each of them at some point
         before attempting to use the results.
 
-    progress_bar: bool
+    progress_bar : bool
         Whether to show a progress bar when waiting for results. The parameter
         is only relevant when `return_futures` is `False`.
+        
+    priority : int
+        The priority of the submitted tasks. Please see the dask documentation
+        for more details: http://distributed.readthedocs.io/en/latest/priority.html
 
     Returns
     -------
@@ -189,7 +193,7 @@ def apply_iter(it, client, func, *args, return_futures=False,
 
 
     ret_list = [
-        client.submit(func, *(i, *args), **kwargs) for i in it
+        client.submit(func, *(i, *args), **kwargs, priority=priority) for i in it
     ]
 
     if return_futures:
@@ -206,8 +210,8 @@ def apply_iter(it, client, func, *args, return_futures=False,
     return ret_list
 
 
-def apply_df(data_frame, client, func, *args, return_futures=False,
-        progress_bar=True, **kwargs):
+def apply_df(data_frame, client, func, *args, return_futures:bool=False,
+        progress_bar:bool=True, priority:int=0, **kwargs):
     """ Call `func` on each row in `data_frame`.
 
     Additionally, `args` and `kwargs` are passed to the function call.
@@ -235,6 +239,10 @@ def apply_df(data_frame, client, func, *args, return_futures=False,
     progress_bar: bool
         Whether to show a progress bar when waiting for results. The parameter
         is only relevant when `return_futures` is `False`.
+        
+    priority : int
+        The priority of the submitted tasks. Please see the dask documentation
+        for more details: http://distributed.readthedocs.io/en/latest/priority.html
 
     Returns
     -------
@@ -251,7 +259,7 @@ def apply_df(data_frame, client, func, *args, return_futures=False,
         it = tqdm.tqdm(it, total=len(data_frame))
 
     ret_list = [
-        client.submit(func, *(row[1], *args), **kwargs) 
+        client.submit(func, *(row[1], *args), **kwargs, priority=priority) 
             for row in it
     ]
 
@@ -266,8 +274,8 @@ def apply_df(data_frame, client, func, *args, return_futures=False,
     return ret_list
 
 
-def apply_groups(groups, client, func, *args, return_futures=False,
-        progress_bar=True, **kwargs):
+def apply_groups(groups, client, func, *args, return_futures:bool=False,
+        progress_bar:bool=True, priority:int=0, **kwargs):
     """ Call `func` on each group in `groups`.
 
     Additionally, `args` and `kwargs` are passed to the function call.
@@ -295,6 +303,10 @@ def apply_groups(groups, client, func, *args, return_futures=False,
     progress_bar: bool
         Whether to show a progress bar when waiting for results. The parameter
         is only relevant when `return_futures` is `False`.
+        
+    priority : int
+        The priority of the submitted tasks. Please see the dask documentation
+        for more details: http://distributed.readthedocs.io/en/latest/priority.html
 
     Returns
     -------
@@ -311,7 +323,7 @@ def apply_groups(groups, client, func, *args, return_futures=False,
         it = tqdm.tqdm(it)
 
     ret_list = [
-        client.submit(func, *(group, *args), **kwargs) 
+        client.submit(func, *(group, *args), **kwargs, priority=priority) 
             for name, group in it
     ]
 
