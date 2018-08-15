@@ -551,7 +551,8 @@ def create_simple_bar_chart(ax,
                             fontsize=12,
                             label_fontsize=12,
                             legend_fontsize=12,
-                            title_fontsize=12
+                            title_fontsize=12,
+                            tick_offset=0.5
                            ):
 
     import numpy as np
@@ -602,11 +603,12 @@ def create_simple_bar_chart(ax,
         
     
     # now the x-axis
-    if xticklabels == "default":
-        xticklabels = xticks
+    if isinstance(xticklabels, str):
+        if xticklabels == "default":
+            xticklabels = xticks
        
 
-    tick_offset = 0.5 - spacing
+    tick_offset = tick_offset - spacing
 
     if xticklabels is not None:
         ax.set_xticks(xticks+tick_offset)
