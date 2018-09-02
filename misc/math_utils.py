@@ -498,7 +498,7 @@ def normalize_rows(matrix):
     normalized_matrix: 2-dimensional np.array
         The matrix normalized s.t. all row sums are 1
     """
-    coef = matrix.sum(axis=1)
+    coef = np.abs(matrix).sum(axis=1)
     coef = coef[:,np.newaxis]
     matrix = np.divide(matrix, coef)
     return matrix
@@ -516,7 +516,7 @@ def normalize_columns(m):
     normalized_matrix: np.array with the same shape as m
         The matrix normalized s.t. all column sums are 1
     """
-    col_sums = np.sum(m, axis=0)
+    col_sums = np.sum(np.abs(m), axis=0)
     m = np.divide(m, col_sums)
     return m
 

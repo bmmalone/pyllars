@@ -174,8 +174,8 @@ def read_df(filename, filetype='AUTO', sheet=None, **kwargs):
 
     return df
 
-def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
-        do_not_compress=False, **kwargs):
+def write_df(df:pd.DataFrame, out, create_path:bool=False, filetype:str='AUTO',
+        sheet:str='Sheet_1', compress:bool=True,  **kwargs):
     """ This function writes a data frame to a file of the specified type. 
         Unless otherwise specified, csv files are gzipped when written. By
         default, the filetype will be guessed based on the extension. The 
@@ -190,7 +190,7 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
         case, the out object is taken to be a pd.ExcelWriter, and the df is
         appended to the writer. AUTO will also guess this correctly.
 
-        N.B. The hdf5 filetype has not been tested!!!
+        N.B. The hdf5 filetype has not been thoroughly tested!!!
 
         Parameters
         ----------
@@ -216,12 +216,12 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
             The type of output file to write.  If AUTO, the function uses the
             extensions mentioned above to guess the filetype.
 
-        sheet: string
+        sheet : string
             The name of the sheet (excel) or key (hdf5) to use when writing the
             file. This argument is not used for csv. For excel, the sheet is
             limited to 31 characters. It will be trimmed if necessary.
 
-        do_not_compress: bool
+        compress : bool
             Whether to compress the output. This is only used for csv files.
 
         **kwargs : other keyword arguments to pass to the df.to_XXX method
@@ -230,6 +230,12 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
         -------
         None, but the file is created
     """
+    
+    # check for a deprecated keyword
+    if 'do_not_compress' in kwargs:
+        msg = ("[pd_utils.write_df] `do_not_compress` keyword has been removed. "
+            "Please use `compress` instead.")
+        raise DeprecationWarning(msg)
     
     # first, see if we want to guess the filetype
     if filetype == 'AUTO':
@@ -247,11 +253,11 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
 
     
     if filetype == 'csv':
-        if do_not_compress:
-            df.to_csv(out, **kwargs)
-        else:
+        if compress:
             with gzip.open(out, 'wt') as out:
                 df.to_csv(out, **kwargs)
+        else:
+            df.to_csv(out, **kwargs)
 
     elif filetype == 'excel':
         with pd.ExcelWriter(out) as out:
@@ -264,7 +270,7 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
         df.to_hdf(out, sheet, **kwargs)
 
     elif filetype == 'parquet':
-        if not do_not_compress:
+        if compress:
             kwargs['compression'] = 'GZIP'
 
         # handle "index=False" kwarg

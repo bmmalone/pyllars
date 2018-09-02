@@ -5,6 +5,7 @@ class is that it allows passing dense numeric matrices and sparse bag-of-word
 matrices simultaneously. Thus, for downstream estimators which can accept sparse
 matrices, there is never any need for the BoW data to be densified.
 """
+
 import scipy.sparse
 
 import sklearn
@@ -87,6 +88,8 @@ class SimpleNumericBoWUnion(object):
         
         Xt.append(Xt_num)
         Xt = scipy.sparse.hstack(Xt)
+        
+        # we generally want to index, so convert to csr
         Xt = Xt.tocsr()
         
         return Xt
