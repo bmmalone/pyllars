@@ -253,22 +253,6 @@ def split(delimiters, string, maxsplit=0):
     regex_pattern = '|'.join(map(re.escape, delimiters))
     return re.split(regex_pattern, string, maxsplit)
 
-
-def load_config(config, required_keys=None):
-    """ Read in the config file, print a logging (INFO) statement and verify
-    that the required keys are present
-    """
-
-    msg = "Reading config file"
-    logger.info(msg)
-
-    config = yaml.load(open(config))
-
-    if required_keys is not None:
-        validation_utils.check_keys_exist(config, required_keys)
-
-    return config
-
 def read_commented_file(filename):
     f = open(filename)
     lines = []
