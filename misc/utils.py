@@ -251,6 +251,22 @@ def split(delimiters, string, maxsplit=0):
     regex_pattern = '|'.join(map(re.escape, delimiters))
     return re.split(regex_pattern, string, maxsplit)
 
+
+def load_config(config, required_keys=None):
+    """ Read in the config file, print a logging (INFO) statement and verify
+    that the required keys are present
+    """
+
+    msg = "Reading config file"
+    logger.info(msg)
+
+    config = yaml.load(open(config))
+
+    if required_keys is not None:
+        validation_utils.check_keys_exist(config, required_keys)
+
+    return config
+
 def read_commented_file(filename):
     f = open(filename)
     lines = []
@@ -636,7 +652,6 @@ def create_symlink(src, dst, remove=True, create=False, call=True):
 
 
 def to_dense(data, row, dtype=float, length=-1):
-    import numpy as np
     d = data.getrow(row).todense()
     d = np.squeeze(np.asarray(d, dtype=dtype))
 
@@ -957,6 +972,50 @@ def append_to_xlsx(df, xlsx, sheet='Sheet_1', **kwargs):
 ###
 #   Functions to help with built-in (ish) data structures
 ###
+def is_iterator_exhausted(iterator, return_element=False):
+    """ Check if the iterator is exhausted
+
+    This method is primarily intended to check if an iterator is empty.
+
+    N.B. THIS CONSUMES THE NEXT ELEMENT OF THE ITERATOR! The `return_element`
+    parameter can change this behavior.
+
+    This method is adapted from this SO question:
+        https://stackoverflow.com/questions/661603
+
+    Parameters
+    ----------
+    iterator : an iterator
+
+    return_element : bool
+        Whether to return the next element of the iterator
+
+    Returns
+    -------
+    is_exhausted : bool
+        Whether there was a next element in the iterator
+
+    [optional] next_element : object
+        It `return_element` is `True`, then the consumed element is also
+        returned.
+    """
+
+    # create a flag as the default value for "next"
+    flag = object()
+
+    # grab the next thing in the iterator, or our flag if there is nothing
+    n = next(iterator, flag)
+
+    # check if we saw the flag or some real value
+    is_exhausted = (n == flag)
+
+    # build up the return
+    ret = is_exhausted
+
+    if return_element:
+        ret = (is_exhausted, n)
+
+    return ret
 
 
 def apply_no_return(items:typing.Iterable, func:typing.Callable, *args,
@@ -1148,7 +1207,7 @@ def is_sequence(maybe_sequence):
         return False
 
     is_sequence = isinstance(maybe_sequence, collections.Sequence)
-    is_ndarray = isinstance(maybe_sequence, numpy.ndarray)
+    is_ndarray = isinstance(maybe_sequence, np.ndarray)
     return  is_sequence or is_ndarray
 
 def wrap_string_in_list(maybe_string):
@@ -1284,11 +1343,7 @@ def remove_nones(l, return_np_array=False):
         Returns:
             list: a list or np.array with the Nones removed
 
-        Imports:
-            numpy
     """
-    import numpy as np
-
     ret = [i for i in l if i is not None]
 
     if return_np_array:
