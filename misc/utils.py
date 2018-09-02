@@ -17,8 +17,6 @@ import yaml
 import numpy as np
 
 from misc.deprecated_decorator import deprecated
-import misc.shell_utils as shell_utils
-import misc.validation_utils as validation_utils
 
 @deprecated("[utils.check_is_fitted] Please use the version in `validation_utils`")
 def check_is_fitted(estimator, attributes, msg=None, all_or_any=all):
@@ -253,6 +251,23 @@ def split(delimiters, string, maxsplit=0):
     regex_pattern = '|'.join(map(re.escape, delimiters))
     return re.split(regex_pattern, string, maxsplit)
 
+
+def load_config(config, required_keys=None):
+    """ Read in the config file, print a logging (INFO) statement and verify
+    that the required keys are present
+    """
+    import misc.validation_utils as validation_utils
+
+    msg = "Reading config file"
+    logger.info(msg)
+
+    config = yaml.load(open(config))
+
+    if required_keys is not None:
+        validation_utils.check_keys_exist(config, required_keys)
+
+    return config
+
 def read_commented_file(filename):
     f = open(filename)
     lines = []
@@ -443,6 +458,7 @@ def check_gzip_file(filename, has_tar=False, raise_on_error=True, logger=logger)
         Raises:
             OSError: if gunzip does not return 0 and raise_on_error is True
     """
+    import misc.shell_utils as shell_utils
     
     programs = ['gunzip', 'tar']
     shell_utils.check_programs_exist(programs)
