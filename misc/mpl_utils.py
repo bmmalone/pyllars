@@ -652,7 +652,7 @@ def create_simple_bar_chart(ax,
     if title is not None:
         ax.set_title(title, fontsize=title_fontsize)
     
-    return mpl_bars
+    return ax
 
 
 def get_diff_counts(data_np):
