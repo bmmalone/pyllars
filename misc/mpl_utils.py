@@ -870,11 +870,55 @@ def create_stacked_bar_graph(
                 fontsize=legend_font_size)
 
     return bars
+
+def plot_simple_scatter(x, y, ax=None, equal_aspect=True, **kwargs):
+    """ Plot a simple scatter plot of x vs. y on `ax`
+    
+    If `fig` and `ax` are not given, then will be created.
+    
+    See the matplotlib documentation for more keyword arguments and details:
+        https://matplotlib.org/api/_as_gen/matplotlib.pyplot.plot.html
+    
+    Parameters
+    ----------
+    x,y : array-like of numbers
+        The values to plot
+        
+    ax : mpl.Axis
+        An axis for plotting. If this is not given, then a figure and axis will
+        be created.
+        
+    equal_aspect : bool
+        Whether to set the aspect of the axis to `equal`
+        
+    **kwargs : <key>=<value> pairs
+        Additional keyword arguments to pass to the plot function. Some useful
+        keyword arguments are:
+        
+        * `label` : the label for a legend
+        * `marker` : https://matplotlib.org/examples/lines_bars_and_markers/marker_reference.html
+        
+    Returns
+    -------
+    fig, ax : mpl.Figure and mpl.Axis
+        The figure and axis on which the scatter points were plotted
+    """
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.figure
+        
+    ax.scatter(x,y, **kwargs)
+    
+    if equal_aspect:
+        ax.set_aspect('equal')
+        
+    return fig, ax
     
 def plot_sorted_values(values, ax=None, **kwargs):
     """ Sort the values and plot them on `ax`
     
-    If `fig` and `ax` are not given, then will be created.
+    If `ax` is not given, then it will be created.
     
     See the matplotlib documentation for more keyword arguments and details:
         https://matplotlib.org/api/_as_gen/matplotlib.pyplot.plot.html
