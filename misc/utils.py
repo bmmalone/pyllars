@@ -1375,29 +1375,80 @@ def replace_none_with_empty_iter(iterator):
         return []
     return iterator
 
-def open(filename, mode='r', compress=False, is_text=True, *args, **kwargs):
+_gzip_extensions = ('gz',)
+_bzip2_extensions = ('bz2',)
+
+def _guess_compression(filename):
+    """ Guess the compression type of `fname` based on its extension.
+    
+    If not matching compression extensions are found, then this function
+    guesses that the file name does not correspond to a compressed file.
+    
+    Compression type and extensions:
+    
+        * gzip: gz
+        * bzip2 : bz2
+        * no_compression: everything else
+    
+    Parameters
+    ----------
+    filename : string
+        The name of the file
+        
+    Returns
+    -------
+    compression_type : string
+        The compression type. See above for details about the value.
+    """
+    
+    compression_type = 'no_compression'
+    
+    if filename.endswith(_gzip_extensions):
+        compression_type = "gzip"
+    elif filename.endswith(_bzip2_extensions):
+        compression_type = "bzip2"
+        
+    return compression_type
+    
+
+def open_file(
+        filename,
+        mode='r',
+        guess_compression=True,
+        compression_type=None,
+        is_text=True,
+        *args, **kwargs):
     """ Return a file handle to the given file. 
     
-    The only difference between this and the standard open command is that this
+    The main difference between this and the standard open command is that this
     function transparently opens zip files, if specified. If a gzipped file is
     to be opened, the mode is adjusted according to the "is_text" flag.
 
     Parameters
     ---------
-    filename: string
+    filename : string
         the file to open
 
-    mode: string
+    mode : string
         the mode to open the file. This *should not* include
         "t" for opening gzipped text files. That is handled by the
         "is_text" flag.
+        
+    guess_compression : bool
+        Whether to guess the compression mode of the file.
 
-    compress: bool
-        whether to open the file as a gzipped file
+    compression_type : string or None
+        If given, then the file will be opened using the specified
+        compression type. This overrides the `guess_compression`
+        flag.Valid options are:
+        
+        * no_compression
+        * gzip
+        * zip2
 
-    is_text: bool
-        for gzip files, whether to open in text (True) or
-        binary (False) mode
+    is_text : bool
+        For zip files, whether to open in text (True) or binary
+        (False) mode
 
     args, kwargs
         Additional arguments are passed to the call to open
@@ -1405,21 +1456,29 @@ def open(filename, mode='r', compress=False, is_text=True, *args, **kwargs):
     Returns
     -------
     file_handle: the file handle to the file
-
     """
-    import builtins
-
-    if compress:
+    
+    if compression_type is None:
+        compression_type = _guess_compression(filename)
+        
+    if is_text:
+        mode = mode + "t"
+        
+    if compression_type == 'gzip':        
         import gzip
-
-        if is_text:
-            mode = mode + "t"
         out = gzip.open(filename, mode, *args, **kwargs)
-    else:
-        out = builtins.open(filename, mode, *args, **kwargs)
+        
+    elif compression_type == 'bzip2':        
+        msg = "bzip2 file handling has not been tested."
+        logger.warning(msg)
+        
+        import bz2            
+        out = gzip.open(filename, mode, *args, **kwargs)
+        
+    elif compression_type == 'no_compression':
+        out = open(filename, mode, *args, **kwargs)
 
     return out
-
 
 def grouper(n, iterable):
     """ This function returns lists of size n of elements from the iterator. It
