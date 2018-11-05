@@ -871,51 +871,6 @@ def create_stacked_bar_graph(
 
     return bars
     
-def plot_sorted_values(values, ax=None, **kwargs):
-    """ Sort the values and plot them on `ax`
-    
-    If `fig` and `ax` are not given, then will be created.
-    
-    See the matplotlib documentation for more keyword arguments and details:
-        https://matplotlib.org/api/_as_gen/matplotlib.pyplot.plot.html
-    
-    Parameters
-    ----------
-    values : array-like of numbers
-        The values to sort and plot as a line graph
-        
-    ax : mpl.Axis
-        An axis for plotting. If this is not given, then a figure and axis will
-        be created.
-        
-    **kwargs : <key>=<value> pairs
-        Additional keyword arguments to pass to the plot function. Some useful
-        keyword arguments are:
-        
-        * `label` : the label for a legend
-        * `lw` : the line width
-        * `ls` : https://matplotlib.org/gallery/lines_bars_and_markers/line_styles_reference.html
-        * `marker` : https://matplotlib.org/examples/lines_bars_and_markers/marker_reference.html
-        
-    Returns
-    -------
-    fig, ax : mpl.Figure and mpl.Axis
-        The figure and axis on which the line was plotted
-    """
-    
-    if ax is None:
-        fig, ax = plt.subplots()
-    else:
-        fig = ax.figure
-        
-    y = np.sort(values)
-    x = np.arange(len(y))
-    
-    ax.plot(x,y, **kwargs)
-    return fig, ax
-    
-
-
 def plot_trend_line(ax, x, intercept, slope, power, **kwargs):
     """ Draw the trend line implied by the given coefficients.
 
@@ -984,7 +939,7 @@ def draw_rectangle(ax, base_x, base_y, width, height, center_x=False,
     ax.add_patch(patches.Rectangle((x,y), width, height, **kwargs))
    
 
-def plot_sorted_values(values, ymin=None, ymax=None, kwargs={}, ax=None):
+def plot_sorted_values(values, ymin=None, ymax=None, ax=None, scale_x=False, **kwargs):
     """ Sort `values` and plot them
 
     Parameters
@@ -995,12 +950,24 @@ def plot_sorted_values(values, ymin=None, ymax=None, kwargs={}, ax=None):
     y{min,max} : floats
         The min and max values for the y-axis. If not given, then these
         default to the minimum and maximum values in the list.
-
-    kwargs : dictionary
-        Additional keyword arguments to pass to `ax.plot`
+        
+    scale_x : bool
+        If True, then the `x` values will be equally-spaced between 0 and 1.
+        Otherwise, they will be the values 0 to len(values)
 
     ax : mpl.Axis
-        The axis on which to plot. If `None`, then an axis will be created
+        An axis for plotting. If this is not given, then a figure and axis will
+        be created.
+        
+    **kwargs : <key>=<value> pairs
+        Additional keyword arguments to pass to the plot function. Some useful
+        keyword arguments are:
+        
+        * `label` : the label for a legend
+        * `lw` : the line width
+        * `ls` : https://matplotlib.org/gallery/lines_bars_and_markers/line_styles_reference.html
+        * `marker` : https://matplotlib.org/examples/lines_bars_and_markers/marker_reference.html
+        
 
     Returns
     -------
@@ -1017,7 +984,11 @@ def plot_sorted_values(values, ymin=None, ymax=None, kwargs={}, ax=None):
         fig = ax.figure
         
     y = np.sort(values)
-    x = np.arange(len(y))
+    
+    if scale_x:
+        x = np.linspace(0,1, len(y))
+    else:
+        x = np.arange(len(y))
     
     ax.plot(x,y, **kwargs)
 
