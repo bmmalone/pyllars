@@ -50,19 +50,26 @@ def dict_to_dataframe(dic, key_name='key', value_name='value'):
     df = df.reset_index()
     return df
 
+
 def dataframe_to_dict(df, key_field, value_field):
-    """ This function converts two columns of a data frame into a dictionary.
+    """ Convert two columns of a data frame into a dictionary
 
-        Args:
-            df (pd.DataFrame): the data frame
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The data frame
 
-            key_field (string): the field to use as the keys in the dictionary
+    key_field : string
+        The field to use as the keys in the dictionary
 
-            value_field (string): the field to use as the values
+    value_field : string
+        The field to use as the values
 
-        Returns:
-            dict: a dictionary which has one entry for each row in the data
-                frame, with the keys and values as indicated by the fields
+    Returns
+    -------
+    the_dict: dictionary
+        A dictionary which has one entry for each row in the data
+        frame, with the keys and values as indicated by the fields
         
     """
     dic = dict(zip(df[key_field], df[value_field]))
