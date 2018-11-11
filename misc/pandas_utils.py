@@ -75,6 +75,25 @@ def dataframe_to_dict(df, key_field, value_field):
     dic = dict(zip(df[key_field], df[value_field]))
     return dic
 
+def get_series_union(*pd_series):
+    """ Take the union of values from the list of series
+    
+    Parameters
+    ----------
+    pd_series : list of pandas series
+        The list of pandas series
+        
+    Returns
+    -------
+    set_union : set
+        The union of the values in all series
+    """
+    res = set.union(
+        *[set(s) for s in pd_series]
+    )
+    
+    return res
+
 excel_extensions = ('xls', 'xlsx')
 hdf5_extensions = ('hdf', 'hdf5', 'h5', 'he5')
 parquet_extensions = ('parq', )

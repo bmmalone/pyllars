@@ -10,9 +10,26 @@ import matplotlib.patches as patches
 import numpy as np
 
 import misc.utils as utils
+import misc.validation_utils as validation_utils
 
 import logging
 logger = logging.getLogger(__name__)
+
+_VALID_AXIS_VALUES = {
+    'both',
+    'x',
+    'y'
+}
+
+_X_AXIS_VALUES = {
+    'both',
+    'x'
+}
+
+_Y_AXIS_VALUES = {
+    'both',
+    'y'
+}
 
 def add_fontsizes_to_args(args,
         legend_title_fontsize=12,
@@ -180,7 +197,7 @@ def hide_tick_labels_by_text(ax, to_remove_x=[], to_remove_y=[]):
     hide_tick_labels(ax, keep_x=keep_x, keep_y=keep_y)
 
 
-def hide_tick_labels(ax, keep_x=[], keep_y=[]):
+def hide_tick_labels(ax, keep_x=[], keep_y=[], axis='both'):
     """ Hide the tick labels on both axes. Optionally, some can be preserved.
 
     Parameters
@@ -191,25 +208,32 @@ def hide_tick_labels(ax, keep_x=[], keep_y=[]):
     keep_{x,y} : list-like of ints
         The indices of any x-axis ticks to keep. The numbers are passed directly
         as indices to the xticks array.
+        
+    axis : string in {'both', 'x', 'y'}
+        Axis of the tick labels to hide
 
     Returns
     -------
     None, but the tick labels of the axis are removed, as specified
     """
+    
+    validation_utils.validate_in_set(axis, _VALID_AXIS_VALUES, "axis")
 
-    xticks = ax.xaxis.get_major_ticks()
-    for xtick in xticks:
-        xtick.label1.set_visible(False)
+    if axis in _X_AXIS_VALUES:
+        xticks = ax.xaxis.get_major_ticks()
+        for xtick in xticks:
+            xtick.label1.set_visible(False)
 
-    for x in keep_x:
-        xticks[x].label1.set_visible(True)
+        for x in keep_x:
+            xticks[x].label1.set_visible(True)
 
-    yticks = ax.yaxis.get_major_ticks()
-    for ytick in yticks:
-        ytick.label1.set_visible(False)
+    if axis in _Y_AXIS_VALUES:
+        yticks = ax.yaxis.get_major_ticks()
+        for ytick in yticks:
+            ytick.label1.set_visible(False)
 
-    for y in keep_y:
-        yticks[y].label1.set_visible(True)
+        for y in keep_y:
+            yticks[y].label1.set_visible(True)
 
 def set_ticklabels_fontsize(ax, fontsize, axis='both', which='major'):
     """ Set the font size of the tick labels.
