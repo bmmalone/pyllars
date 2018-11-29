@@ -1213,7 +1213,7 @@ def is_sequence(maybe_sequence):
     return  is_sequence or is_ndarray
 
 def wrap_string_in_list(maybe_string):
-    """ If maybe_string is a string, wrap it in a list
+    """ If `maybe_string` is a string, then wrap it in a list.
 
     The motivation for this function is that some functions return either a
     single string or multiple strings as a list. The return value of this
@@ -1221,37 +1221,42 @@ def wrap_string_in_list(maybe_string):
 
     Parameters
     ----------
-    maybe_string: obj
+    maybe_string : object
         An object which may be a string
 
     Returns
     -------
-    l: list
+    list
         Either the original object, or maybe_string wrapped in a list, if
-            it was a string
+            it was a string}
     """
     if isinstance(maybe_string, str):
         return [maybe_string]
     return maybe_string
 
-def wrap_string_in_list(maybe_string):
-    """ This function checks if maybe_string is a string (or anything derived
-        from str). If so, it wraps it in a list.
 
-        The motivation for this function is that some functions return either a
-        single string or multiple strings as a list. The return value of this
-        function can be iterated over safely.
+def wrap_in_list(maybe_sequence):
+    """ If `maybe_sequence` is not a sequence, then wrap it in a list
+    
+    See `is_sequence` for more details about what counts as a sequence.
 
-        Args:
-            maybe_string (obj): an object which may be a string
+    Parameters
+    ----------
+    maybe_sequence : object
+        An object which may be a sequence
 
-        Returns:
-            either the original object, or maybe_string wrapped in a list, if
-                it was a string
+    Returns
+    -------
+    list
+        Either the original object, or maybe_sequence wrapped in a list, if
+            it was not already a sequence
     """
-    if isinstance(maybe_string, str):
-        return [maybe_string]
-    return maybe_string
+    ret = maybe_sequence
+    
+    if not is_sequence(maybe_sequence):
+        ret = [maybe_sequence]
+        
+    return ret
 
 def flatten_lists(list_of_lists):
     """ Flatten a list of lists into a single list
