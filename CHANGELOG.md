@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Validation helpers for non-pydata types
 - Simple BoW and numeric feature handler
 - Helpers for standard plots
+- Helpers for MyGene.py
 
 ### Updated
 - k-fold splitter to include validation set
