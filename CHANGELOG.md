@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Simple BoW and numeric feature handler
 - Helpers for standard plots
 - Helpers for MyGene.py
+- Helpers for working with the Gene Ontology
 
 ### Updated
 - k-fold splitter to include validation set
