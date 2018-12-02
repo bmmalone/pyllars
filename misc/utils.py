@@ -15,6 +15,7 @@ import typing
 import yaml
 
 import numpy as np
+import pandas as pd
 
 from misc.deprecated_decorator import deprecated
 
@@ -1187,6 +1188,75 @@ def get_type(type_string):
 
     return class_
 
+def get_set_pairwise_intersections(dict_of_sets, return_intersections=True):
+    """ Find the pairwise intersections among sets in `dict_of_sets`
+    
+    Parameters
+    ----------
+    dict_of_sets : mapping from set names to the sets
+        A dictionary in which the keys are the "names" of the sets and the values
+        are the actual sets
+        
+    return_intersections : bool
+        Whether to include the actual set intersections in the return. If `False`,
+        then only the intersection size will be included.
+        
+    Returns
+    -------
+    df_pairswise_intersections : pd.DataFrame
+        A dataframe with the following columns:
+        * set1 : the name of one set in the pair
+        * set2 : the name of the second set in the pair
+        * len(set1) : the size of set1
+        * len(set2) : the size of set2
+        * len(intersection) : the size of the intersection
+        * coverage_small : the fraction of the smaller of set1 or set2 in the intersection
+        * coverage_large : the fraction of the larger of set1 or set2 in the intersection
+        * intersection : the intersection set. Only included if `return_intersections`
+            is True.
+    """
+    all_intersection_sizes = []
+
+    it = itertools.combinations(dict_of_sets, 2)
+
+    for i in it:
+        s1 = i[0]
+        s2 = i[1]
+        set1 = dict_of_sets[s1]
+        set2 = dict_of_sets[s2]
+
+        intersection = set1 & set2
+        
+        # determine the coverage of both sets
+        coverage_set1 = len(intersection) / len(set1)
+        coverage_set2 = len(intersection) / len(set2)
+        
+        # and set the appropriate "coverage" variables
+        if len(set1) > len(set2):
+            coverage_small = coverage_set2
+            coverage_large = coverage_set1
+        else:
+            coverage_small = coverage_set1
+            coverage_large = coverage_set2
+            
+
+        intersection_size = {
+            'set1': s1,
+            'set2': s2,
+            'len(set1)': len(set1),
+            'len(set2)': len(set2),
+            'len(intersection)': len(intersection),
+            'coverage_small': coverage_small,
+            'coverage_large': coverage_large
+        }
+
+        if return_intersections:
+            intersection_size['intersection'] = intersection
+
+        all_intersection_sizes.append(intersection_size)
+
+    df_intersection_sizes = pd.DataFrame(all_intersection_sizes)
+    return df_intersection_sizes
 
 def is_sequence(maybe_sequence):
     """ Check whether `maybe_sequence` is a `collections.Sequence` or `np.ndarray`
