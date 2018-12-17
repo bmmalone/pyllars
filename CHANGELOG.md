@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Updated
 - k-fold splitter to include validation set
 - Transparent file opening for compressed files
+- Split out machine learning helpers into a separate module
 
 ### Fixed
 - Missing data one hot encoder to handle sparse inputs
