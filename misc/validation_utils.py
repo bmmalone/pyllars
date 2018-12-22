@@ -536,7 +536,7 @@ def validate_unique(array, name="array", caller=None):
 ###
 # sklearn-style helpers
 ###
-def check_is_fitted(estimator, attributes, msg=None, all_or_any=all):
+def check_is_fitted(estimator, attributes, name="estimator", caller=None, all_or_any=all):
     """Perform is_fitted validation for estimator.
 
     N.B. This is essentially the same as the function in
@@ -546,43 +546,30 @@ def check_is_fitted(estimator, attributes, msg=None, all_or_any=all):
     Checks if the estimator is fitted by verifying the presence of
     "all_or_any" of the passed attributes and raises a NotFittedError with the
     given message.
+
     Parameters
     ----------
     estimator : estimator instance.
         estimator instance for which the check is performed.
+
     attributes : attribute name(s) given as string or a list/tuple of strings
         Eg.:
             ``["coef_", "estimator_", ...], "coef_"``
 
-    msg : string
-        The default error message is, "This %(name)s instance is not fitted
-        yet. Call 'fit' with appropriate arguments before using this method."
-        For custom messages if "%(name)s" is present in the message string,
-        it is substituted for the estimator name.
-        Eg. : "Estimator, %(name)s, must be fitted before sparsifying".
+    name: string
+        A name for the variable in the error message
+
+    caller: string
+        A name for the caller in the error message
 
     all_or_any : callable, {all, any}, default all
         Specify whether all or any of the given attributes must exist.
-
-    Returns
-    -------
-    None
-
-    Raises
-    ------
-    NotFittedError
-        If the attributes are not found.
     """
-    import sklearn.exceptions
-    
-    if msg is None:
-        msg = ("This %(name)s instance is not fitted yet. Call the appropriate "
-               "initialization, fit, etc., methods before using this method.")
-
+   
     if not isinstance(attributes, (list, tuple)):
         attributes = [attributes]
 
     if not all_or_any([hasattr(estimator, attr) for attr in attributes]):
-        raise sklearn.exceptions.NotFittedError(msg % {'name': type(estimator).__name__})
-
-
+        msg = ("{caller}{name} is not fitted yet. Call the appropriate "
+            "initialization, fit, etc., methods before using this method.")
+        _raise_value_error(msg, name, caller, sklearn.exceptions.NotFittedError)

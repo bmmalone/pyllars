@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Helpers for standard plots
 - Helpers for MyGene.py
 - Helpers for working with the Gene Ontology
+- Helper to create scaler from means and standard deviations
 
 ### Updated
 - k-fold splitter to include validation set

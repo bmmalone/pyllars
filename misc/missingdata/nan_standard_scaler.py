@@ -1,9 +1,12 @@
+import logging
+logger = logging.getLogger(__name__)
+
 import numpy as np
 import pandas as pd
 import sklearn.base
 
-import logging
-logger = logging.getLogger(__name__)
+import misc.validation_utils as validation_utils
+
 
 class NaNStandardScaler(sklearn.base.TransformerMixin):
     """ Scale the specified columns to zero mean and unit variance while
@@ -51,7 +54,7 @@ class NaNStandardScaler(sklearn.base.TransformerMixin):
         # numeric types)
         #
         # See this SO comment for more details:
-        #   https://stackoverflow.com/questions/18557337/numpy-attributeerror-float-object-has-no-attribute-exp#comment27300354_18557337
+        #   https://stackoverflow.com/questions/18557337/
         ###
         X_cols = X_cols.astype(float)
         self.col_mean_ = np.nanmean(X_cols, axis=0)
@@ -69,6 +72,15 @@ class NaNStandardScaler(sklearn.base.TransformerMixin):
         return self
         
     def transform(self, X, *_):
+        
+        to_check = [
+            'col_mean_',
+            'col_std_',
+            'columns_',
+            'col_ignore_',
+        ]
+        validation_utils.check_is_fitted(self, to_check)
+        
         # if we did not see a column in the training, or if it had only one
         # value, we cannot really do anything with it
 
@@ -105,3 +117,21 @@ class NaNStandardScaler(sklearn.base.TransformerMixin):
             X[:,self.columns_] = X_transform
 
         return X
+    
+    @classmethod
+    def get_scaler(cls, means, stds):
+        scaler = cls()
+
+        num_features = means.shape[0]
+        scaler.col_mean_ = means
+        scaler.col_std_ = stds
+        scaler.columns_ = np.arange(num_features)
+
+        m_zero = scaler.col_std_ == 0
+        m_nan = np.isnan(scaler.col_std_)
+        scaler.col_ignore_ = m_zero | m_nan
+
+        scaler.col_mean_ = np.nan_to_num(scaler.col_mean_)
+        scaler.col_std_[scaler.col_ignore_] = 1
+
+        return scaler
