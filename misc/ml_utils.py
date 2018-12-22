@@ -16,8 +16,8 @@ import sklearn.preprocessing
 
 from copy import deepcopy
 
-import nec_neoag.utils as utils
-import nec_neoag.validation_utils as validation_utils
+import misc.utils as utils
+import misc.validation_utils as validation_utils
 
 ###
 # Data structures
@@ -43,14 +43,12 @@ _split_masks_fields = [
 ]
 split_masks = collections.namedtuple('split_masks', ' '.join(_split_masks_fields))
 
-def assign_stratified_splits(y,
+def get_cv_folds(y,
         num_splits=10,
+        use_stratified=True,
         shuffle=True,
         random_state=8675309):
     """ Assign a split to each row based on the values of `y`
-    
-    This function uses `StratifiedKFold`, so it assumes `y` corresponds to
-    a categorical target variable.
     
     Parameters
     ----------
@@ -60,6 +58,10 @@ def assign_stratified_splits(y,
         
     num_splits : int
         The number of stratified splits to use
+
+    use_stratified : bool
+        Whether to use stratified cross-validation. For example, this may be
+        set to False if choosing folds for regression.
         
     shuffle : bool
         Whether to shuffle during the split
@@ -72,11 +74,18 @@ def assign_stratified_splits(y,
     splits : np.array of ints
         The split of each row
     """
-    cv = sklearn.model_selection.StratifiedKFold(
-        n_splits=num_splits,
-        shuffle=shuffle,
-        random_state=random_state
-    )
+    if use_stratified:
+        cv = sklearn.model_selection.StratifiedKFold(
+            n_splits=num_splits,
+            shuffle=shuffle,
+            random_state=random_state
+        )
+    else:
+        cv = sklearn.model_selection.KFold(
+            n_splits=num_splits,
+            shuffle=shuffle,
+            random_state=random_state
+        )
     
     splits = np.zeros(len(y), dtype=int)
     for fold, (train, test) in enumerate(cv.split(y,y)):
@@ -216,8 +225,8 @@ def get_fold_data(
     X_test = df.loc[m_test, attribute_fields].values
     
     if attributes_are_np_arrays:
-        X_train = utils.stack_and_concat_np_arrays(X_train, concat=True)
-        X_test = utils.stack_and_concat_np_arrays(X_test, concat=True)
+        X_train = np.stack(X_train)
+        X_test = np.stack(X_test)
     
     y_train = df.loc[m_train, target_field].values
     y_test = df.loc[m_test, target_field].values
@@ -239,7 +248,7 @@ def get_fold_data(
             val_indices = np.where(m_validation)[0]
 
             if attributes_are_np_arrays:
-                X_val = utils.stack_and_concat_np_arrays(X_val, concat=True)
+                X_val = np.stack(X_val)
         
     ret = fold_data(
         X_train, y_train,
