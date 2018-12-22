@@ -895,7 +895,14 @@ def create_stacked_bar_graph(
 
     return bars
 
-def plot_simple_scatter(x, y, ax=None, equal_aspect=True, **kwargs):
+def plot_simple_scatter(
+        x, y,
+        ax=None,
+        equal_aspect=True,
+        set_lim=True,
+        show_y_x_line=True,
+        xy_line_kwargs={},
+        **kwargs):
     """ Plot a simple scatter plot of x vs. y on `ax`
     
     If `fig` and `ax` are not given, then will be created.
@@ -915,6 +922,15 @@ def plot_simple_scatter(x, y, ax=None, equal_aspect=True, **kwargs):
     equal_aspect : bool
         Whether to set the aspect of the axis to `equal`
         
+    set_lim : bool
+        Whether to automatically set the min and max axis limits
+        
+    show_y_x_line : bool
+        Whether to draw the y=x line. This will look weird if `set_lim` is False.
+        
+    xy_line_kwargs : dict
+        keyword arguments for plotting the y=x line, if it plotting
+        
     **kwargs : <key>=<value> pairs
         Additional keyword arguments to pass to the plot function. Some useful
         keyword arguments are:
@@ -933,6 +949,17 @@ def plot_simple_scatter(x, y, ax=None, equal_aspect=True, **kwargs):
         fig = ax.figure
         
     ax.scatter(x,y, **kwargs)
+
+    min_val = min(min(x), min(y))
+    max_val = max(max(x), max(y))
+    lim = (min_val, max_val)
+    
+    if set_lim:
+        ax.set_xlim(lim)
+        ax.set_ylim(lim)
+        
+    if show_y_x_line:
+        ax.plot(lim, lim, **xy_line_kwargs)
     
     if equal_aspect:
         ax.set_aspect('equal')
