@@ -4,7 +4,7 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [0.2.11] - In progress
+## [0.2.11] - 2018-12-22
 ### Added
 - Helpers for checking and collecting dask futures
 - Validation helpers for non-pydata types
