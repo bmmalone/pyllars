@@ -11,11 +11,13 @@ import os
 import shutil
 import subprocess
 import sys
+import typing
+import yaml
 
 import numpy as np
+import pandas as pd
 
 from misc.deprecated_decorator import deprecated
-import misc.shell_utils as shell_utils
 
 @deprecated("[utils.check_is_fitted] Please use the version in `validation_utils`")
 def check_is_fitted(estimator, attributes, msg=None, all_or_any=all):
@@ -141,6 +143,7 @@ def is_int(s):
     	return s[1:].isdigit()
     return s.isdigit()
 
+@deprecated("[utils.check_keys_exist] Please use the version in `validation_utils`")
 def check_keys_exist(d, keys):
     """ This function ensures the given keys are present in the dictionary. It
         does not other validate the type, value, etc., of the keys or their
@@ -248,6 +251,23 @@ def split(delimiters, string, maxsplit=0):
     import re
     regex_pattern = '|'.join(map(re.escape, delimiters))
     return re.split(regex_pattern, string, maxsplit)
+
+
+def load_config(config, required_keys=None):
+    """ Read in the config file, print a logging (INFO) statement and verify
+    that the required keys are present
+    """
+    import misc.validation_utils as validation_utils
+
+    msg = "Reading config file"
+    logger.info(msg)
+
+    config = yaml.load(open(config))
+
+    if required_keys is not None:
+        validation_utils.check_keys_exist(config, required_keys)
+
+    return config
 
 def read_commented_file(filename):
     f = open(filename)
@@ -439,6 +459,7 @@ def check_gzip_file(filename, has_tar=False, raise_on_error=True, logger=logger)
         Raises:
             OSError: if gunzip does not return 0 and raise_on_error is True
     """
+    import misc.shell_utils as shell_utils
     
     programs = ['gunzip', 'tar']
     shell_utils.check_programs_exist(programs)
@@ -634,7 +655,6 @@ def create_symlink(src, dst, remove=True, create=False, call=True):
 
 
 def to_dense(data, row, dtype=float, length=-1):
-    import numpy as np
     d = data.getrow(row).todense()
     d = np.squeeze(np.asarray(d, dtype=dtype))
 
@@ -955,6 +975,94 @@ def append_to_xlsx(df, xlsx, sheet='Sheet_1', **kwargs):
 ###
 #   Functions to help with built-in (ish) data structures
 ###
+def is_iterator_exhausted(iterator, return_element=False):
+    """ Check if the iterator is exhausted
+
+    This method is primarily intended to check if an iterator is empty.
+
+    N.B. THIS CONSUMES THE NEXT ELEMENT OF THE ITERATOR! The `return_element`
+    parameter can change this behavior.
+
+    This method is adapted from this SO question:
+        https://stackoverflow.com/questions/661603
+
+    Parameters
+    ----------
+    iterator : an iterator
+
+    return_element : bool
+        Whether to return the next element of the iterator
+
+    Returns
+    -------
+    is_exhausted : bool
+        Whether there was a next element in the iterator
+
+    [optional] next_element : object
+        It `return_element` is `True`, then the consumed element is also
+        returned.
+    """
+
+    # create a flag as the default value for "next"
+    flag = object()
+
+    # grab the next thing in the iterator, or our flag if there is nothing
+    n = next(iterator, flag)
+
+    # check if we saw the flag or some real value
+    is_exhausted = (n == flag)
+
+    # build up the return
+    ret = is_exhausted
+
+    if return_element:
+        ret = (is_exhausted, n)
+
+    return ret
+
+
+def apply_no_return(items:typing.Iterable, func:typing.Callable, *args,
+        progress_bar:bool=False, total_items=None, **kwargs) -> None:
+    """ Apply func to each item in the list
+    
+    Unlike `map`, this function does not return anything.
+    
+    Parameters
+    ----------
+    items : iterable
+        An iterable
+        
+    func : function pointer
+        The function to apply to each item
+
+    args, kwargs
+        The other arguments to pass to `func`
+
+    progress_bar : bool
+        Whether to show a progress bar when waiting for results.
+
+    total_items : int
+        The number of items in `items`. If not given, `len` is used.
+        Presumably, this is used when `items` is a generator and `len` does
+        not work.
+
+    Returns
+    -------
+    None
+        If a return value is expected, use list comprehension instead
+    """    
+    if progress_bar:
+
+        if total_items is None:
+            items = tqdm.tqdm(items, total=total_items)
+        else:
+            items = tqdm.tqdm(items, total=len(items))
+
+    for i in items:
+        func(*(i, *args), **kwargs)
+    
+    return None
+
 
 def list_to_dict(l, f=None):
     """ Convert the list to a dictionary in which keys and values are adjacent
@@ -1011,6 +1119,24 @@ def merge_sets(*set_args):
     """
     ret = {item for s in set_args for item in s}
     return ret
+    
+def reverse_dict(d):
+    """ Create a new dictionary in which the keys and values of d are switched
+    
+    In the case of duplicate values, it is arbitrary which will be retained.
+    
+    Parameters
+    ----------
+    d : dictionary
+        The dictionary
+        
+    Returns
+    -------
+    reversed_d : dictionary
+        A dictionary in which the values of `d` now map to the keys
+    """
+    reverse_d = {v:k for k,v in d.items()}    
+    return reverse_d
 
 @deprecated("[utils.merge_dicts]: please use `toolz.dicttoolz.merge` instead")
 def merge_dicts(*dict_args):
@@ -1062,6 +1188,75 @@ def get_type(type_string):
 
     return class_
 
+def get_set_pairwise_intersections(dict_of_sets, return_intersections=True):
+    """ Find the pairwise intersections among sets in `dict_of_sets`
+    
+    Parameters
+    ----------
+    dict_of_sets : mapping from set names to the sets
+        A dictionary in which the keys are the "names" of the sets and the values
+        are the actual sets
+        
+    return_intersections : bool
+        Whether to include the actual set intersections in the return. If `False`,
+        then only the intersection size will be included.
+        
+    Returns
+    -------
+    df_pairswise_intersections : pd.DataFrame
+        A dataframe with the following columns:
+        * set1 : the name of one set in the pair
+        * set2 : the name of the second set in the pair
+        * len(set1) : the size of set1
+        * len(set2) : the size of set2
+        * len(intersection) : the size of the intersection
+        * coverage_small : the fraction of the smaller of set1 or set2 in the intersection
+        * coverage_large : the fraction of the larger of set1 or set2 in the intersection
+        * intersection : the intersection set. Only included if `return_intersections`
+            is True.
+    """
+    all_intersection_sizes = []
+
+    it = itertools.combinations(dict_of_sets, 2)
+
+    for i in it:
+        s1 = i[0]
+        s2 = i[1]
+        set1 = dict_of_sets[s1]
+        set2 = dict_of_sets[s2]
+
+        intersection = set1 & set2
+        
+        # determine the coverage of both sets
+        coverage_set1 = len(intersection) / len(set1)
+        coverage_set2 = len(intersection) / len(set2)
+        
+        # and set the appropriate "coverage" variables
+        if len(set1) > len(set2):
+            coverage_small = coverage_set2
+            coverage_large = coverage_set1
+        else:
+            coverage_small = coverage_set1
+            coverage_large = coverage_set2
+            
+
+        intersection_size = {
+            'set1': s1,
+            'set2': s2,
+            'len(set1)': len(set1),
+            'len(set2)': len(set2),
+            'len(intersection)': len(intersection),
+            'coverage_small': coverage_small,
+            'coverage_large': coverage_large
+        }
+
+        if return_intersections:
+            intersection_size['intersection'] = intersection
+
+        all_intersection_sizes.append(intersection_size)
+
+    df_intersection_sizes = pd.DataFrame(all_intersection_sizes)
+    return df_intersection_sizes
 
 def is_sequence(maybe_sequence):
     """ Check whether `maybe_sequence` is a `collections.Sequence` or `np.ndarray`
@@ -1084,11 +1279,11 @@ def is_sequence(maybe_sequence):
         return False
 
     is_sequence = isinstance(maybe_sequence, collections.Sequence)
-    is_ndarray = isinstance(maybe_sequence, numpy.ndarray)
+    is_ndarray = isinstance(maybe_sequence, np.ndarray)
     return  is_sequence or is_ndarray
 
 def wrap_string_in_list(maybe_string):
-    """ If maybe_string is a string, wrap it in a list
+    """ If `maybe_string` is a string, then wrap it in a list.
 
     The motivation for this function is that some functions return either a
     single string or multiple strings as a list. The return value of this
@@ -1096,37 +1291,42 @@ def wrap_string_in_list(maybe_string):
 
     Parameters
     ----------
-    maybe_string: obj
+    maybe_string : object
         An object which may be a string
 
     Returns
     -------
-    l: list
+    list
         Either the original object, or maybe_string wrapped in a list, if
-            it was a string
+            it was a string}
     """
     if isinstance(maybe_string, str):
         return [maybe_string]
     return maybe_string
 
-def wrap_string_in_list(maybe_string):
-    """ This function checks if maybe_string is a string (or anything derived
-        from str). If so, it wraps it in a list.
 
-        The motivation for this function is that some functions return either a
-        single string or multiple strings as a list. The return value of this
-        function can be iterated over safely.
+def wrap_in_list(maybe_sequence):
+    """ If `maybe_sequence` is not a sequence, then wrap it in a list
+    
+    See `is_sequence` for more details about what counts as a sequence.
 
-        Args:
-            maybe_string (obj): an object which may be a string
+    Parameters
+    ----------
+    maybe_sequence : object
+        An object which may be a sequence
 
-        Returns:
-            either the original object, or maybe_string wrapped in a list, if
-                it was a string
+    Returns
+    -------
+    list
+        Either the original object, or maybe_sequence wrapped in a list, if
+            it was not already a sequence
     """
-    if isinstance(maybe_string, str):
-        return [maybe_string]
-    return maybe_string
+    ret = maybe_sequence
+    
+    if not is_sequence(maybe_sequence):
+        ret = [maybe_sequence]
+        
+    return ret
 
 def flatten_lists(list_of_lists):
     """ Flatten a list of lists into a single list
@@ -1220,11 +1420,7 @@ def remove_nones(l, return_np_array=False):
         Returns:
             list: a list or np.array with the Nones removed
 
-        Imports:
-            numpy
     """
-    import numpy as np
-
     ret = [i for i in l if i is not None]
 
     if return_np_array:
@@ -1254,29 +1450,80 @@ def replace_none_with_empty_iter(iterator):
         return []
     return iterator
 
-def open(filename, mode='r', compress=False, is_text=True, *args, **kwargs):
+_gzip_extensions = ('gz',)
+_bzip2_extensions = ('bz2',)
+
+def _guess_compression(filename):
+    """ Guess the compression type of `fname` based on its extension.
+    
+    If not matching compression extensions are found, then this function
+    guesses that the file name does not correspond to a compressed file.
+    
+    Compression type and extensions:
+    
+        * gzip: gz
+        * bzip2 : bz2
+        * no_compression: everything else
+    
+    Parameters
+    ----------
+    filename : string
+        The name of the file
+        
+    Returns
+    -------
+    compression_type : string
+        The compression type. See above for details about the value.
+    """
+    
+    compression_type = 'no_compression'
+    
+    if filename.endswith(_gzip_extensions):
+        compression_type = "gzip"
+    elif filename.endswith(_bzip2_extensions):
+        compression_type = "bzip2"
+        
+    return compression_type
+    
+
+def open_file(
+        filename,
+        mode='r',
+        guess_compression=True,
+        compression_type=None,
+        is_text=True,
+        *args, **kwargs):
     """ Return a file handle to the given file. 
     
-    The only difference between this and the standard open command is that this
+    The main difference between this and the standard open command is that this
     function transparently opens zip files, if specified. If a gzipped file is
     to be opened, the mode is adjusted according to the "is_text" flag.
 
     Parameters
     ---------
-    filename: string
+    filename : string
         the file to open
 
-    mode: string
+    mode : string
         the mode to open the file. This *should not* include
         "t" for opening gzipped text files. That is handled by the
         "is_text" flag.
+        
+    guess_compression : bool
+        Whether to guess the compression mode of the file.
 
-    compress: bool
-        whether to open the file as a gzipped file
+    compression_type : string or None
+        If given, then the file will be opened using the specified
+        compression type. This overrides the `guess_compression`
+        flag.Valid options are:
+        
+        * no_compression
+        * gzip
+        * zip2
 
-    is_text: bool
-        for gzip files, whether to open in text (True) or
-        binary (False) mode
+    is_text : bool
+        For zip files, whether to open in text (True) or binary
+        (False) mode
 
     args, kwargs
         Additional arguments are passed to the call to open
@@ -1284,21 +1531,29 @@ def open(filename, mode='r', compress=False, is_text=True, *args, **kwargs):
     Returns
     -------
     file_handle: the file handle to the file
-
     """
-    import builtins
-
-    if compress:
+    
+    if compression_type is None:
+        compression_type = _guess_compression(filename)
+        
+    if is_text:
+        mode = mode + "t"
+        
+    if compression_type == 'gzip':        
         import gzip
-
-        if is_text:
-            mode = mode + "t"
         out = gzip.open(filename, mode, *args, **kwargs)
-    else:
-        out = builtins.open(filename, mode, *args, **kwargs)
+        
+    elif compression_type == 'bzip2':        
+        msg = "bzip2 file handling has not been tested."
+        logger.warning(msg)
+        
+        import bz2            
+        out = gzip.open(filename, mode, *args, **kwargs)
+        
+    elif compression_type == 'no_compression':
+        out = open(filename, mode, *args, **kwargs)
 
     return out
-
 
 def grouper(n, iterable):
     """ This function returns lists of size n of elements from the iterator. It

@@ -50,23 +50,49 @@ def dict_to_dataframe(dic, key_name='key', value_name='value'):
     df = df.reset_index()
     return df
 
+
 def dataframe_to_dict(df, key_field, value_field):
-    """ This function converts two columns of a data frame into a dictionary.
+    """ Convert two columns of a data frame into a dictionary
 
-        Args:
-            df (pd.DataFrame): the data frame
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The data frame
 
-            key_field (string): the field to use as the keys in the dictionary
+    key_field : string
+        The field to use as the keys in the dictionary
 
-            value_field (string): the field to use as the values
+    value_field : string
+        The field to use as the values
 
-        Returns:
-            dict: a dictionary which has one entry for each row in the data
-                frame, with the keys and values as indicated by the fields
+    Returns
+    -------
+    the_dict: dictionary
+        A dictionary which has one entry for each row in the data
+        frame, with the keys and values as indicated by the fields
         
     """
     dic = dict(zip(df[key_field], df[value_field]))
     return dic
+
+def get_series_union(*pd_series):
+    """ Take the union of values from the list of series
+    
+    Parameters
+    ----------
+    pd_series : list of pandas series
+        The list of pandas series
+        
+    Returns
+    -------
+    set_union : set
+        The union of the values in all series
+    """
+    res = set.union(
+        *[set(s) for s in pd_series]
+    )
+    
+    return res
 
 excel_extensions = ('xls', 'xlsx')
 hdf5_extensions = ('hdf', 'hdf5', 'h5', 'he5')
@@ -174,8 +200,8 @@ def read_df(filename, filetype='AUTO', sheet=None, **kwargs):
 
     return df
 
-def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
-        do_not_compress=False, **kwargs):
+def write_df(df:pd.DataFrame, out, create_path:bool=False, filetype:str='AUTO',
+        sheet:str='Sheet_1', compress:bool=True,  **kwargs):
     """ This function writes a data frame to a file of the specified type. 
         Unless otherwise specified, csv files are gzipped when written. By
         default, the filetype will be guessed based on the extension. The 
@@ -190,7 +216,7 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
         case, the out object is taken to be a pd.ExcelWriter, and the df is
         appended to the writer. AUTO will also guess this correctly.
 
-        N.B. The hdf5 filetype has not been tested!!!
+        N.B. The hdf5 filetype has not been thoroughly tested!!!
 
         Parameters
         ----------
@@ -216,12 +242,12 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
             The type of output file to write.  If AUTO, the function uses the
             extensions mentioned above to guess the filetype.
 
-        sheet: string
+        sheet : string
             The name of the sheet (excel) or key (hdf5) to use when writing the
             file. This argument is not used for csv. For excel, the sheet is
             limited to 31 characters. It will be trimmed if necessary.
 
-        do_not_compress: bool
+        compress : bool
             Whether to compress the output. This is only used for csv files.
 
         **kwargs : other keyword arguments to pass to the df.to_XXX method
@@ -230,6 +256,12 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
         -------
         None, but the file is created
     """
+    
+    # check for a deprecated keyword
+    if 'do_not_compress' in kwargs:
+        msg = ("[pd_utils.write_df] `do_not_compress` keyword has been removed. "
+            "Please use `compress` instead.")
+        raise DeprecationWarning(msg)
     
     # first, see if we want to guess the filetype
     if filetype == 'AUTO':
@@ -247,11 +279,11 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
 
     
     if filetype == 'csv':
-        if do_not_compress:
-            df.to_csv(out, **kwargs)
-        else:
+        if compress:
             with gzip.open(out, 'wt') as out:
                 df.to_csv(out, **kwargs)
+        else:
+            df.to_csv(out, **kwargs)
 
     elif filetype == 'excel':
         with pd.ExcelWriter(out) as out:
@@ -264,7 +296,7 @@ def write_df(df, out, create_path=False, filetype='AUTO', sheet='Sheet_1',
         df.to_hdf(out, sheet, **kwargs)
 
     elif filetype == 'parquet':
-        if not do_not_compress:
+        if compress:
             kwargs['compression'] = 'GZIP'
 
         # handle "index=False" kwarg

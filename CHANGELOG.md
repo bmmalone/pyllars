@@ -4,6 +4,25 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.2.11] - 2018-12-22
+### Added
+- Helpers for checking and collecting dask futures
+- Validation helpers for non-pydata types
+- Simple BoW and numeric feature handler
+- Helpers for standard plots
+- Helpers for MyGene.py
+- Helpers for working with the Gene Ontology
+- Helper to create scaler from means and standard deviations
+
+### Updated
+- k-fold splitter to include validation set
+- Transparent file opening for compressed files
+- Split out machine learning helpers into a separate module
+- Split out statistical helpers into a separate module
+
+### Fixed
+- Missing data one hot encoder to handle sparse inputs
+
 ## [0.2.10] - 2018-06-06
 ### Added
 - Followup table construction for MIMIC

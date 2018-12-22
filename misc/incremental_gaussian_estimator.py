@@ -25,6 +25,10 @@ class IncrementalGaussianEstimator:
 
             self.old_mean = self.new_mean
             self.old_s = self.new_s
+            
+    def add_observations(self, x):
+        for xi in x:
+            self.add_observation(xi)
 
     def get_mean(self):
         return self.new_mean

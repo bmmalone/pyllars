@@ -10,9 +10,26 @@ import matplotlib.patches as patches
 import numpy as np
 
 import misc.utils as utils
+import misc.validation_utils as validation_utils
 
 import logging
 logger = logging.getLogger(__name__)
+
+_VALID_AXIS_VALUES = {
+    'both',
+    'x',
+    'y'
+}
+
+_X_AXIS_VALUES = {
+    'both',
+    'x'
+}
+
+_Y_AXIS_VALUES = {
+    'both',
+    'y'
+}
 
 def add_fontsizes_to_args(args,
         legend_title_fontsize=12,
@@ -180,7 +197,7 @@ def hide_tick_labels_by_text(ax, to_remove_x=[], to_remove_y=[]):
     hide_tick_labels(ax, keep_x=keep_x, keep_y=keep_y)
 
 
-def hide_tick_labels(ax, keep_x=[], keep_y=[]):
+def hide_tick_labels(ax, keep_x=[], keep_y=[], axis='both'):
     """ Hide the tick labels on both axes. Optionally, some can be preserved.
 
     Parameters
@@ -191,25 +208,32 @@ def hide_tick_labels(ax, keep_x=[], keep_y=[]):
     keep_{x,y} : list-like of ints
         The indices of any x-axis ticks to keep. The numbers are passed directly
         as indices to the xticks array.
+        
+    axis : string in {'both', 'x', 'y'}
+        Axis of the tick labels to hide
 
     Returns
     -------
     None, but the tick labels of the axis are removed, as specified
     """
+    
+    validation_utils.validate_in_set(axis, _VALID_AXIS_VALUES, "axis")
 
-    xticks = ax.xaxis.get_major_ticks()
-    for xtick in xticks:
-        xtick.label1.set_visible(False)
+    if axis in _X_AXIS_VALUES:
+        xticks = ax.xaxis.get_major_ticks()
+        for xtick in xticks:
+            xtick.label1.set_visible(False)
 
-    for x in keep_x:
-        xticks[x].label1.set_visible(True)
+        for x in keep_x:
+            xticks[x].label1.set_visible(True)
 
-    yticks = ax.yaxis.get_major_ticks()
-    for ytick in yticks:
-        ytick.label1.set_visible(False)
+    if axis in _Y_AXIS_VALUES:
+        yticks = ax.yaxis.get_major_ticks()
+        for ytick in yticks:
+            ytick.label1.set_visible(False)
 
-    for y in keep_y:
-        yticks[y].label1.set_visible(True)
+        for y in keep_y:
+            yticks[y].label1.set_visible(True)
 
 def set_ticklabels_fontsize(ax, fontsize, axis='both', which='major'):
     """ Set the font size of the tick labels.
@@ -551,7 +575,8 @@ def create_simple_bar_chart(ax,
                             fontsize=12,
                             label_fontsize=12,
                             legend_fontsize=12,
-                            title_fontsize=12
+                            title_fontsize=12,
+                            tick_offset=0.5
                            ):
 
     import numpy as np
@@ -602,11 +627,12 @@ def create_simple_bar_chart(ax,
         
     
     # now the x-axis
-    if xticklabels == "default":
-        xticklabels = xticks
+    if isinstance(xticklabels, str):
+        if xticklabels == "default":
+            xticklabels = xticks
        
 
-    tick_offset = 0.5 - spacing
+    tick_offset = tick_offset - spacing
 
     if xticklabels is not None:
         ax.set_xticks(xticks+tick_offset)
@@ -652,7 +678,7 @@ def create_simple_bar_chart(ax,
     if title is not None:
         ax.set_title(title, fontsize=title_fontsize)
     
-    return mpl_bars
+    return ax
 
 
 def get_diff_counts(data_np):
@@ -869,7 +895,77 @@ def create_stacked_bar_graph(
 
     return bars
 
+def plot_simple_scatter(
+        x, y,
+        ax=None,
+        equal_aspect=True,
+        set_lim=True,
+        show_y_x_line=True,
+        xy_line_kwargs={},
+        **kwargs):
+    """ Plot a simple scatter plot of x vs. y on `ax`
+    
+    If `fig` and `ax` are not given, then will be created.
+    
+    See the matplotlib documentation for more keyword arguments and details:
+        https://matplotlib.org/api/_as_gen/matplotlib.pyplot.plot.html
+    
+    Parameters
+    ----------
+    x,y : array-like of numbers
+        The values to plot
+        
+    ax : mpl.Axis
+        An axis for plotting. If this is not given, then a figure and axis will
+        be created.
+        
+    equal_aspect : bool
+        Whether to set the aspect of the axis to `equal`
+        
+    set_lim : bool
+        Whether to automatically set the min and max axis limits
+        
+    show_y_x_line : bool
+        Whether to draw the y=x line. This will look weird if `set_lim` is False.
+        
+    xy_line_kwargs : dict
+        keyword arguments for plotting the y=x line, if it plotting
+        
+    **kwargs : <key>=<value> pairs
+        Additional keyword arguments to pass to the plot function. Some useful
+        keyword arguments are:
+        
+        * `label` : the label for a legend
+        * `marker` : https://matplotlib.org/examples/lines_bars_and_markers/marker_reference.html
+        
+    Returns
+    -------
+    fig, ax : mpl.Figure and mpl.Axis
+        The figure and axis on which the scatter points were plotted
+    """
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.figure
+        
+    ax.scatter(x,y, **kwargs)
 
+    min_val = min(min(x), min(y))
+    max_val = max(max(x), max(y))
+    lim = (min_val, max_val)
+    
+    if set_lim:
+        ax.set_xlim(lim)
+        ax.set_ylim(lim)
+        
+    if show_y_x_line:
+        ax.plot(lim, lim, **xy_line_kwargs)
+    
+    if equal_aspect:
+        ax.set_aspect('equal')
+        
+    return fig, ax
+    
 def plot_trend_line(ax, x, intercept, slope, power, **kwargs):
     """ Draw the trend line implied by the given coefficients.
 
@@ -935,5 +1031,68 @@ def draw_rectangle(ax, base_x, base_y, width, height, center_x=False,
         
     y = base_y - y_offset
     x = base_x - x_offset
-    ax.add_patch(patches.Rectangle((x,y), width, height, **kwargs))
+    ax.add_patch(patches.Rectangle((x,y), width, height, **kwargs))   
+
+def plot_sorted_values(values, ymin=None, ymax=None, ax=None, scale_x=False, **kwargs):
+    """ Sort `values` and plot them
+
+    Parameters
+    ----------
+    values : list-like of numbers
+        The values to plot
+
+    y{min,max} : floats
+        The min and max values for the y-axis. If not given, then these
+        default to the minimum and maximum values in the list.
+        
+    scale_x : bool
+        If True, then the `x` values will be equally-spaced between 0 and 1.
+        Otherwise, they will be the values 0 to len(values)
+
+    ax : mpl.Axis
+        An axis for plotting. If this is not given, then a figure and axis will
+        be created.
+        
+    **kwargs : <key>=<value> pairs
+        Additional keyword arguments to pass to the plot function. Some useful
+        keyword arguments are:
+        
+        * `label` : the label for a legend
+        * `lw` : the line width
+        * `ls` : https://matplotlib.org/gallery/lines_bars_and_markers/line_styles_reference.html
+        * `marker` : https://matplotlib.org/examples/lines_bars_and_markers/marker_reference.html
+        
+
+    Returns
+    -------
+    fig : mpl.Figure
+        The Figure associated with `ax`, or a new Figure
+
+    ax : mpl.Axis
+        Either `ax` or a new Axis
+    """
     
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.figure
+        
+    y = np.sort(values)
+    
+    if scale_x:
+        x = np.linspace(0,1, len(y))
+    else:
+        x = np.arange(len(y))
+    
+    ax.plot(x,y, **kwargs)
+
+    if ymin is None:
+        ymin = y[0]
+
+    if ymax is None:
+        ymax = y[-1]
+    
+    ax.set_ylim((ymin, ymax))
+    ax.set_xlim((0, len(y)))
+    
+    return fig, ax 

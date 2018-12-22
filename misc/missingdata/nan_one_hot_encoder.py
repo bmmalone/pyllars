@@ -135,6 +135,9 @@ class NaNOneHotEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin
             copy=True
         )
 
+        if self.sparse:
+            Xt = Xt.tocsr()
+            
         # and clear out the missing values
         for i, f in enumerate(self.categorical_features):
             m = masks[f]

@@ -77,7 +77,7 @@ def readme():
         return f.read()
 
 setup(name='misc',
-        version='0.2.10',
+        version='0.2.11',
         description="This package contains python3 utilities I find useful.",
         long_description=readme(),
         keywords="utilities",
