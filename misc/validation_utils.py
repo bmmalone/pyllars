@@ -573,3 +573,49 @@ def check_is_fitted(estimator, attributes, name="estimator", caller=None, all_or
         msg = ("{caller}{name} is not fitted yet. Call the appropriate "
             "initialization, fit, etc., methods before using this method.")
         _raise_value_error(msg, name, caller, sklearn.exceptions.NotFittedError)
+        
+
+def validate_is_sequence(
+        maybe_sequence:typing.Any,
+        raise_on_fail:bool=True,
+        name:str="array",
+        caller=None) -> bool:
+    """ Check whether `maybe_sequence` is a `collections.Sequence` or `np.ndarray`
+
+    The function specifically checks is maybe_sequence is an instance of a
+    string and returns False in that case.
+
+    Parameters
+    ----------
+    maybe_sequence : object
+        An object which may be a sequence
+        
+    raise_on_fail : bool
+        Whether to raise an error if `maybe_sequence` is not a sequence
+
+    name: string
+        A name for the variable in the error message
+
+    caller: string
+        A name for the caller in the error message
+
+    Returns
+    -------
+    is_sequence : bool
+        Whether the object is a sequence (as described above)
+    """
+
+    if isinstance(maybe_sequence, str):
+        return False
+
+    is_sequence = isinstance(maybe_sequence, collections.Sequence)
+    is_ndarray = isinstance(maybe_sequence, np.ndarray)
+    validated =  is_sequence or is_ndarray
+    
+    if (not validated) and raise_on_fail
+        msg = ("{caller}{name} invalid type. found: " + str(type(var)) + 
+            ". allowed: sequence types.")
+        _raise_value_error(msg, name, caller, TypeError)
+        
+    return validated
+    
