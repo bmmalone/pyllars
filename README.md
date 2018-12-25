@@ -41,21 +41,8 @@ This package contains helpers for a wide variety of python applications.
     * A Bayesian test to determine if two proportions differ significantly
     * A Bayesian test to determine if the means of two populations differ
         significantly (that is, something like a Bayesian t-test)
-        
-* `missingdata`. A subpackage containing utilities for handling data. This
-    includes minor variants on `sklearn` preprocessing components that handle
-    `np.nan`s in the input in a reasonable way, as well as utilities for 
-    removing data according to different
-    missingness mechanisms, including missing at random (MAR), missing
-    completely at random (MCAR), and not missing at random (NMAR).
-    
-    * `nan_nearest_neighbors`. A simple k-NN algorithm which handles features with
-        missing values represented as `np.nan`s.
-    
-    * `nan_standard_scaler`. An `sklearn` transformer which scales features by the
-        observed mean and standard deviation of the training data; in contrast to
-        the normal `StandardScaler`, this class ignores `nan`s, `inf`s and other
-        typically-problematic values.
+
+* `ml_utils`.
 
 * `mpl_utils`. Utilities for manipulating object-oriented matplotlib plots, that
     is, those which uses `Axes` objects.
@@ -68,49 +55,67 @@ This package contains helpers for a wide variety of python applications.
 * `sparse_vector`. A class which wraps a `scipy.sparse_matrix` to reduce the
     notational burden for working with sparse vectors.
     
-#### `scikit-learn` utilities
+* `stats_utils`.
+    
+#### `scikit-learn` transformers
 
 These are helpers which are specifically for use within `sklearn` workflows.
 Of course, it is also part of the PyData stack, but there are many of these.
 
-* `column_selector`. An `sklearn.Transformer` for selecting specific columns
-    in a pipeline. This is deprecated in favor of the more robust implementation
-    available in [mlxtend](https://rasbt.github.io/mlxtend/user_guide/feature_selection/ColumnSelector/).
 
-* `dataset_manager`. A class for managing datasets with various modalities.
-
-* `incremental_count_vectorizer`. An `sklearn.CountVectorizer` which can operate
+* `sklearn_transformers.incremental_count_vectorizer`. An `sklearn.CountVectorizer` which can operate
     in parallel and does not requires storing the entire set of documents at
     once.
+        
+* `sklearn_transformers.missingdata`. A subpackage containing utilities for handling data. This
+    includes minor variants on `sklearn` preprocessing components that handle
+    `np.nan`s in the input in a reasonable way, as well as utilities for 
+    removing data according to different
+    missingness mechanisms, including missing at random (MAR), missing
+    completely at random (MCAR), and not missing at random (NMAR).
     
-* `multicolumn_imputer`. An `sklearn.Transformer` for replacing missing data
+    * `missingdata.nan_label_encoder`.
+    
+    * `missingdata.nan_nearest_neighbors`. A simple k-NN algorithm which handles features with
+        missing values represented as `np.nan`s.
+        
+    * `missingdata.nan_one_hot_encoder`.
+    
+    * `missingdata.nan_standard_scaler`. An `sklearn` transformer which scales features by the
+        observed mean and standard deviation of the training data; in contrast to
+        the normal `StandardScaler`, this class ignores `nan`s, `inf`s and other
+        typically-problematic values.
+        
+* `sklearn_transformers.multicolumn_imputer`. An `sklearn.Transformer` for replacing missing data
     in multiple columns at once. The fitted imputers are kept around for use
     on test data. An independent imputer is fit for each column.
     
-* `multicolumn_label_encoder`. An `sklearn.Transformer` for encoding categorical
+* `sklearn_transformers.multicolumn_label_encoder`. An `sklearn.Transformer` for encoding categorical
     in multiple columns at once. The fitted encoders are kept around for use
     on test data. The encoders are independent for each column.
     
+* `sklearn_transformers.simple_numeric_bow_union`.
+    
 #### Domain-specific utilities
+
+* `gene_ontology_utils`.
+
+* `mygene_utils`.
 
 * `physionet_utils`. Utilities for working with the [MIMIC](https://mimic.physionet.org/)
     clinical care database as well as other datasets published by `physionet`,
     such as the [Computing in Cardiology Challenge](https://www.physionet.org/challenge/2012/).
+    
+* `scip_utils`.
 
 #### General utilities
 * `deprecated_decorator`. A simple decorator for marking functions, classes,
     etc., as deprecated.
 
-* `latex`. Utilities for programmatically creating latex documents.
+* `latex_utils`. Utilities for programmatically creating latex documents.
 
 * `logging_utils`. Utilities for easily controlling logging behavior from the
     command line.
-    
-* `parallel`. Utilities for parallel processing, especially focusing on data
-    frames and iterators. These functions are largely wrappers around
-    [`joblib`](https://pythonhosted.org/joblib/); they tend to be more
-    light-weight than dask-based solutions, but they are generally only useful
-    for embarrassingly parallel loops.
     
 * `shell_utils`. Utilities for interacting with a shell. Many of these functions
     wrap the `os` and/or `subprocess` modules with things like checks that
@@ -142,12 +147,5 @@ Of course, it is also part of the PyData stack, but there are many of these.
 * `scancel-range`. A script which calls [`scancel`](https://slurm.schedmd.com/scancel.html)
     on a range of job id's.
     
-* `slurm`. Utilities for adding slurm options to any script.
+* `slurm_utils.slurm_utils`. Utilities for adding slurm options to any script.
 
-
-#### Other small programs
-    
-* `test-gzip`. A simple script which reads and writes a gzipped file to and from
-    disk many times. It verifies the integrity of the file after each iteration,
-    so it can be useful to diagnose problems with incomplete files being
-    written to disk (looking at you, [BeeGFS](https://www.beegfs.io/content/)).
