@@ -41,6 +41,8 @@ This package contains helpers for a wide variety of python applications.
     * A Bayesian test to determine if two proportions differ significantly
     * A Bayesian test to determine if the means of two populations differ
         significantly (that is, something like a Bayesian t-test)
+        
+* `matrix_utils`.
 
 * `ml_utils`.
 
@@ -111,6 +113,8 @@ Of course, it is also part of the PyData stack, but there are many of these.
 #### General utilities
 * `deprecated_decorator`. A simple decorator for marking functions, classes,
     etc., as deprecated.
+    
+* `collection_utils`.
 
 * `latex_utils`. Utilities for programmatically creating latex documents.
 
@@ -123,6 +127,8 @@ Of course, it is also part of the PyData stack, but there are many of these.
     
 * `ssh_utils`. Utilities for distributing jobs across a cluster, etc., using
     password-less SSH.
+    
+* `string_utils`.
     
 * `suppress_stdout_stderr`. A context manager for suppressing stdout and stderr.
     This is useful for calls into compiled C/Fortran where the standard logging

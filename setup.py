@@ -10,7 +10,7 @@ import importlib
 slurm_console_scripts = [
     'call-sbatch=misc.slurm_utils.call_sbatch:main',
     'scancel-range=misc.slurm_utils.scancel_range:main',
-    'call-program=misc.call_program:main'
+    'call-program=misc.slurm_utils.call_program:main'
 ]
 
 console_scripts = slurm_console_scripts
@@ -88,7 +88,7 @@ def readme():
         return f.read()
 
 setup(name='misc',
-        version='0.2.11',
+        version='0.3.0',
         description="This package contains python3 utilities I find useful.",
         long_description=readme(),
         keywords="utilities",
