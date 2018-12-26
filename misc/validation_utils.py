@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 import misc.utils as utils
 
+import importlib
 import numpy as np
 import operator
 import scipy.sparse
@@ -472,19 +473,43 @@ def validate_numeric(array, name="array", caller=None):
 
     Parameters
     ----------
-    array: np.array
+    array : np.array
         A numpy array
     
-    name: string
+    name : string
         A name for the variable in the error message
 
-    caller: string
+    caller : string
         A name for the caller in the error message
     """
     if not np.issubdtype(array.dtype, np.number):
         msg = ("{caller}{name} invalid dtype for numeric sequences. found: " +
             array.dtype)
         _raise_value_error(msg, name, caller)
+        
+def validate_pacakges_installed(packages:typing.Iterable[str], caller:str=None) -> None:
+    """ Ensure `packages` are installed and can be imported
+    
+    Parameters
+    ----------
+    packages : iterable of strings
+        The package names
+
+    caller : string
+        A name for the caller in the error message
+    """
+    
+    missing = [
+        (importlib.util.find_spec(p) is None)
+            for p in packages
+    ]
+    
+    if len(missing) > 0:
+        s = ','.join(missing)
+        msg = ("{caller} could not find the following packages: {}".format(s))
+        _raise_value_error(msg, caller=caller, error_type=ImportError)
+        
+    
         
 def validate_type(var, allowed_types, name="var", caller=None):
     """ Ensure `var` has one of the allowed types

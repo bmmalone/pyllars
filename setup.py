@@ -4,14 +4,20 @@ from setuptools.command.develop import develop as _develop
 
 import importlib
 
-
-other_console_scripts = [
-    'call-sbatch=misc.call_sbatch:main',
-    'scancel-range=misc.scancel_range:main',
-    'test-gzip=misc.test_gzip:main',
+###
+# Console scripts
+###
+slurm_console_scripts = [
+    'call-sbatch=misc.slurm_utils.call_sbatch:main',
+    'scancel-range=misc.slurm_utils.scancel_range:main',
     'call-program=misc.call_program:main'
 ]
 
+console_scripts = slurm_console_scripts
+
+###
+# Dependencies
+###
 install_requires = [
     'cython',
     'numpy',
@@ -22,7 +28,6 @@ install_requires = [
     'pandas',
     'sklearn',
     'sklearn_pandas',
-    'fastparquet',
     'more_itertools',
     'networkx>=2.0',
     'docopt',
@@ -44,13 +49,19 @@ tests_require = [
     'nose',
 ]
 
+parquet_require = [
+    'fastparquet'
+]
+
+all_require = tests_require + parquest_require
+
 extras = {
     'test': tests_require,
+    'parquest': parquet_require,
+    'all': all_require
 }
 
 
-# previously, there were other types of scripts
-console_scripts = other_console_scripts
 
 def _post_install(self):
     import site

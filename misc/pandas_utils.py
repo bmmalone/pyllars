@@ -19,6 +19,7 @@ import tqdm
 import openpyxl
 
 import misc.utils as utils
+import misc.validation_utils as validation_utils
 
 import typing
 
@@ -188,6 +189,10 @@ def read_df(filename, filetype='AUTO', sheet=None, **kwargs):
     elif filetype == 'hdf5':
         df = pd.read_hdf(filename, key=sheet, **kwargs)
     elif filetype == "parquet":
+        
+        caller = "pandas_utils.read_df"
+        validation_utils.validate_packages_installed(['fastparquet'], caller)
+        
         import fastparquet
         pf = fastparquet.ParquetFile(filename, **kwargs)
 
@@ -317,6 +322,9 @@ def write_df(df:pd.DataFrame, out, create_path:bool=False, filetype:str='AUTO',
             else:
                 # delete directory
                 shutil.rmtree(out)
+        
+        caller = "pandas_utils.read_df"
+        validation_utils.validate_packages_installed(['fastparquet'], caller)
         
         import fastparquet
         fastparquet.write(out, df, **kwargs)
