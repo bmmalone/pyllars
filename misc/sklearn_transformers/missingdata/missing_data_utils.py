@@ -704,3 +704,59 @@ def get_nan_preprocessing_pipeline(dataset_manager, fill_categoricals="flag",
     return preprocessing
 
 
+
+def distance_with_nans(x, y, metric, normalize=True):
+    """ Compute the distance between the two vectors considering only features
+    observed in both. The distance is then normalized by the number of features
+    in both.
+    
+    If the vectors share no common features, then the distance is taken to
+    be np.inf.
+    
+    Parameters
+    ----------
+    x,y: np.arrays
+        The two feature vectors
+        
+    metric: callable, which takes two arguments (x and y)
+        The function used to calculate the distance between the common features.
+        
+        N.B. While the indices of features passed to this function will match,
+            they will not, in general, match the indices from the original
+            vectors. Thus, care should be taken in "metric" if a specific
+            meaning is assigned to particular indices (e.g., "our bag-of-words
+            begins at index 3" may not hold unless some prior knowledge is
+            available about the structure of the missing values).
+            
+    normalize: bool
+        Whether to normalize the distance by the number of observations. For
+        example, it may not make sense to normalize something like cosine
+        distance.
+            
+    Returns
+    -------
+    normalized_distance: float
+        The distance between `x` and `y`, accounting for missing values as
+        described above. If `normalize` is `True`, then the distance is
+        normalized by the number of observed values.
+    """
+    # first, find the set of nan's in both
+    nan_x = np.isnan(x)
+    nan_y = np.isnan(y)
+
+    nan_either = nan_x | nan_y
+    remaining = ~nan_either
+    
+    remaining_x = x[remaining]
+    remaining_y = y[remaining]
+    
+    num_remaining = remaining_x.shape[0]
+    
+    # it is possible there is no overlap
+    if num_remaining == 0:
+        # just say they will not be connected
+        return np.inf
+    
+    distance = metric(remaining_x, remaining_y) / num_remaining
+    
+    return distance

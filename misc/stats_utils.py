@@ -5,7 +5,97 @@ logger = logging.getLogger(__name__)
 
 import numpy as np
 import pandas as pd
+import scipy.stats
+import typing
 
+###
+# Probability distribution helpers
+###
+
+def calculate_symmetric_kl_divergence(
+        p:typing.Any,
+        q:typing.Any,
+        calculate_kl_divergence:typing.Callable) -> float:
+    """ Calculates the symmetric KL-divergence between distributions p and q
+    
+    In particular, it defines the symmetric KL-divergence to be:
+    
+    .. math::
+        D_{sym}(p||q) := \frac{D(p||q) + D(p||p)}{2}
+
+    Parameters
+    ----------
+    p, q
+        A representation of a distribution that can be used by the 
+        function `calculate_kl_divergence`
+            
+    calculate_kl_divergence : callable
+        A function the calculates the KL-divergence between :math:`p`
+        and :math:`q`
+
+    Returns
+    -------
+    symmetric_kl : float
+        The symmetric KL-divergence between :math:`p` and :math:`q`
+
+    """
+    kl_1 = calculate_kl_divergence(p, q)
+    kl_2 = calculate_kl_divergence(q, p)
+    symmetric_kl = (kl_1 + kl_2) / 2
+    return symmetric_kl
+
+def calculate_univariate_gaussian_kl(
+        mean_p_var_p:typing.Tuple[float,float],
+        mean_q_var_q:typing.Tuple[float,float]) -> float:
+    """ Calculate the (asymmetric) KL-divergence between the univariate
+    Gaussian distributions p and q
+
+    N.B. This function uses the variance!
+
+    N.B. The parameters for each distribution are passed as pairs 
+    for easy use with `calculate_symmetric_kl_divergence`.
+
+    See, for example, [1]_ for the formula.
+
+    Parameters
+    ----------
+    mean_p_var_p, mean_q_var_q : tuples of floats
+        The parameters of the distributions.
+
+    Returns
+    -------
+    kl_divergence : float
+        The KL divergence between the two distributions.
+            
+    References
+    ----------
+    .. [1] Penny, W. "KL-Divergences of Normal, Gamma, Dirichlet and Wishart densities."
+    Wellcome Department of Cognitive Neurology, University College London, 2001.
+    """
+
+    (mean_p, var_p) = mean_p_var_p
+    (mean_q, var_q) = mean_q_var_q
+
+    t_1 = 0.5 * (np.log(var_p) - np.log(var_q))
+    t_2 = np.log(mean_q*mean_q + mean_p*mean_p + var_q - 2*mean_q*mean_p)
+    t_3 = np.log(2*var_p)
+    kl = t_1 - 0.5 + np.exp(t_2 - t_3)
+    return kl
+
+def symmetric_entropy(p, q) -> float:
+    """ Calculate the symmetric scipy.stats.entropy. """
+    return calculate_symmetric_kl_divergence(p, q, scipy.stats.entropy)
+
+def symmetric_gaussian_kl(p, q) -> float:
+    """ Calculate the symmetric gaussian KL divergence. """
+    return calculate_symmetric_kl_divergence(
+        p, q, 
+        calculate_univariate_gaussian_kl
+    )
+
+###
+# Frequentist statistics
+###
 def get_population_statistics(
         subpopulation_sizes,
         subpopulation_means,
@@ -52,3 +142,309 @@ def get_population_statistics(
     population_std = np.sqrt(population_variance)
     
     return n, population_mean, population_variance, population_std
+
+###
+# Bayesian hypothesis testing
+###
+
+
+
+def bayesian_proportion_test(x, n, prior=(0.5,0.5), prior2=None, 
+        num_samples=1000, seed=None):
+    """ Perform a Bayesian test to identify significantly different proportions.
+    
+    This test is based on a beta-binomial conjugate model. It uses simulations to
+    estimate the posterior of the difference between the proportions, as well as
+    the likelihood that \pi_1 > \pi_2 (where \pi_i is the likelihood of success in 
+    sample i).
+    
+    Parameters
+    ----------
+    x: two-element array-like of integers
+        The number of successes in each sample
+        
+    n: two-element array-like of integers
+        The number of trials in each sample
+        
+    prior: two-element array-like of floats
+        The parameters of the beta distribution used as the prior in the conjugate
+        model for the first sample.
+        
+    prior2: two-element array-like of floats, or None
+        The parameters of the beta distribution used as the prior in the conjugate
+        model for the second sample. If this is not specified, then prior is used.
+        
+    num_samples: int
+        The number of simulations
+        
+    seed: int
+        The seed for the random number generator
+        
+    Returns
+    -------
+    (difference_mean, difference_var) : a 2-tuple of floats
+        The posterior mean and variance of the difference in the likelihood of success 
+        in the two samples. A negative mean indicates that the likelihood in sample 2 
+        is higher.
+        
+    p_pi_1_greater : float
+        The probability that pi_1 > pi_2
+    """
+    
+    # copy over the prior if not specified for sample 2
+    if prior2 is None:
+        prior2 = prior
+        
+    # check the bounds
+    if len(x) != 2:
+        msg = "[bayesian_proportion_test]: please ensure x has exactly two elements"
+        raise ValueError(msg)
+    if len(n) != 2:
+        msg = "[bayesian_proportion_test]: please ensure n has exactly two elements"
+        raise ValueError(msg)
+    if len(prior) != 2:
+        msg = "[bayesian_proportion_test]: please ensure prior has exactly two elements"
+        raise ValueError(msg)
+    if len(prior2) != 2:
+        msg = "[bayesian_proportion_test]: please ensure prior2 has exactly two elements"
+        raise ValueError(msg)
+        
+    
+    # set the seed
+    if seed is not None:
+        np.random.seed(seed)
+    
+    # perform the test
+    a = prior[0]+x[0]
+    b = prior[0]+n[0]-x[0]
+    s1_posterior_samples = scipy.stats.beta.rvs(a, b, size=num_samples)
+
+    a = prior[1]+x[1]
+    b = prior[1]+n[1]-x[1]
+    s2_posterior_samples = scipy.stats.beta.rvs(a, b, size=num_samples)
+    
+    diff_posterior_samples = s1_posterior_samples - s2_posterior_samples
+    diff_posterior_mean = np.mean(diff_posterior_samples)
+    diff_posterior_var = np.var(diff_posterior_samples)
+    
+    p_pi_1_greater = sum(s1_posterior_samples > s2_posterior_samples) / num_samples
+    
+    return (diff_posterior_mean, diff_posterior_var), p_pi_1_greater
+
+def normal_inverse_chi_square(m, k, r, s, size=1):
+    """ Sample from a normal-inverse-chi-square distribution with parameters
+    m, k, r, s.
+
+    This distribution is of interest because it is a conjugate prior for
+    Gaussian observations.
+
+    Sampling is described in: https://www2.stat.duke.edu/courses/Fall10/sta114/notes15.pdf
+    
+    Parameters
+    ----------
+    m, k: float
+        m is the mean of the sampled mean; k relates to the variance of the
+        sampled mean.
+
+    r, s: float
+        r is the degrees of freedom in the chi-square distribution from which
+        the variance is samples; s is something like a scaling factor.
+
+    size: int or tuple of ints, or None
+        Output shape. This shares the semantics as other numpy sampling functions.
+    """
+    
+    x = np.random.chisquare(r, size=size)
+    v = (r*s)/x
+    w = np.random.normal(m, v/k)
+        
+    return w, v
+
+def bayesian_means_test(x1, x2, jeffreys_prior=True, prior1=None, prior2=None, 
+        num_samples=1000, seed=None):
+    """ Perform a Bayesian test to identify significantly different means.
+    
+    The test is based on a Gaussian conjugate model. (The normal-inverse-chi-square
+    distribution is the prior.) It uses simulation to estimate the posterior of the 
+    difference between the means of the populations, under the (probably dubious) 
+    assumption that the observations are Gaussian distributed. It also estimates the
+    likelihood that \mu_1 > \mu_2, where \mu_i is the mean of each sample.
+    
+    Parameters
+    ----------
+    x{1,2}: array-like of floats
+        The observations of each sample
+        
+    jeffreys_prior: bool
+        Whether to use the Jeffreys prior. For more details, see:
+        
+            Murphy, K. Conjugate Bayesian analysis of the Gaussian distribution. 
+            Technical report, 2007.
+            
+        Briefly, the Jeffreys prior is: (sample mean, n, n-1, sample variance)
+            
+    prior{1,2}: four-element tuple, or None
+        If the Jeffreys prior is not used, then these parameters are used as the
+        priors for the normal-inverse-chi-square. If only prior1 is given, then
+        those values are also used for prior2, where prior_i is taken as the prior
+        for x_i.
+        
+    num_samples: int
+        The number of simulations
+        
+    seed: int
+        The seed for the random number generator
+        
+    Returns
+    -------
+    (difference_mean, difference_var) : a 2-tuple of floats
+        The posterior mean and variance of the difference in the mean of the two
+        samples. A negative difference_mean indicates that the mean of x2 is 
+        higher.
+        
+    p_m1_greater : float
+        The probability that mu_1 > mu_2
+
+    """
+    
+    if jeffreys_prior:
+        prior1 = (np.mean(x1), len(x1), int(len(x1)-1), np.var(x1))
+        prior2 = (np.mean(x2), len(x2), int(len(x2)-1), np.var(x2))
+        
+    elif prior2 is None:
+        prior2 = prior1
+        
+    if prior1 is None:
+        msg = ("[bayesian_means_test]: either the Jeffreys prior must be "
+               "used, or the parameters of the normal-inverse-chi-square "
+               "distributions must be given.")
+        raise ValueError(msg)
+        
+    if len(prior1) != 4:
+        msg = ("[bayesian_means_test]: please ensure prior1 has exactly four "
+            "elements")
+        raise ValueError(msg)
+    if len(prior2) != 4:
+        msg = ("[bayesian_means_test]: please ensure prior2 has exactly four "
+            "elements")
+        raise ValueError(msg)
+        
+    if seed is not None:
+        np.random.seed(seed)
+        
+    # now, sample from the posterior distributions
+    s1 = normal_inverse_chi_square(*prior1, size=num_samples)
+    s2 = normal_inverse_chi_square(*prior2, size=num_samples)
+
+    w1_posterior_samples, v1_posterior_samples = s1
+    w2_posterior_samples, v2_posterior_samples = s2
+    
+    diff_posterior_samples = w1_posterior_samples - w2_posterior_samples
+    diff_posterior_mean = np.mean(diff_posterior_samples)
+    diff_posterior_var = np.var(diff_posterior_samples)
+    
+    m_m1_greater = w1_posterior_samples > w2_posterior_samples
+    p_m1_greater = np.sum(m_m1_greater) / num_samples
+
+    return (diff_posterior_mean, diff_posterior_var), p_m1_greater
+
+###
+# Model parameter estimation
+###
+
+def get_categorical_mle_estimates(
+        observations,
+        cardinality=None,
+        use_laplacian_smoothing=False,
+        base_1=False):
+    """ Calculate the MLE estimates for the categorical observations
+    
+    Parameters
+    ----------
+    observations: iterable of ints
+        The observed values. These are taken to already be "label encoded",
+        so they should be integers in [0,cardinality).
+        
+    cardinality: int or None
+        The cardinality of the categorical variable. If `None`, then this
+        is taken as the number of unique values in `observations`.
+        
+    use_laplacian_smoothing: bool
+        Whether to use Laplacian ("add one") smoothing for the estimates.
+        This can also be interpreted as a symmetric Dirichlet prior with 
+        a concentration parameter of 1.
+
+    base_1: bool
+        Whether the observations are base 1. If so, then the range is taken
+        as [1, cardinality].
+        
+    Returns
+    -------
+    mle_estimates: np.array of size `cardinality`
+        The estimates
+    """
+    if base_1:
+        observations = np.array(observations) - 1
+
+    indices, counts = np.unique(observations, return_counts=True)
+    
+    if cardinality is None:
+        cardinality = np.max(indices) + 1
+        
+    mle_estimates = np.zeros(shape=cardinality)
+    
+    for i,c in zip(indices, counts):
+        mle_estimates[i] += c
+        
+    if use_laplacian_smoothing:
+        mle_estimates += 1
+        
+    mle_estimates = mle_estimates / np.sum(mle_estimates)
+    return mle_estimates
+
+
+class polynomial_order(Enum):
+    linear = 1
+    quadratic = 2
+
+def fit_with_least_squares(x, y, w=None, order=polynomial_order.linear):
+    """ Fit a polynomial relationship between x and y. Optionally, the values
+    can be weighted.
+
+    Parameters
+    ----------
+    x, y : arrays of floats
+        The input arrays
+
+    w : array of floats
+        A weighting of each of the (x,y) pairs for regression
+
+    order : from polynomial_order enum
+        The order of the fit
+
+    Returns
+    -------
+    intercept, slope, power : floats
+        The coefficients of the fit. power is 0 if the order is linear.
+
+    r_sqr : float
+        The coefficient of determination
+    """
+
+    #Calculate trendline
+    coeffs = np.polyfit(x, y, order.value, w=w)
+
+    intercept = coeffs[-1]
+    slope = coeffs[-2]
+    power = coeffs[0] if order != polynomial_order.linear else 0 
+
+    #Calculate R Squared
+    p = np.poly1d(coeffs)
+
+    ybar = np.sum(y) / len(y)
+    ssreg = np.sum((p(x) - ybar) ** 2)
+    sstot = np.sum((y - ybar) ** 2)
+    r_sqr = ssreg / sstot
+    
+
+    return intercept, slope, power, r_sqr

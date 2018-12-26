@@ -889,3 +889,402 @@ def make_two_class_set(fd):
     )
     
     return ret
+
+
+def collect_regression_metrics(y_true, y_pred):
+    """ Collect various classification performance metrics for the predictions
+
+    Parameters
+    ----------
+    y_true: np.array of real values
+        The true value of each instance
+
+    y_pred: np.array of floats
+        The prediction for each instance
+    
+    Returns
+    -------
+    metrics: dict
+        A mapping from the metric name to the respective value
+    """
+    validation_utils.validate_equal_shape(y_true, y_pred)
+
+    ret = {
+        "explained_variance": sklearn.metrics.explained_variance_score(y_true, y_pred),
+        "mean_absolute_error": sklearn.metrics.mean_absolute_error(y_true, y_pred),
+        "mean_squared_error": sklearn.metrics.mean_squared_error(y_true, y_pred),
+        #"mean_squared_log_error": sklearn.metrics.mean_squared_log_error(y_true, y_pred),
+        "median_absolute_error": sklearn.metrics.median_absolute_error(y_true, y_pred),
+        "r2": sklearn.metrics.r2_score(y_true, y_pred)
+    }
+
+    return ret
+
+
+def collect_multiclass_classification_metrics(y_true, y_score):
+    """ Calculate various multi-class classification performance metrics
+    
+    Parameters
+    ----------
+    y_true: np.array with shape [n_samples]
+        The true label of each instance. The labels are assumed to be encoded 
+        with integers [0, 1, ... n_classes-1]. The respective columns in
+        y_score should give the scores of the matching label.
+        
+    y_score: np.array with shape [n_samples, n_classes]
+        The score predictions for each class, e.g., from pred_proba, though
+        they are not required to be probabilities
+        
+    Returns
+    -------
+    metrics: dict
+        A mapping from the metric name to the respective value
+    """
+
+    # make hard predictions
+    y_pred = np.argmax(y_score, axis=1)
+
+    # now collect all statistics
+    ret = {
+         "cohen_kappa":  sklearn.metrics.cohen_kappa_score(y_true, y_pred),
+         #"matthews_corrcoef":  sklearn.metrics.matthews_corrcoef(y_true, y_pred),
+         "accuracy":  sklearn.metrics.accuracy_score(y_true, y_pred),
+         "micro_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
+            average='micro'),
+         "macro_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
+            average='macro'),
+         "hamming_loss":  sklearn.metrics.hamming_loss(y_true, y_pred),
+         "micro_precision":  sklearn.metrics.precision_score(y_true, y_pred,
+            average='micro'),
+         "macro_precision":  sklearn.metrics.precision_score(y_true, y_pred,
+            average='macro'),
+         "micro_recall":  sklearn.metrics.recall_score(y_true, y_pred,
+            average='micro'),
+         "macro_recall":  sklearn.metrics.recall_score(y_true, y_pred,
+            average='macro'),
+         "hand_and_till_m_score": calc_hand_and_till_m_score(y_true, y_score),
+         "provost_and_domingos_auc": calc_provost_and_domingos_auc(y_true, y_score)
+    }
+
+    return ret
+
+
+def collect_binary_classification_metrics(y_true, y_probas_pred, threshold=0.5,
+        pos_label=1):
+    """ Collect various classification performance metrics for the predictions
+
+    N.B. This function assumes the second column in y_probas_pred gives the
+    score for the "positive" class.
+
+    Parameters
+    ----------
+    y_true: np.array of binary-like values
+        The true class of each instance
+
+    y_probas_pred: 2-d np.array of floats, shape is (num_instances, 2)
+        The score of each prediction for each instance
+    
+    threshold: float
+        The score threshold to choose "positive" predictions
+
+    pos_label: str or int
+        The "positive" class for some metrics
+
+    Returns
+    -------
+    metrics: dict
+        A mapping from the metric name to the respective value
+    """
+
+    # first, validate the input
+    if y_true.shape[0] != y_probas_pred.shape[0]:
+        msg = ("[math_utils.collect_binary_classification_metrics]: y_true "
+            "and y_probas_pred do not have matching shapes. y_true: {}, "
+            "y_probas_pred: {}".format(y_true.shape, y_probas_pred.shape))
+        raise ValueError(msg)
+
+    if y_probas_pred.shape[1] != 2:
+        msg = ("[math_utils.collect_binary_classification_metrics]: "
+            "y_probas_pred does not have scores for exactly two classes: "
+            "y_probas_pred.shape: {}".format(y_probas_pred.shape))
+        raise ValueError(msg)
+
+
+    # first, pull out the probability of positive classes
+    y_score = y_probas_pred[:,1]
+
+    # and then make a hard prediction
+    y_pred = (y_score >= threshold)
+
+    # now collect all statistics
+    ret = {
+         "cohen_kappa":  sklearn.metrics.cohen_kappa_score(y_true, y_pred),
+         "hinge_loss":  sklearn.metrics.hinge_loss(y_true, y_score),
+         "matthews_corrcoef":  sklearn.metrics.matthews_corrcoef(y_true, y_pred),
+         "accuracy":  sklearn.metrics.accuracy_score(y_true, y_pred),
+         "binary_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
+            average='binary', pos_label=pos_label),
+         "micro_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
+            average='micro', pos_label=pos_label),
+         "macro_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
+            average='macro', pos_label=pos_label),
+         "hamming_loss":  sklearn.metrics.hamming_loss(y_true, y_pred),
+         "jaccard_similarity_score":  sklearn.metrics.jaccard_similarity_score(
+            y_true, y_pred),
+         "log_loss":  sklearn.metrics.log_loss(y_true, y_probas_pred),
+         "micro_precision":  sklearn.metrics.precision_score(y_true, y_pred,
+            average='micro', pos_label=pos_label),
+         "binary_precision":  sklearn.metrics.precision_score(y_true, y_pred,
+            average='binary', pos_label=pos_label),
+         "macro_precision":  sklearn.metrics.precision_score(y_true, y_pred,
+            average='macro', pos_label=pos_label),
+         "micro_recall":  sklearn.metrics.recall_score(y_true, y_pred,
+            average='micro', pos_label=pos_label),
+         "macro_recall":  sklearn.metrics.recall_score(y_true, y_pred,
+            average='macro', pos_label=pos_label),
+         "binary_recall":  sklearn.metrics.recall_score(y_true, y_pred,
+            average='binary', pos_label=pos_label),
+         "zero_one_loss":  sklearn.metrics.zero_one_loss(y_true, y_pred),
+         "micro_average_precision":  sklearn.metrics.average_precision_score(
+            y_true, y_score, average='micro'),
+         "macro_average_precision":  sklearn.metrics.average_precision_score(
+            y_true, y_score, average='macro'),
+         "micro_roc_auc_score":  sklearn.metrics.roc_auc_score(y_true, y_score,
+            average='micro'),
+         "macro_roc_auc_score":  sklearn.metrics.roc_auc_score(y_true, y_score,
+            average='macro')
+    }
+
+    return ret
+
+
+
+def _calc_hand_and_till_a_value(y_true, y_score, i, j):
+    """ Calculate the \hat{A} value in Equation (3) of:
+    
+    Hand, D. & Till, R. A Simple Generalisation of the Area Under the ROC Curve
+    for Multiple Class Classification Problems Machine Learning, 2001, 45, 171-186.
+    
+    Specifically:
+        A(i|j) = \frac{ S_i - n_i*(n_i + 1)/2 }{n_i * n_j},
+
+        where n_i, n_j are the count of instances of the respective classes and
+        S_i is the (base-1) sum of the ranks of class i
+    
+    Parameters
+    ----------
+    y_true: np.array with shape [n_samples]
+        The true label of each instance. The labels are assumed to be encoded with
+        integers [0, 1, ... n_classes-1]. The respective columns in y_prob should
+        give the probabilities of the matching label.
+        
+    y_score: np.array with shape [n_samples, n_classes]
+        The score predictions for each class, e.g., from pred_proba, though they
+        are not required to be probabilities
+        
+    i, j: integers
+        The class indices
+        
+    Returns
+    -------
+    a_hat: float
+        The \hat{A} value from Equation (3) referenced above. Specifically, this is
+        the probability that a randomly drawn member of class j will have a lower
+        estimated score for belonging to class i than a randomly drawn member
+        of class i.
+    """
+    # so first pull out all elements of class i or j
+    m_j = (y_true == j)
+    m_i = (y_true == i)
+    m_ij = (m_i | m_j)
+
+    y_true_ij = y_true[m_ij]
+    y_score_ij = y_score[m_ij]
+
+    # count them
+    n_i = np.sum(m_i)
+    n_j = np.sum(m_j)
+
+    # likelihood of class i
+    y_score_i_ij = zip(y_true_ij, y_score_ij[:,i])
+
+    # rank the instances
+    sorted_c_pi = np.array(sorted(y_score_i_ij, key=lambda a: a[1]))
+
+    # sum the ranks for class i
+
+    # first, find where the class_i's are
+    m_ci = sorted_c_pi[:,0] == i
+
+    # ranks are base-1, so add 1
+    ci_ranks = np.where(m_ci)[0] + 1
+    s_i = np.sum(ci_ranks)
+
+    a_i_given_j = s_i - n_i * (n_i + 1)/2
+    a_i_given_j /= (n_i * n_j)
+
+    return a_i_given_j
+
+def calc_hand_and_till_m_score(y_true, y_score):
+    """ Calculate the "M" score from Equation (7) of:
+    
+    Hand, D. & Till, R. A Simple Generalisation of the Area Under the ROC Curve
+    for Multiple Class Classification Problems Machine Learning, 2001, 45,
+    171-186.
+    
+    This is typically taken as a good multi-class extension of the AUC score.
+    For more details, see:
+    
+    Fawcett, T. An introduction to ROC analysis Pattern Recognition Letters,
+    2006, 27, 861 - 874.
+
+    N.B. This function *can* handle unobserved labels, except for the label
+    with the highest index. In particular:
+
+    y_score.shape[1] != np.max(np.unique(y_true)) + 1 causes an error.
+
+    N.B. In case y_score contains any np.nan's, those will be removed before
+    calculating the M score.
+    
+    Parameters
+    ----------
+    y_true: np.array with shape [n_samples]
+        The true label of each instance. The labels are assumed to be encoded 
+        with integers [0, 1, ... n_classes-1]. The respective columns in
+        y_score should give the scores of the matching label.
+        
+    y_score: np.array with shape [n_samples, n_classes]
+        The score predictions for each class, e.g., from pred_proba, though
+        they are not required to be probabilities
+        
+    Returns
+    -------
+    m: float
+        The "multi-class AUC" score referenced above
+    """
+
+    #msg = ("[hand_and_till] y_true: {}. y_score: {}".format(y_true, y_score))
+    #print(msg)
+    
+    classes = np.unique(y_true)
+
+    # make sure the classes are integers, or we will have problems indexing
+    classes = np.array(classes, dtype=int)
+    num_classes = np.max(classes)+1
+
+    # first, validate our input
+    if y_true.shape[0] != y_score.shape[0]:
+        msg = ("[math_utils.m_score]: y_true and y_score do not have matching "
+            "shapes. y_true: {}, y_score: {}".format(y_true.shape,
+            y_score.shape))
+        raise ValueError(msg)
+    
+    if y_score.shape[1] != (num_classes):
+        msg = ("[math_utils.m_score]: y_score does not have the expected "
+            "number of columns based on the maximum observed class in y_true. "
+            "y_score.shape: {}. expected number of columns: {}".format(
+            y_score.shape, num_classes))
+        raise ValueError(msg)
+
+    # clear out the np.nan's
+    m_nan = np.any(np.isnan(y_score), axis=1)
+    y_score = y_score[~m_nan]
+    y_true = y_true[~m_nan]
+    
+    # the specific equation is:
+    #
+    # M = \frac{2}{c*(c-1)}*\sum_{i<j} {\hat{A}(i,j)},
+    #
+    # where \hat{A}(i,j) is \frac{A(i|j) + A(i|j)}{2}
+    ij_pairs = itertools.combinations(classes, 2)
+
+    m = 0
+    for i,j in ij_pairs:
+        a_ij = _calc_hand_and_till_a_value(y_true, y_score, i,j)
+        a_ji = _calc_hand_and_till_a_value(y_true, y_score, j, i)
+
+        m += (a_ij + a_ji) / 2
+    
+    m_1 = num_classes * (num_classes - 1)
+    m_1 = 2 / m_1
+    m = m_1 * m
+
+    #print("[hand_and_till] m: {}".format(m))
+    return m
+
+
+def calc_provost_and_domingos_auc(y_true, y_score):
+    """ Calculate the "M" score from Equation (7) of:
+    
+    Provost, F. & Domingos, P. Well-Trained PETs: Improving Probability
+    Estimation Trees Sterm School of Business, NYU, Sterm School of
+    Business, NYU, 2000.
+    
+    This is typically taken as a good multi-class extension of the AUC score.
+    For more details, see:
+    
+    Fawcett, T. An introduction to ROC analysis Pattern Recognition Letters,
+    2006, 27, 861 - 874.
+
+    N.B. This function *can* handle unobserved labels, except for the label
+    with the highest index. In particular:
+
+    y_score.shape[1] != np.max(np.unique(y_true)) + 1 causes an error.
+    
+    Parameters
+    ----------
+    y_true: np.array with shape [n_samples]
+        The true label of each instance. The labels are assumed to be encoded 
+        with integers [0, 1, ... n_classes-1]. The respective columns in
+        y_score should give the scores of the matching label.
+        
+    y_score: np.array with shape [n_samples, n_classes]
+        The score predictions for each class, e.g., from pred_proba, though
+        they are not required to be probabilities
+        
+    Returns
+    -------
+    m: float
+        The "multi-class AUC" score referenced above
+    """
+    
+    classes = np.unique(y_true)
+
+    # make sure the classes are integers, or we will have problems indexing
+    classes = np.array(classes, dtype=int)
+
+    num_classes = np.max(classes)+1
+    
+    # first, validate our input
+    if y_true.shape[0] != y_score.shape[0]:
+        msg = ("[math_utils.m_score]: y_true and y_score do not have matching "
+            "shapes. y_true: {}, y_score: {}".format(y_true.shape,
+            y_score.shape))
+        raise ValueError(msg)
+
+    if y_score.shape[1] != (num_classes):
+        msg = ("[math_utils.m_score]: y_score does not have the expected "
+            "number of columns based on the maximum observed class in y_true. "
+            "y_score.shape: {}. expected number of columns: {}".format(
+            y_score.shape, num_classes))
+        raise ValueError(msg)
+        
+    m = 0
+    
+    for c in classes:
+        m_c = y_true == c
+        p_c = np.sum(m_c) / len(y_true)
+
+        y_true_c = (y_true == c)
+        y_score_c = y_score[:,c]
+
+        m_nan = np.isnan(y_score_c)
+        y_score_c = y_score_c[~m_nan]
+        y_true_c = y_true_c[~m_nan]
+
+        auc_c = sklearn.metrics.roc_auc_score(y_true_c, y_score_c)
+        a_c = auc_c * p_c
+        
+        m += a_c
+        
+    return m
