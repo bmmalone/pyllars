@@ -5,14 +5,12 @@ class suppress_stdout_stderr(object):
     A context manager for doing a "deep suppression" of stdout and stderr in
     Python, i.e. will suppress all print, even if the print originates in a
     compiled C/Fortran sub-function.
-       This will not suppress raised exceptions, since exceptions are printed
+    
+    This will not suppress raised exceptions, since exceptions are printed
     to stderr just before a script exits, and after the context manager has
     exited (at least, I think that is why it lets exceptions through).
 
-    Presumably, this is used to suppress PyStan's verbose sampling output.
-
-    This code is directly taken from randlet's comment here:
-        https://github.com/facebook/prophet/issues/223#issuecomment-326455744
+    This code is directly taken from randlet's comment here: https://github.com/facebook/prophet/issues/223#issuecomment-326455744
     '''
     def __init__(self):
         # Open a pair of null files

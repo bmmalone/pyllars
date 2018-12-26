@@ -16,7 +16,6 @@ import pandas as pd
 from dask import dataframe as dd
 
 import misc.pandas_utils as pd_utils
-import misc.parallel as parallel
 import misc.utils as utils
 
 ###
@@ -51,7 +50,7 @@ def _fix_mimic_icd(icd):
         
     return icd
 
-def fix_mimic_icds(icds, num_cpus=1):
+def fix_mimic_icds(icds):
     """ Add the decimal to the correct location for the given ICD codes
 
     Since adding the decimals is a string-based operation, it can be somewhat
@@ -68,11 +67,9 @@ def fix_mimic_icds(icds, num_cpus=1):
     fixed_icds: list of strings
         The ICD codes with decimals in the correct location
     """
-    fixed_icds = parallel.apply_parallel_iter(
-        icds,
-        num_cpus,
-        _fix_mimic_icd
-    )
+    fixed_icds = [
+        _fix_mimic_icd(icd) for icd in icds
+    ]
 
     return fixed_icds
 
@@ -488,7 +485,7 @@ def create_followups_table(mimic_base, progress_bar=True):
 
 def parse_rdsamp_datetime(fname, version=2):
     """ Extract the identifying information from the filename of the MIMIC-III
-    header (*hea) files
+    header (\*hea) files
 
     In this project, we refer to each of these files as an "episode".
 

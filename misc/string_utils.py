@@ -66,7 +66,7 @@ def try_parse_float(s:str) -> typing.Optional[float]:
     except ValueError:
         return None
 
-def bytes2human(n:int, format="%(value)i%(symbol)s":str) -> str:
+def bytes2human(n:int, format:str="%(value)i%(symbol)s") -> str:
     """ Convert `n` bytes to a human-readable format
     
     This code is adapted from: http://goo.gl/zeJZl

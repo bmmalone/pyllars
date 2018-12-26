@@ -3,7 +3,7 @@ import pandas as pd
 import sklearn.base
 import sklearn.utils
 
-from sklearn.utils.validation import check_is_fitted
+from misc.validation_utils import check_is_fitted
 
 import logging
 logger = logging.getLogger(__name__)
@@ -15,16 +15,16 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
 
     Parameters
     ----------
-    missing_value_marker: string
+    missing_value_marker : string
         A flag value which will be used internally for missing values. This
         value should not appear in the actual data.
 
-    labels: list-like of values
+    labels : list-like of values
         Optionally, a list of values can be given; any values which do not
         appear in the training data, but present in the list, will still be
         accounted for.
 
-    treat_unknown_as_missing: bool
+    treat_unknown_as_missing : bool
         By default, `transform` will fail when attempting to encode a value
         not seen during fitting. If this flag is `True`, then unknown values
         will instead be replaced with np.nan during `transform`.
@@ -38,10 +38,12 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
 
     def fit(self, y):
         """Fit label encoder
+        
         Parameters
         ----------
         y : array-like of shape (n_samples,)
             Target values.
+            
         Returns
         -------
         self : returns an instance of self.
@@ -102,10 +104,12 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
 
     def transform(self, y):
         """Transform labels to normalized encoding.
+        
         Parameters
         ----------
         y : array-like of shape [n_samples]
             Target values.
+            
         Returns
         -------
         y : array-like of shape [n_samples]
@@ -156,11 +160,13 @@ class NaNLabelEncoder(sklearn.base.BaseEstimator, sklearn.base.TransformerMixin)
 
     def inverse_transform(self, y):
         """Transform labels back to original encoding.
+        
         Parameters
         ----------
         y : numpy array of shape [n_samples]
             Encoded target values. That is, these should be integers in
             the range [0, n_classes].
+            
         Returns
         -------
         y : numpy array of shape [n_samples]

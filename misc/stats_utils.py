@@ -3,6 +3,7 @@
 import logging
 logger = logging.getLogger(__name__)
 
+from enum import Enum
 import numpy as np
 import pandas as pd
 import scipy.stats
@@ -11,18 +12,16 @@ import typing
 ###
 # Probability distribution helpers
 ###
-
 def calculate_symmetric_kl_divergence(
         p:typing.Any,
         q:typing.Any,
         calculate_kl_divergence:typing.Callable) -> float:
     """ Calculates the symmetric KL-divergence between distributions p and q
     
-    In particular, it defines the symmetric KL-divergence to be:
+    In particular, this function defines the symmetric KL-divergence to be\:
     
-    .. math::
-        D_{sym}(p||q) := \frac{D(p||q) + D(p||p)}{2}
-
+    .. math:: ``D_{sym}(p||q) \:= \\frac{D(p||q) + D(p||p)}{2}``
+        
     Parameters
     ----------
     p, q
@@ -37,7 +36,6 @@ def calculate_symmetric_kl_divergence(
     -------
     symmetric_kl : float
         The symmetric KL-divergence between :math:`p` and :math:`q`
-
     """
     kl_1 = calculate_kl_divergence(p, q)
     kl_2 = calculate_kl_divergence(q, p)
@@ -69,8 +67,7 @@ def calculate_univariate_gaussian_kl(
             
     References
     ----------
-    .. [1] Penny, W. "KL-Divergences of Normal, Gamma, Dirichlet and Wishart densities."
-    Wellcome Department of Cognitive Neurology, University College London, 2001.
+    .. [1] Penny, W. "KL-Divergences of Normal, Gamma, Dirichlet and Wishart densities." Wellcome Department of Cognitive Neurology, University College London, 2001.
     """
 
     (mean_p, var_p) = mean_p_var_p

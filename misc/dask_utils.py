@@ -283,7 +283,7 @@ def apply_groups(groups, client, func, *args, return_futures:bool=False,
     Parameters
     ----------
     groups: pandas.DataFrameGroupBy
-        The result of a call to `groupby`on a data frame
+        The result of a call to `groupby` on a data frame
 
     client: distributed.client.Client
         A dask client

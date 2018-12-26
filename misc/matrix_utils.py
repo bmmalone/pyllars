@@ -40,7 +40,7 @@ def permute_matrix(m, is_flat=False, shape=None):
 
 def write_sparse_matrix(target, a, compress=True, **kwargs):
     """ This function is a drop-in replacement for scipy.io.mmwrite. The only
-        difference is that is compresses the output by default. It _does not_
+        difference is that is compresses the output by default. It *does not*
         alter the file extension, which should likely end in "mtx.gz" except
         in special circumstances.
 

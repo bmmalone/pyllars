@@ -45,20 +45,27 @@ install_requires = [
     'dask[complete]',
 ]
 
-tests_require = [
+test_requires = [
     'nose',
 ]
 
-parquet_require = [
+parquet_requires = [
     'fastparquet'
 ]
 
-all_require = tests_require + parquet_require
+bio_requires = [
+    'goatools',
+    'mygene',
+    'biopython',
+]
+
+all_requires = test_requires + parquet_requires + bio_requires
 
 extras = {
-    'test': tests_require,
-    'parquest': parquet_require,
-    'all': all_require
+    'test': test_requires,
+    'parquest': parquet_requires,
+    'bio': bio_requires,
+    'all': all_requires
 }
 
 
@@ -103,7 +110,7 @@ setup(name='misc',
                   'develop': my_develop   # develop is used for pip install -e .
         },
         test_suite='nose.collector',
-        tests_require=tests_require,
+        tests_require=test_requires,
         extras_require=extras,
         entry_points = {
             'console_scripts': console_scripts

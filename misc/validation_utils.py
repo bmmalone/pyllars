@@ -11,6 +11,7 @@ import importlib
 import numpy as np
 import operator
 import scipy.sparse
+import typing
 
 def _raise_value_error(msg, name="array", caller=None, error_type=ValueError):
     """ Raise an `error_type` error with the given message
@@ -188,9 +189,9 @@ def validate_2d(array, name="array", caller=None):
         _raise_value_error("{caller}{name} must be a 2-d data structure",
             name, caller)
             
-def validate_all_between(array, min_, max_, name="array", caller=None):
+def validate_all_between(array, min_val, max_val, name="array", caller=None):
     """ Ensure that all values in `array` are (inclusive) in the range
-    [min_, max_]
+    [min_val, max_val]
 
     If any values in `array` are outside the range, then raise a ValueError.
 
@@ -199,7 +200,7 @@ def validate_all_between(array, min_, max_, name="array", caller=None):
     array: np.array
         A numpy array
 
-    min_, max_: numbers
+    min_val, max_val: numbers
         The min and max for the (inclusive) range
 
     name: string
@@ -210,16 +211,16 @@ def validate_all_between(array, min_, max_, name="array", caller=None):
     """
 
     valid_vals = [
-        check_range(v, min_, max_, raise_on_invalid=False)
+        check_range(v, min_val, max_val, raise_on_invalid=False)
             for v in array
     ]
 
     if not np.all(valid_vals):
         msg = ''.join([
             "{caller}all values in {name} must be between ",
-            str(min_),
+            str(min_val),
             " and ",
-            str(max_),
+            str(max_val),
             ", inclusive"
         ])        
         _raise_value_error(msg, name, caller)
@@ -602,7 +603,7 @@ def check_is_fitted(estimator, attributes, name="estimator", caller=None, all_or
 
 def validate_is_sequence(
         maybe_sequence:typing.Any,
-        raise_on_fail:bool=True,
+        raise_on_invalid:bool=True,
         name:str="array",
         caller=None) -> bool:
     """ Check whether `maybe_sequence` is a `collections.Sequence` or `np.ndarray`
@@ -615,7 +616,7 @@ def validate_is_sequence(
     maybe_sequence : object
         An object which may be a sequence
         
-    raise_on_fail : bool
+    raise_on_invalid : bool
         Whether to raise an error if `maybe_sequence` is not a sequence
 
     name: string
@@ -637,7 +638,7 @@ def validate_is_sequence(
     is_ndarray = isinstance(maybe_sequence, np.ndarray)
     validated =  is_sequence or is_ndarray
     
-    if (not validated) and raise_on_fail
+    if (not validated) and raise_on_invalid:
         msg = ("{caller}{name} invalid type. found: " + str(type(var)) + 
             ". allowed: sequence types.")
         _raise_value_error(msg, name, caller, TypeError)

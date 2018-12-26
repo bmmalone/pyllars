@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 import argparse
-import misc.slurm as slurm
+import misc.slurm_utils.slurm_utils as slurm
 
 default_mem = "10G"
 default_num_cpus = 1

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 import collections
 import numpy as np
 import scipy.sparse
-from sklearn.utils.validation import check_is_fitted
+from misc.validation_utils import check_is_fitted
 
 import misc.utils as utils
 

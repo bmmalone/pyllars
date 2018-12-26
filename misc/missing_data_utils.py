@@ -79,10 +79,10 @@ import misc.math_utils as math_utils
 import more_itertools
 
 # nan preprocessing
-from misc.missingdata.nan_standard_scaler import NaNStandardScaler
-from misc.missingdata.nan_one_hot_encoder import NaNOneHotEncoder
+from misc.sklearn_transformers.nan_standard_scaler import NaNStandardScaler
+from misc.sklearn_transformers.nan_one_hot_encoder import NaNOneHotEncoder
 
-from misc.multicolumn_imputer import MultiColumnImputer
+from misc.sklearn_transformers.multicolumn_imputer import MultiColumnImputer
 from sklearn_pandas.categorical_imputer import CategoricalImputer
 from sklearn.preprocessing import FunctionTransformer 
 
@@ -129,7 +129,8 @@ def get_nmar_incomplete_data(X, missing_likelihood=None, random_state=8675309):
     """ Remove some of the observations
     
     Internally, this function uses an NMAR mechanism. That is, the likelihood
-    that an observation is missing depends on the value.    
+    that an observation is missing depends on the value.
+    
     Parameters
     ----------
     X: data matrix
@@ -145,7 +146,7 @@ def get_nmar_incomplete_data(X, missing_likelihood=None, random_state=8675309):
         array gives all values for the respective feature. See
         `remove_large_values` for a simple example.
         
-        `None`s can be given if all observations for the respective feature
+        `None` values can be given if all observations for the respective feature
         are present.
         
     random_state: int
@@ -266,7 +267,7 @@ def remove_y_when_z_is_large(x, y, z, threshold,
         
     combination_operator: callable with one parameter
         The operation to combine the `z` variables. The callable should take
-        an array of size |z|. 
+        an array of size :math:`|z|`. 
         
     Returns
     -------

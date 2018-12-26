@@ -277,9 +277,9 @@ def remove_nones(l:typing.Iterable, return_np_array:bool=False) -> typing.List:
     behavior with data frames, lists of bools, etc.
     
     This function returns a shallow copy and is not lazy.
-
-    N.B. This does not test nested lists. So, for example, a list of lists
-    of `None`s would be unchanged by this function.
+    
+    NB This does not test nested lists. So, for example, a list of lists
+    of `None` values would be unchanged by this function.
     
     Parameters
     ----------
@@ -293,7 +293,6 @@ def remove_nones(l:typing.Iterable, return_np_array:bool=False) -> typing.List:
     -------
     l_no_nones : list
         A list or np.array with the `None`s removed from `l`
-
     """
     ret = [i for i in l if i is not None]
 
@@ -375,7 +374,7 @@ def get_set_pairwise_intersections(
         * coverage_small : the fraction of the smaller of set1 or set2 in the intersection
         * coverage_large : the fraction of the larger of set1 or set2 in the intersection
         * intersection : the intersection set. Only included if `return_intersections`
-            is True.
+        is True.
     """
     all_intersection_sizes = []
 
@@ -401,7 +400,6 @@ def get_set_pairwise_intersections(
             coverage_small = coverage_set1
             coverage_large = coverage_set2
             
-
         intersection_size = {
             'set1': s1,
             'set2': s2,
