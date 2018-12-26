@@ -53,7 +53,7 @@ parquet_require = [
     'fastparquet'
 ]
 
-all_require = tests_require + parquest_require
+all_require = tests_require + parquet_require
 
 extras = {
     'test': tests_require,
