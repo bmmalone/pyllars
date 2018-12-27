@@ -1,6 +1,8 @@
 # pymisc-utils
 This project contains many python3 utilities that I find useful.
 
+[![Build Status](https://travis-ci.org/bmmalone/pymisc-utils.svg?branch=dev)](https://travis-ci.org/bmmalone/pymisc-utils)
+
 **Installation**
 
 This package is written in python3. `pip` can be used to install it:
