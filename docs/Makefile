@@ -7,6 +7,7 @@ SPHINXBUILD   = sphinx-build
 SOURCEDIR     = source
 BUILDDIR      = build
 SPHINXAPIDOC  = sphinx-apidoc
+SPHINXAPIOPTS = --separate
 PACKAGEBASE   = ../misc
 
 # Put it first so that "make" without argument is like "make help".
@@ -21,4 +22,4 @@ help:
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 api: Makefile
-	@$(SPHINXAPIDOC) -f -o "$(SOURCEDIR)" "$(PACKAGEBASE)"
+	@$(SPHINXAPIDOC) -f -o "$(SOURCEDIR)" "$(PACKAGEBASE)" $(SPHINXAPIOPTS)
