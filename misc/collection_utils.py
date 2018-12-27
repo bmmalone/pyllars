@@ -93,7 +93,7 @@ def is_iterator_exhausted(iterator:Iterable, return_element:bool=False) -> Tuple
     Parameters
     ----------
     iterator : typing.Iterable
-        The iterators
+        The iterator
 
     return_element : bool
         Whether to return the next element of the iterator

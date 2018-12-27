@@ -45,8 +45,12 @@ install_requires = [
     'dask[complete]',
 ]
 
-test_requires = [
-    'nose',
+setup_requires = [
+    'pytest-runner'
+]
+
+tests_require = [
+    'pytest',
 ]
 
 parquet_requires = [
@@ -59,13 +63,26 @@ bio_requires = [
     'biopython',
 ]
 
-all_requires = test_requires + parquet_requires + bio_requires
+docs_require = [
+    'sphinx',
+    'sphinx_rtd_theme',
+]
+
+all_requires = (
+    tests_require + 
+    parquet_requires + 
+    bio_requires + 
+    setup_requires + 
+    docs_require
+)
 
 extras = {
-    'test': test_requires,
+    'test': tests_require,
     'parquest': parquet_requires,
     'bio': bio_requires,
-    'all': all_requires
+    'all': all_requires,
+    'setup': setup_requires,
+    'docs': docs_require
 }
 
 
@@ -104,13 +121,13 @@ setup(name='misc',
         author_email="bmmalone@gmail.com",
         license='MIT',
         packages=find_packages(),
+        setup_requires=setup_requires,
         install_requires=install_requires,
         include_package_data=True,
         cmdclass={'install': my_install,  # override install
                   'develop': my_develop   # develop is used for pip install -e .
         },
-        test_suite='nose.collector',
-        tests_require=test_requires,
+        tests_require=tests_require,
         extras_require=extras,
         entry_points = {
             'console_scripts': console_scripts
