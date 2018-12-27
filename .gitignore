@@ -3,6 +3,9 @@ __pycache__
 .ipynb_checkpoints
 .eggs
 dask-worker-space
+coverage
+
+.coverage*
 
 # sphinx
 _static

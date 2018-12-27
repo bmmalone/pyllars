@@ -51,6 +51,9 @@ setup_requires = [
 
 tests_require = [
     'pytest',
+    'coverage',
+    'pytest-cov',
+    'coveralls',
 ]
 
 parquet_requires = [
