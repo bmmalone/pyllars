@@ -2,6 +2,7 @@
 This project contains many python3 utilities that I find useful.
 
 [![Build Status](https://travis-ci.org/bmmalone/pymisc-utils.svg?branch=dev)](https://travis-ci.org/bmmalone/pymisc-utils)
+[![Coverage Status](https://coveralls.io/repos/github/bmmalone/pymisc-utils/badge.svg?branch=dev)](https://coveralls.io/github/bmmalone/pymisc-utils?branch=dev)
 
 **Installation**
 
