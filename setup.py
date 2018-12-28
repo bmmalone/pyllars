@@ -20,29 +20,29 @@ console_scripts = slurm_console_scripts
 ###
 install_requires = [
     'cython',
-    'numpy',
-    'scipy',
-    'statsmodels',
+    'dask[complete]',
+    'docopt',
+    'graphviz',
+    'joblib',
     'matplotlib',
     'matplotlib_venn',
-    'pandas',
-    'sklearn',
-    'sklearn_pandas',
     'more_itertools',
     'networkx>=2.0',
-    'docopt',
-    'tqdm',
-    'joblib',
-    'xlrd',
-    'openpyxl',
-    'graphviz',
-    'pydot',
-    'tables',
-    'paramiko',
-    'spur',
-    'six',
     'nltk',
-    'dask[complete]',
+    'numpy',
+    'openpyxl',
+    'pandas',
+    'paramiko',
+    'pydot',
+    'scipy',
+    'six',
+    'sklearn',
+    'sklearn_pandas',
+    'spur',
+    'statsmodels',
+    'tables',
+    'tqdm',
+    'xlrd',
 ]
 
 setup_requires = [
@@ -95,9 +95,14 @@ def _post_install(self):
     importlib.reload(site)
 
     # already download the nltk resources used in nlp_utils
-    import nltk
-    nltk.download('stopwords')
-    nltk.download('punkt')
+    
+    nltk_spec = importlib.util.find_spec("nltk")
+    nltk_found = nltk_spec is not None
+    
+    if nltk_found:
+        import nltk
+        nltk.download('stopwords')
+        nltk.download('punkt')
 
 class my_install(_install):
     def run(self):
