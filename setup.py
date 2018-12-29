@@ -119,12 +119,12 @@ def readme():
     with open('README.md') as f:
         return f.read()
 
-setup(name='misc',
+setup(name='pyllars',
         version='0.3.0',
-        description="This package contains python3 utilities I find useful.",
+        description="This package contains supporting utilities for Python 3.",
         long_description=readme(),
         keywords="utilities",
-        url="https://github.com/bmmalone/pymisc-utils",
+        url="https://github.com/bmmalone/pyllars",
         author="Brandon Malone",
         author_email="bmmalone@gmail.com",
         license='MIT',

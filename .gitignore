@@ -11,3 +11,6 @@ coverage
 _static
 _templates
 build
+
+# scratch work
+scratch*ipynb

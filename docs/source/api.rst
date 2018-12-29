@@ -1,11 +1,11 @@
 API
 ****
 
-This is the API for the Utilities library.
+This is the API for the pyllars library.
 
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
    
    collection_utils
    dask_utils

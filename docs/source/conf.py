@@ -19,7 +19,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'Utilities'
+project = 'pyllars'
 copyright = '2018, Brandon'
 author = 'Brandon'
 

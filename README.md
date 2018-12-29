@@ -1,16 +1,18 @@
-# pymisc-utils
-This project contains many python3 utilities that I find useful.
+# pyllars
 
-[![Build Status](https://travis-ci.org/bmmalone/pymisc-utils.svg?branch=dev)](https://travis-ci.org/bmmalone/pymisc-utils)
-[![Coverage Status](https://coveralls.io/repos/github/bmmalone/pymisc-utils/badge.svg?branch=dev)](https://coveralls.io/github/bmmalone/pymisc-utils?branch=dev)
+This project contains supporting utilities for Python 3.
+
+[![Build Status](https://travis-ci.org/bmmalone/pymisc-utils.svg?branch=dev)](https://travis-ci.org/bmmalone/pyllars)
+[![Coverage Status](https://coveralls.io/repos/github/bmmalone/pymisc-utils/badge.svg?branch=dev)](https://coveralls.io/github/bmmalone/pyllars?branch=dev)
+[![Documentation Status](https://readthedocs.org/projects/pymisc-utils/badge/?version=latest)](https://pyllars.readthedocs.io/en/latest/?badge=latest)
 
 **Installation**
 
-This package is written in python3. `pip` can be used to install it:
+This package is written in Python 3. `pip` can be used to install it:
 
 ```
-git clone https://github.com/bmmalone/pymisc-utils
-cd pymisc-utils
+git clone https://github.com/bmmalone/pyllars
+cd pyllars
 pip3 install .
 ```
 
@@ -19,142 +21,5 @@ pip3 install .
 If possible, I recommend installing inside a virtual environment. See 
 [here](http://www.simononsoftware.com/virtualenv-tutorial-part-2/>), for example.
 
-## Overview
-
-This package contains helpers for a wide variety of python applications.
-
-#### PyData stack utilities
-
-* `dask_utils`. Utilities for working with [dask](https://dask.pydata.org/en/latest/).
-    For example, this include functions for easily specifying connection, etc.,
-    information for a dask cluster from the command line.
-    
-* `external_sparse_matrix_list`. A class which wraps a list of sparse matrices
-    and seamlessly handles reading and writing them to- and from-disk in
-    standard, compressed text formats, such as [Matrix Market](http://math.nist.gov/MatrixMarket/formats.html).
-
-* `incremental_gaussian_estimator`. A class which calculates sample mean and
-    variance from univariate online (that is, streaming) observations.
-
-* `math_utils`. Utilities for working with matrices, as well as other
-    math utilities. In particular, it includes implementations of a few
-    sophisticated statistical algorithms, including:
-    
-    * Univariate Gaussian KL-divergence
-    * A Bayesian test to determine if two proportions differ significantly
-    * A Bayesian test to determine if the means of two populations differ
-        significantly (that is, something like a Bayesian t-test)
-        
-* `matrix_utils`.
-
-* `ml_utils`.
-
-* `mpl_utils`. Utilities for manipulating object-oriented matplotlib plots, that
-    is, those which uses `Axes` objects.
-    
-* `nlp_utils`. Utilities for interacting with `nltk`.
-    
-* `pandas_utils`. Utilities for working with pandas data frames, such as
-    seamless file-IO for a variety of formats like parquet, hdf5 and excel.
-    
-* `sparse_vector`. A class which wraps a `scipy.sparse_matrix` to reduce the
-    notational burden for working with sparse vectors.
-    
-* `stats_utils`.
-    
-#### `scikit-learn` transformers
-
-These are helpers which are specifically for use within `sklearn` workflows.
-Of course, it is also part of the PyData stack, but there are many of these.
-
-
-* `sklearn_transformers.incremental_count_vectorizer`. An `sklearn.CountVectorizer` which can operate
-    in parallel and does not requires storing the entire set of documents at
-    once.
-        
-* `sklearn_transformers.missingdata`. A subpackage containing utilities for handling data. This
-    includes minor variants on `sklearn` preprocessing components that handle
-    `np.nan`s in the input in a reasonable way, as well as utilities for 
-    removing data according to different
-    missingness mechanisms, including missing at random (MAR), missing
-    completely at random (MCAR), and not missing at random (NMAR).
-    
-    * `missingdata.nan_label_encoder`.
-    
-    * `missingdata.nan_nearest_neighbors`. A simple k-NN algorithm which handles features with
-        missing values represented as `np.nan`s.
-        
-    * `missingdata.nan_one_hot_encoder`.
-    
-    * `missingdata.nan_standard_scaler`. An `sklearn` transformer which scales features by the
-        observed mean and standard deviation of the training data; in contrast to
-        the normal `StandardScaler`, this class ignores `nan`s, `inf`s and other
-        typically-problematic values.
-        
-* `sklearn_transformers.multicolumn_imputer`. An `sklearn.Transformer` for replacing missing data
-    in multiple columns at once. The fitted imputers are kept around for use
-    on test data. An independent imputer is fit for each column.
-    
-* `sklearn_transformers.multicolumn_label_encoder`. An `sklearn.Transformer` for encoding categorical
-    in multiple columns at once. The fitted encoders are kept around for use
-    on test data. The encoders are independent for each column.
-    
-* `sklearn_transformers.simple_numeric_bow_union`.
-    
-#### Domain-specific utilities
-
-* `gene_ontology_utils`.
-
-* `mygene_utils`.
-
-* `physionet_utils`. Utilities for working with the [MIMIC](https://mimic.physionet.org/)
-    clinical care database as well as other datasets published by `physionet`,
-    such as the [Computing in Cardiology Challenge](https://www.physionet.org/challenge/2012/).
-    
-* `scip_utils`.
-
-#### General utilities
-* `deprecated_decorator`. A simple decorator for marking functions, classes,
-    etc., as deprecated.
-    
-* `collection_utils`.
-
-* `latex_utils`. Utilities for programmatically creating latex documents.
-
-* `logging_utils`. Utilities for easily controlling logging behavior from the
-    command line.
-    
-* `shell_utils`. Utilities for interacting with a shell. Many of these functions
-    wrap the `os` and/or `subprocess` modules with things like checks that
-    required input and output files exist.
-    
-* `ssh_utils`. Utilities for distributing jobs across a cluster, etc., using
-    password-less SSH.
-    
-* `string_utils`.
-    
-* `suppress_stdout_stderr`. A context manager for suppressing stdout and stderr.
-    This is useful for calls into compiled C/Fortran where the standard logging
-    mechanisms do not work well.
-
-* `utils`. Utilities for working with built-in python types, simple file system
-    operations, as well as a variety of other utilities. Many of the functions
-    in other modules began here and were migrated after a sufficient number of
-    related functions had been added. Thus, many functions from this module
-    issue deprecation warnings when called.
-
-* `validation_utils`. Utilities for standard validation tasks.
-    
-#### Slurm command line utilities
-
-* `call-program`. A wrapper which calls whatever program it is given. This is
-    useful for calling binary programs with `call-sbatch`.
-
-* `call-sbatch`. A wrapper around Slurm's [`sbatch`](https://slurm.schedmd.com/sbatch.html)
-    command with reasonable defaults.
-    
-* `scancel-range`. A script which calls [`scancel`](https://slurm.schedmd.com/scancel.html)
-    on a range of job id's.
-    
-* `slurm_utils.slurm_utils`. Utilities for adding slurm options to any script.
-
+Please see [the documentation](https://pyllars.readthedocs.io/en/latest/index.html)
+for more details.
