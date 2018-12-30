@@ -6,12 +6,13 @@ Collection utilities
    
 .. currentmodule::  misc.collection_utils
     
+Many of the function names mention specific data structures, such as "list"s or "dict"s,
+in the names for historical reasons. In most cases, these functions work with any instance
+of the more general type (such as `Iterable` or `Mapping`). Please see the specific
+documentation for more details, though.
+
 Iterable helpers
 ----------------
-
-Many of the function names mention "list"s for historical reasons. In most
-cases, these functions work with any iterable. Please see the specific documentation
-for more details, though.
 
 .. autosummary::
     apply_no_return

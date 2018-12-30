@@ -8,9 +8,8 @@ Welcome to the documentation for pyllars!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
    
-   intro
+   Introduction <intro>
    api
    tutorials
 
