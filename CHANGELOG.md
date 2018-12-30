@@ -4,14 +4,20 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [0.3.0] - In progress
+## [1.0.0] - In progress
 This version change significantly rearranges the package structure. In particular,
 the functionality of the large `utils` and `math_utils` modules has been split
 into more specific modules (some of which already existed). Deprecated functionality
 has been removed, and sphinx documentation has been added.
 
-This version does not yet have tests, etc., so it is expected that import errors
-may still need to be resolved.
+Additionally, the package was renamed from `pymisc-utils` to `pyllars` to help
+avoid confusion between the older API and the updated one.
+
+This update also adds Travis CI, Coveralls, Read the Docs, and PyPI support for
+the project.
+
+The tests are very minimal, and it is expected that some import errors have
+not yet been resolved.
 
 ## [0.2.11] - 2018-12-22
 ### Added
