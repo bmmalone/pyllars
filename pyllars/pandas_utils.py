@@ -118,18 +118,18 @@ def dict_to_dataframe(dic:Dict, key_name:str='key', value_name:str='value') -> p
     Parameters
     ----------
     dic: typing.Dict
-        a dictionary
+        A dictionary
 
     key_name: str
-        the name to use for the column for the keys
+        The name to use for the column for the keys
 
     value_name: str
-        the name to use for the column for the values
+        The name to use for the column for the values
 
     Returns
     -------
     df: pandas.DataFrame
-        a data frame in which each row corresponds to one entry in dic
+        A data frame in which each row corresponds to one entry in dic
     """
     df = pd.Series(dic, name=value_name)
     df.index.name = key_name
