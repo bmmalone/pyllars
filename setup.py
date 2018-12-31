@@ -7,13 +7,7 @@ import importlib
 ###
 # Console scripts
 ###
-slurm_console_scripts = [
-    'call-sbatch=misc.slurm_utils.call_sbatch:main',
-    'scancel-range=misc.slurm_utils.scancel_range:main',
-    'call-program=misc.slurm_utils.call_program:main'
-]
-
-console_scripts = slurm_console_scripts
+console_scripts = []
 
 ###
 # Dependencies
@@ -54,6 +48,7 @@ tests_require = [
     'coverage',
     'pytest-cov',
     'coveralls',
+    'pytest-runner',
 ]
 
 parquet_requires = [
@@ -87,6 +82,12 @@ extras = {
     'setup': setup_requires,
     'docs': docs_require
 }
+
+classifiers=[
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+]
 
 
 
@@ -123,11 +124,13 @@ setup(name='pyllars',
         version='1.0.0',
         description="This package contains supporting utilities for Python 3.",
         long_description=readme(),
+        long_description_content_type='text/markdown',
         keywords="utilities",
         url="https://github.com/bmmalone/pyllars",
         author="Brandon Malone",
         author_email="bmmalone@gmail.com",
         license='MIT',
+        classifiers=classifiers,
         packages=find_packages(),
         setup_requires=setup_requires,
         install_requires=install_requires,
