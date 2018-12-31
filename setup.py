@@ -66,12 +66,18 @@ docs_require = [
     'sphinx_rtd_theme',
 ]
 
+pypi_requires = [
+    'twine',
+    'readme_renderer[md]'
+]
+
 all_requires = (
     tests_require + 
     parquet_requires + 
     bio_requires + 
     setup_requires + 
-    docs_require
+    docs_require +
+    pypi_requires
 )
 
 extras = {
@@ -80,7 +86,8 @@ extras = {
     'bio': bio_requires,
     'all': all_requires,
     'setup': setup_requires,
-    'docs': docs_require
+    'docs': docs_require,
+    'pypi': pypi_requires,
 }
 
 classifiers=[
@@ -121,7 +128,7 @@ def readme():
         return f.read()
 
 setup(name='pyllars',
-        version='1.0.0',
+        version='0.99.0',
         description="This package contains supporting utilities for Python 3.",
         long_description=readme(),
         long_description_content_type='text/markdown',

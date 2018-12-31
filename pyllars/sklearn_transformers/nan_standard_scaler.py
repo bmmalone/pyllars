@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import sklearn.base
 
-import misc.validation_utils as validation_utils
+import pyllars.validation_utils as validation_utils
 
 
 class NaNStandardScaler(sklearn.base.TransformerMixin):

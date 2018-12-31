@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import sklearn.base
-from misc.validation_utils import check_is_fitted
+from pyllars.validation_utils import check_is_fitted
 
 from sklearn.preprocessing import OneHotEncoder
 

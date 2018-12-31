@@ -15,7 +15,7 @@ import pandas as pd
 import tqdm
 import typing
 
-import misc.validation_utils as validation_utils
+import pyllars.validation_utils as validation_utils
 
 
 def apply_no_return(items:Iterable, func:Callable, *args,
@@ -275,7 +275,7 @@ def replace_none_with_empty_iter(i:Optional[Iterable]) -> Iterable:
 def wrap_in_list(maybe_sequence:Any) -> Sequence:
     """ If `maybe_sequence` is not a sequence, then wrap it in a list
     
-    See :func:`misc.validation_utils.is_sequence` for more details about
+    See :func:`pyllars.validation_utils.is_sequence` for more details about
     what counts as a sequence.
 
     Parameters

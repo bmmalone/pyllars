@@ -15,8 +15,8 @@ import numpy as np
 import pandas as pd
 from dask import dataframe as dd
 
-import misc.pandas_utils as pd_utils
-import misc.utils as utils
+import pyllars.pandas_utils as pd_utils
+import pyllars.utils as utils
 
 ###
 # MIMIC

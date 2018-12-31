@@ -1,10 +1,10 @@
 Collection utilities
 **************************
 
-.. automodule:: misc.collection_utils
+.. automodule:: pyllars.collection_utils
     :noindex:
    
-.. currentmodule::  misc.collection_utils
+.. currentmodule::  pyllars.collection_utils
     
 Many of the function names mention specific data structures, such as "list"s or "dict"s,
 in the names for historical reasons. In most cases, these functions work with any instance
@@ -44,5 +44,5 @@ Mapping helpers
 Definitions
 ----------------
 
-.. automodule:: misc.collection_utils
+.. automodule:: pyllars.collection_utils
     :members:

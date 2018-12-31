@@ -7,12 +7,20 @@ These functions are largely wrappers around spur:
 """
 
 import logging
+logger = logging.getLogger(__name__)
 
 import os
 import subprocess
 import sys
 
-logger = logging.getLogger(__name__)
+import random
+import socket
+import spur
+import paramiko.ssh_exception
+import time
+
+import pyllars.utils as utils
+
 
 default_connection_timeout = 5
 default_max_tries = 10
@@ -64,12 +72,6 @@ def distribute(cmd, node=None,
         If no connections can be made after the given number of tries.
         
     """
-    import random
-    import socket
-    import spur
-    import paramiko.ssh_exception
-    import misc.utils as utils
-
     cwd = os.getcwd()
     env = os.environ
 
@@ -149,10 +151,6 @@ def distribute_all(cmd_list,
         If no connections can be made after the given number of tries for any of the commands.
 
     """
-    import time
-    import spur
-    import misc.utils as utils
-
     # if the node list is a file, read it
     if not utils.is_sequence(node_list):
         with open(node_list) as node_list_file:

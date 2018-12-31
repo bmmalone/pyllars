@@ -1,7 +1,7 @@
-""" Tests for the `misc.collection_utils` module.
+""" Tests for the `pyllars.collection_utils` module.
 """
 
-import misc.collection_utils as collection_utils
+import pyllars.collection_utils as collection_utils
 
 def test_flatten_lists():
     """ Test for flattening nested lists.

@@ -13,7 +13,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import Imputer, StandardScaler
 from sklearn.feature_extraction.text import TfidfTransformer
 
-import misc.validation_utils as validation_utils
+import pyllars.validation_utils as validation_utils
 
 def _get_simple_num_pipeline():
     imputer = Imputer()

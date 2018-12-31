@@ -26,7 +26,7 @@ import scipy.stats
 import sklearn
 import sklearn.model_selection
 
-import misc.validation_utils as validation_utils
+import pyllars.validation_utils as validation_utils
 
 
 

@@ -17,7 +17,7 @@ import yaml
 import numpy as np
 import pandas as pd
 
-from misc.deprecated_decorator import deprecated
+from pyllars.deprecated_decorator import deprecated
 
 
 ### Parsing and writing utilities
@@ -28,7 +28,7 @@ def load_config(config, required_keys=None):
     """ Read in the config file, print a logging (INFO) statement and verify
     that the required keys are present
     """
-    import misc.validation_utils as validation_utils
+    import pyllars.validation_utils as validation_utils
 
     msg = "Reading config file"
     logger.info(msg)

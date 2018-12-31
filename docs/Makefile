@@ -8,7 +8,7 @@ SOURCEDIR     = source
 BUILDDIR      = build
 SPHINXAPIDOC  = sphinx-apidoc
 SPHINXAPIOPTS = --separate
-PACKAGEBASE   = ../misc
+PACKAGEBASE   = ../pyllars
 
 # Put it first so that "make" without argument is like "make help".
 help:

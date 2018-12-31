@@ -13,9 +13,9 @@ logger = logging.getLogger(__name__)
 import collections
 import numpy as np
 import scipy.sparse
-from misc.validation_utils import check_is_fitted
+from pyllars.validation_utils import check_is_fitted
 
-import misc.utils as utils
+import pyllars.utils as utils
 
 class IncrementalCountVectorizer:
     def __init__(self, 

@@ -1,10 +1,10 @@
 Dask utilities
 ***************
 
-.. automodule:: misc.dask_utils
+.. automodule:: pyllars.dask_utils
     :noindex:
     
-.. currentmodule::  misc.dask_utils
+.. currentmodule::  pyllars.dask_utils
 
 Starting or connecting to a server
 -----------------------------------
@@ -38,5 +38,5 @@ Other dask helpers
     
 Definitions
 -------------
-.. automodule:: misc.dask_utils
+.. automodule:: pyllars.dask_utils
     :members:

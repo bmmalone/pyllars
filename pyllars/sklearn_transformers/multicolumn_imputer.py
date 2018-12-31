@@ -1,6 +1,6 @@
 import sklearn.base
 
-from misc.validation_utils import check_is_fitted
+from pyllars.validation_utils import check_is_fitted
 
 import copy
 import numpy as np

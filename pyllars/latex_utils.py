@@ -2,6 +2,9 @@
 Utilities for programmatically constructing a latex document
 """
 
+import os
+import pyllars.shell_utils as shell_utils
+
 def vspace(out, vspace):
     out.write("\n\\vspace{")
     out.write(vspace)
@@ -366,8 +369,6 @@ def get_footer_text():
 
 def compile(out_dir, doc_name):
     """ Compile the document by calling pdflatex twice. """
-    import os
-    import misc.shell_utils as shell_utils
 
     os.chdir(out_dir)
     cmd = [

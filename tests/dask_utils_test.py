@@ -1,7 +1,7 @@
-""" Tests for the `misc.dask_utils` module.
+""" Tests for the `pyllars.dask_utils` module.
 """
 
-import misc.dask_utils as dask_utils
+import pyllars.dask_utils as dask_utils
 
 import argparse
 import pytest

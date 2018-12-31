@@ -5,7 +5,7 @@ This module contains helpers for typical validation routines.
 import logging
 logger = logging.getLogger(__name__)
 
-import misc.utils as utils
+import pyllars.utils as utils
 
 import importlib
 import numpy as np

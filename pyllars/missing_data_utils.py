@@ -8,7 +8,7 @@ Example::
     import functools
     import numpy as np
     import sklearn.datasets
-    import misc.missing_data_utils as missing_data_utils
+    import pyllars.missing_data_utils as missing_data_utils
     
     X_complete, y = sklearn.datasets.load_iris(return_X_y=True)
 
@@ -75,14 +75,14 @@ import pandas as pd
 import scipy.sparse
 import sklearn.model_selection
 
-import misc.math_utils as math_utils
+import pyllars.math_utils as math_utils
 import more_itertools
 
 # nan preprocessing
-from misc.sklearn_transformers.nan_standard_scaler import NaNStandardScaler
-from misc.sklearn_transformers.nan_one_hot_encoder import NaNOneHotEncoder
+from pyllars.sklearn_transformers.nan_standard_scaler import NaNStandardScaler
+from pyllars.sklearn_transformers.nan_one_hot_encoder import NaNOneHotEncoder
 
-from misc.sklearn_transformers.multicolumn_imputer import MultiColumnImputer
+from pyllars.sklearn_transformers.multicolumn_imputer import MultiColumnImputer
 from sklearn_pandas.categorical_imputer import CategoricalImputer
 from sklearn.preprocessing import FunctionTransformer 
 

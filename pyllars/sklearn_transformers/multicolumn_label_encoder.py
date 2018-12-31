@@ -1,12 +1,12 @@
 import sklearn.preprocessing
 import sklearn.base
 
-from misc.validation_utils import check_is_fitted
+from pyllars.validation_utils import check_is_fitted
 
 import numpy as np
 import pandas as pd
 
-from misc.sklearn_transformers.nan_label_encoder import NaNLabelEncoder
+from pyllars.sklearn_transformers.nan_label_encoder import NaNLabelEncoder
 
 class MultiColumnLabelEncoder(sklearn.base.TransformerMixin):
     """ Encode multiple columns using independent label encoders

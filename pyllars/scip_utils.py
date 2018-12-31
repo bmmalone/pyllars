@@ -3,7 +3,7 @@ Utilities for working with SCIP: http://scip.zib.de/
 """
 import numpy as np
 
-import misc.utils as utils
+import pyllars.utils as utils
 import toolz.dicttoolz
 
 ###

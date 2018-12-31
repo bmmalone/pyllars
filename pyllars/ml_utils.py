@@ -16,8 +16,8 @@ import sklearn.preprocessing
 
 from copy import deepcopy
 
-import misc.utils as utils
-import misc.validation_utils as validation_utils
+import pyllars.utils as utils
+import pyllars.validation_utils as validation_utils
 
 ###
 # Data structures

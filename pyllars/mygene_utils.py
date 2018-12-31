@@ -6,7 +6,14 @@
 import logging
 logger = logging.getLogger(__name__)
 
+import functools
+import pandas as pd
+
 import mygene
+
+import pyllars.pandas_utils as pd_utils
+import pyllars.parallel as parallel
+import pyllars.utils as utils
 
 MYGENE_COLUMN_MAP = {
     'query': 'gene_id',
@@ -76,11 +83,7 @@ def parse_go_terms(row, go_hierarchies = ['BP', 'MF', 'CC']):
                 'gene_id': which is retrieved from the 'query' field of row
                 'go_terms': a semi-colon delimited list of the GO terms
 
-        Imports:
-            misc.utils
-
     """
-    import misc.utils as utils
 
     go_terms = []
     
@@ -119,11 +122,7 @@ def parse_kegg_pathways(row):
             dictionary: containing the keys:
                 'gene_id': which is retrieved from the 'query' field of row
                 'kegg_pathways': a semi-colon delimited list of the KEGG pathways
-
-        Imports:
-            misc.utils
     """
-    import misc.utils as utils
 
     kps = []
     
@@ -237,21 +236,7 @@ def query_mygene(gene_ids, species='all', scopes=None, unique_only=True,
             'kegg_pathways': the name of any matching KEGG pathways
             'go_terms': the term name of any associated GO terms
             'interpro_families': the description of any associated Interpro family
-                   
-
-        Imports:
-            functools
-            pandas
-            mygene
-            misc.parallel
-            misc.utils 
     """
-    import functools
-    import pandas as pd
-    import mygene
-    import misc.pandas_utils as pd_utils
-    import misc.parallel as parallel
-    import misc.utils as utils
 
     MG = mygene.MyGeneInfo()
     MG.url = mygene_url
@@ -373,69 +358,12 @@ def _parse_transcript_to_gene_query_result(entry):
                      
     return ret
 
-def get_transcript_to_gene_mapping(transcript_ids):
-    """ This function uses mygene.info to find the Ensembl gene identifers which
-        match to the provided list of Ensembl transcript identifers. The result
-        is returned as a pandas data frame which is useful for joining data
-        frames with gene information and transcript information.
-
-        Example:
-
-            ... create gene_info_df, which has "gene_id"s
-            ... create transcript_info_df, which has "transcript_id"s
-
-            transcript_ids = transcript_info_df['transcript_id']
-            mapping_df = mygene_utils.get_gene_identifier_mapping(transcript_ids)
-
-            middle_join = gene_info_df.merge(mapping_df, on='gene_id')
-            gene_and_transcript_info_df = middle_join.merge(transcript_info_df, on='transcript_id')
-
-        Args:
-            transcript_ids (list-like): a list of Ensembl transcript identifers,
-                such as "ENSMUST00000049208"
-
-        Returns:
-            pd.DataFrame: a data frame mapping from the transcript to gene ids.
-                columns:
-                    gene_id
-                    transcript_id
-
-        Imports:
-            misc.parallel
-            misc.utils
-            mygene
-            pandas
-    """
-    import mygene
-    import misc.parallel as parallel
-    import misc.utils as utils
-    import pandas as pd
-
-    msg = ("[mygene_utils.get_transcript_to_gene_mapping]: Use the pyensembl "
-        "package to find this mapping. It works locally and is much faster.")
-    raise DeprecationWarning(msg)
-
-    MG =  mygene.MyGeneInfo()
-    res = MG.querymany(transcript_ids, returnall=False, 
-        scopes='ensembl.transcript', fields='ensembl.gene', species='all')
-
-    id_mapping = parallel.apply_iter_simple(res, 
-        _parse_transcript_to_gene_query_result, progress_bar=True)
-    id_mapping_flat = utils.flatten_lists(id_mapping)
-    id_mapping_df = pd.DataFrame(id_mapping_flat)
-    id_mapping_df = id_mapping_df.drop_duplicates()
-    id_mapping_df = id_mapping_df.reset_index(drop=True)
-
-    return id_mapping_df
-
 def _parse_gene_to_transcript_query_result(entry):
     """ This helper function parses the results from the 
         get_gene_to_transcript_mapping query.
 
         It is not intended for external use.
     """ 
-    import misc.utils as utils
-
     transcript = None
     gene = entry['query']
     ret = []
@@ -461,48 +389,3 @@ def _parse_gene_to_transcript_query_result(entry):
             ]
         
     return ret
-
-def get_gene_to_transcript_mapping(gene_ids, mygene_url="http://mygene.info/v3"):
-    """ This function uses mygene.info to find the Ensembl transcript identifiers
-        which match the provided list of Ensembl gene identifiers. The result is
-        returned as a pandas data frame.
-
-        Args:
-            gene_ids (list-like): a list of Ensembl gene identifiers, such as
-                "ENSMUSG00000025902"
-
-        Returns:
-            pd.DataFrame a data frame mapping between transcript and gene ids.
-                columns:
-                    gene_id
-                    transcript_id
-
-        Imports:
-            misc.parallel
-            misc.utils
-            mygene
-            pandas
-    """
-    import mygene
-    import misc.parallel as parallel
-    import misc.utils as utils
-    import pandas as pd
-
-    msg = ("[mygene_utils.get_gene_to_transcript_mapping]: Use the pyensembl "
-        "package to find this mapping. It works locally and is much faster.")
-    raise DeprecationWarning(msg)
-
-    MG =  mygene.MyGeneInfo()
-    MG.url = mygene_url
-    res = MG.querymany(gene_ids, returnall=False, 
-        fields='ensembl.transcript', scopes='ensembl.gene', species='all')
-
-    id_mapping = parallel.apply_iter_simple(res, 
-        _parse_gene_to_transcript_query_result, progress_bar=True)
-    id_mapping_flat = utils.flatten_lists(id_mapping)
-    id_mapping_df = pd.DataFrame(id_mapping_flat)
-    id_mapping_df = id_mapping_df.drop_duplicates()
-    id_mapping_df = id_mapping_df.reset_index(drop=True)
-
-    return id_mapping_df
-

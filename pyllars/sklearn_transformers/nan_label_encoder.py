@@ -3,7 +3,7 @@ import pandas as pd
 import sklearn.base
 import sklearn.utils
 
-from misc.validation_utils import check_is_fitted
+from pyllars.validation_utils import check_is_fitted
 
 import logging
 logger = logging.getLogger(__name__)

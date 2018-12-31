@@ -5,12 +5,13 @@ This module contains a number of helper functions for matplotlib.
 import itertools
 
 import matplotlib
+import matplotlib.colors
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 
-import misc.utils as utils
-import misc.validation_utils as validation_utils
+import pyllars.utils as utils
+import pyllars.validation_utils as validation_utils
 
 import logging
 logger = logging.getLogger(__name__)
@@ -579,10 +580,7 @@ def create_simple_bar_chart(ax,
                             tick_offset=0.5
                            ):
 
-    import numpy as np
-    import matplotlib.colors
-    import matplotlib.pyplot as plt
-    import misc.utils as utils
+    
     
     mpl_bars = []
 
@@ -733,8 +731,6 @@ def create_stacked_bar_graph(
     
     This code is adapted from code by Michael Imelfort.
     """
-
-    import misc.utils as utils
 
 #------------------------------------------------------------------------------
 # data fixeratering
