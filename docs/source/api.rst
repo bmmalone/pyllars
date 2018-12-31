@@ -9,3 +9,4 @@ This is the API for the pyllars library.
    
    collection_utils
    dask_utils
+   pandas_utils
