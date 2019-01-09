@@ -20,6 +20,7 @@ import sklearn.preprocessing
 
 from copy import deepcopy
 
+import pyllars.collection_utils as collection_utils
 import pyllars.utils as utils
 import pyllars.validation_utils as validation_utils
 
@@ -79,6 +80,7 @@ class split_masks(NamedTuple):
 ###
 # Cross-validation helpers
 ###
+
 
 def get_cv_folds(y:np.ndarray,
         num_splits:int=10,
@@ -165,10 +167,14 @@ def get_train_val_test_splits(
         in the `validation_splits` or `test_splits` will be placed in the
         training set.
         
-        If given, this container must be compatible with `isin`.
+        If given, this container must be compatible with `isin`. Otherwise,
+        it will be wrapped in a set.
         
     {validation,test}_splits :  typing.Optional[typing.Set]
         The splits to use for the validation and test sets, respectively.
+        
+        If given, this container must be compatible with `isin`. Otherwise,
+        it will be wrapped in a set.
         
     split_field : str
         The name of the column indicating the split for each row.
@@ -181,17 +187,15 @@ def get_train_val_test_splits(
         rows which belong to the respective sets. All three masks are
         always returned, but a mask may be always `False` if the given
         split does not contain any rows.
-    """
-        
-    if validation_splits is None:
-        validation_splits = set()
-        
-    if test_splits is None:
-        test_splits = set()
+    """ 
+    validation_splits = collection_utils.wrap_in_set(validation_splits)
+    test_splits = collection_utils.wrap_in_set(test_splits)
     
     if training_splits is None:
         training_splits = set(df[split_field].unique())
         training_splits = training_splits - validation_splits - test_splits
+    else:
+        training_splits = collection_utils.wrap_in_set(training_splits)
 
 
     m_train = df[split_field].isin(training_splits)
@@ -247,13 +251,19 @@ def get_fold_data(
     fold_data : pyllars.ml_utils.fold_data
         A named tuple with the given splits
     """
+    caller = 'ml_utils.get_fold_data' # for validation
     
     # first, grab the attribute columns if not specified
+        
     if attribute_fields is None:
         attribute_fields = df.columns.values.tolist()
         attribute_fields = attribute_fields.remove(target_field)
         
-    # TODO: should check if attribute_fields is a sequence
+    validation_utils.validate_is_sequence(
+        attribute_fields,
+        name='attribute_fields',
+        caller=caller
+    )
     
     X_train = df.loc[m_train, attribute_fields].values
     X_test = df.loc[m_test, attribute_fields].values
