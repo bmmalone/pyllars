@@ -31,6 +31,7 @@ Set helpers
 -------------
 
 .. autosummary::
+    wrap_in_set
     get_set_pairwise_intersections
     merge_sets
 
