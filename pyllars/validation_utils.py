@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 import pyllars.utils as utils
 
+import collections
 import importlib
 import numpy as np
 import operator
