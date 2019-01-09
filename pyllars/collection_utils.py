@@ -333,6 +333,42 @@ def wrap_string_in_list(maybe_string:Any) -> Sequence:
 # Set helpers
 ###
 
+
+def wrap_in_set(maybe_set:Optional[Any]) -> Set:
+    """ If `maybe_set` is not a set, then wrap it in a set.
+    
+    Parameters
+    ----------
+    maybe_set : typing.Optional[typing.Any]
+        An object which may be a set
+        
+    Returns
+    -------
+    s : typing.Set
+        Either the original object, or `maybe_set` wrapped in a set, if
+        it was not already a set. If `maybe_set` was `None`, then an
+        empty set is returned.
+    """
+    ret = maybe_set
+    
+    if ret is None:
+        ret = set()
+
+    # check if we already have a set-like object
+    if not isinstance(ret, collections.abc.Set):
+
+        # if not and it is an iterable
+        if isinstance(ret, collections.abc.Iterable):
+            # then we can just directly wrap it
+            ret = set(ret)
+            
+        else:
+            # otherwise, we must first wrap the object in a list, and
+            # then wrap it in the set
+            ret = set([ret])
+            
+    return ret
+
 def get_set_pairwise_intersections(
         dict_of_sets:Mapping[str,Set],
         return_intersections:bool=True) -> pd.DataFrame:
