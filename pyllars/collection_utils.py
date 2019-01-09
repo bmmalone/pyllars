@@ -334,13 +334,18 @@ def wrap_string_in_list(maybe_string:Any) -> Sequence:
 ###
 
 
-def wrap_in_set(maybe_set:Optional[Any]) -> Set:
+def wrap_in_set(maybe_set:Optional[Any], wrap_string:bool=True) -> Set:
     """ If `maybe_set` is not a set, then wrap it in a set.
     
     Parameters
     ----------
     maybe_set : typing.Optional[typing.Any]
         An object which may be a set
+        
+    wrap_string : bool
+        Whether to wrap `maybe_set` as a singleton if it is a string.
+        Otherwise, the string will be converted into a set of individual
+        characters.
         
     Returns
     -------
@@ -353,6 +358,11 @@ def wrap_in_set(maybe_set:Optional[Any]) -> Set:
     
     if ret is None:
         ret = set()
+        
+    # handle strings explicitly
+    if isinstance(ret, str):
+        if wrap_string:
+            ret = set([ret])
 
     # check if we already have a set-like object
     if not isinstance(ret, collections.abc.Set):
