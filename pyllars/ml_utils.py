@@ -216,7 +216,8 @@ def get_fold_data(
         m_train:np.ndarray,
         m_test:np.ndarray,
         m_validation:Optional[np.ndarray]=None,
-        attribute_fields:Iterable[str]=None,
+        attribute_fields:Optional[Iterable[str]]=None,
+        fields_to_ignore:Optional[Iterable[str]]=None,
         attributes_are_np_arrays:bool=False) -> fold_data:
     """ Prepare a data frame for `sklearn` according to the given splits
     
@@ -239,7 +240,10 @@ def get_fold_data(
     attribute_fields : typing.Optional[typing.Iterable[str]]
         The names of the columns to use for attributes (that is, `X`). If
         `None` (default), then all columns except the `target_field` will
-        be used as attributes
+        be used as attributes.
+        
+    fields_to_ignore : typing.Optional[typing.Container[str]]
+        The names of the columns to ignore.
         
     attributes_are_np_arrays : bool
         Whether to stack the values from the individual rows. This should
@@ -257,7 +261,15 @@ def get_fold_data(
         
     if attribute_fields is None:
         attribute_fields = df.columns.values.tolist()
-        attribute_fields = attribute_fields.remove(target_field)
+        attribute_fields.remove(target_field)
+        
+    attribute_fields = attribute_fields.copy()
+    
+    if fields_to_ignore is not None:
+        # make sure to wrap strings, etc., so they behave as expected
+        fields_to_ignore = collection_utils.wrap_in_set(fields_to_ignore)
+        attribute_fields = collection_utils.list_remove_list(
+            attribute_fields, fields_to_ignore)
         
     validation_utils.validate_is_sequence(
         attribute_fields,
