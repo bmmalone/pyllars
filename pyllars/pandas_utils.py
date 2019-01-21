@@ -662,3 +662,57 @@ def join_df_list(dfs:List[pd.DataFrame], join_col:StrOrList, *args,
 
     return joined_df
 
+
+def filter_rows(
+        df_filter:pd.DataFrame,
+        df_to_keep:pd.DataFrame,
+        filter_on:List[str],
+        to_keep_on:List[str],
+        drop_duplicates:bool=True) -> pd.DataFrame:
+    """ Filter rows from `df_to_keep` which have matches in `df_filter`
+    
+    **N.B.** The order of the the columns in `filter_on` and `to_keep_on`
+    *must* match.
+    
+    This is adapted from: https://stackoverflow.com/questions/44706485.
+    
+    Parameters
+    ----------
+    df_filter : pandas.DataFrame
+        The rows which will be used *as the filter*
+        
+    df_to_keep : pandas.DataFrame
+        The rows which will be kept, unless they appear in `df_filter`
+        
+    filter_on : typing.List[str]
+        The columns from `df_filter` to use for matching
+        
+    to_keep_on : typing.List[str]
+        The columns from `df_to_keep` to use for matching
+        
+    drop_duplicates : bool
+        Whether to remove duplicate rows from the filtered data frame
+        
+    Returns
+    -------
+    df_filtered : pandas.DataFrame
+        The rows of `df_to_keep` which do not appear in `df_filter` (considering
+        only the given columns)
+    """
+    
+    d = df_filter.merge(
+        df_to_keep,
+        left_on=filter_on,
+        right_on=to_keep_on,
+        indicator=True,
+        how='outer'
+    )
+    
+    m_right_only = d['_merge'] == 'right_only'
+    d = d[m_right_only]
+    
+    if drop_duplicates:
+        d = d.drop_duplicates()
+        d = d.reset_index(drop=True)
+        
+    return d

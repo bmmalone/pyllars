@@ -14,6 +14,7 @@ Manipulating and processing data frames
     apply_groups
     split_df
     join_df_list
+    filter_rows
     group_and_chunk_df
     get_group_extreme
 
