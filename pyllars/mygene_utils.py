@@ -1,7 +1,8 @@
-###
-#   This module provides helper functions (namely, "query_mygene") for pulling
-#   information from the mygene.info database.
-###
+"""
+This module provides helper functions for querying the mygene.info
+service via MyGene.py. Please consult the official documentation for
+more details: http://docs.mygene.info/projects/mygene-py/en/latest/.
+"""
 
 import logging
 logger = logging.getLogger(__name__)
@@ -11,9 +12,12 @@ import pandas as pd
 
 import mygene
 
+import pyllars.collection_utils as collection_utils
 import pyllars.pandas_utils as pd_utils
-import pyllars.parallel as parallel
 import pyllars.utils as utils
+
+import typing
+from typing import Dict, Iterable, Optional
 
 MYGENE_COLUMN_MAP = {
     'query': 'gene_id',
@@ -35,17 +39,17 @@ MYGENE_COLUMNS = ['gene_id',
 FIELDS = ("name,symbol,entrezgene,pdb,pfam,prosite,summary,uniprot.Swiss-Prot,"
           "uniprot.TrEMBL,go,interpro,pathway")
 
-def get_entrez_gene_mapping(ensembl_protein_ids):
+def get_entrez_gene_mapping(ensembl_protein_ids:Iterable[str]) -> Dict:
     """ Retrieve the Entrez gene ids for the given Ensembl protein identifiers
     
     Parameters
     ----------
-    ensemble_protein_ids : iterable of strings
+    ensemble_protein_ids : typing.Iterable[str]
         The protein identifiers
         
     Returns
     -------
-    mapping : dictionary
+    mapping : typing.Dict
         A mapping from the Ensembl protein id to the Entrez id
     """
     mg = mygene.MyGeneInfo()
@@ -65,24 +69,30 @@ def get_entrez_gene_mapping(ensembl_protein_ids):
     return mapping
 
 
-def parse_go_terms(row, go_hierarchies = ['BP', 'MF', 'CC']):
-    """ This function parses all of the gene ontology terms out of the "go"
-        field of a record. It assumes the "go" field, if it is present, contains
-        a dictionary in which the keys are the high-level GO hierarchies, and
-        the values are lists of dictionaries which include a key "term" that
-        gives the text description of interest.
+def parse_go_terms(
+        row:pd.Series,
+        go_hierarchies:Iterable[str]=['BP', 'MF', 'CC']) -> Dict:
+    """ Parse the GO terms out of the `go` field of `row`
+    
+    This function assumes the "go" field, if it is present, contains
+    a dictionary in which the keys are the high-level GO hierarchies, and
+    the values are lists of dictionaries which include a key "term" that
+    gives the text description of interest.
+    
+    Parameters
+    ----------
+    row : pandas.Series
+        Presumably, the result of a call to `mygene.get_genes` or similar
         
-        Args:
-            row (pd.Series, or dictionary): presumably, the result of a call
-                to mygene.get_genes
-                
-            go_hierarchies (list of strings): the top-level GO terms
+    go_hierarchies : typing.Iterable[str]                
+        The top-level GO terms
             
-        Returns:
-            dictionary: containing the keys:
-                'gene_id': which is retrieved from the 'query' field of row
-                'go_terms': a semi-colon delimited list of the GO terms
-
+    Returns
+    -------
+    go_terms : typing.Dict
+        A dictionary containing the keys:
+        * 'gene_id': which is retrieved from the 'query' field of row
+        * 'go_terms': a semi-colon delimited list of the GO terms
     """
 
     go_terms = []
@@ -106,22 +116,25 @@ def parse_go_terms(row, go_hierarchies = ['BP', 'MF', 'CC']):
         'go_terms': ';'.join(go_terms)
     }
 
-def parse_kegg_pathways(row):
-    """ This function parses all of the KEGG pathways out of the "kegg"
-        field of a record. It first checks the "pathway" field, which is
-        assumed to be a dictionary, of the row for a field key called 
-        "kegg". It assumes the "kegg" field, if it is present,
-        contains a list of dictionaries, and each dictionary contains a
-        key called "name" which gives the name of that KEGG pathway.
+def parse_kegg_pathways(row:pd.Series) -> Dict:
+    """ Parse all of the KEGG pathways out of the `kegg` field of `row`
+    
+    It first checks the `pathway` field, which is assumed to be a dictionary,
+    of the row for a field key called `kegg`. It assumes the `kegg` field,
+    if it is present, contains a list of dictionaries, and each dictionary
+    contains a key called `name` which gives the name of that KEGG pathway.
         
-        Args:
-            row (pd.Series, or dictionary): presumably, the result of a call
-                to mygene.get_genes
-            
-        Returns:
-            dictionary: containing the keys:
-                'gene_id': which is retrieved from the 'query' field of row
-                'kegg_pathways': a semi-colon delimited list of the KEGG pathways
+    Parameters
+    ----------
+    row : pandas.Series
+        Presumably, the result of a call to `mygene.get_genes` or similar
+        
+    Returns
+    -------
+    kegg_pathways : typing.Dict
+        A dictionary containing the keys:
+        * 'gene_id': which is retrieved from the 'query' field of row
+        * 'kegg_pathways': a semi-colon delimited list of the KEGG pathways        
     """
 
     kps = []
@@ -142,20 +155,24 @@ def parse_kegg_pathways(row):
         'kegg_pathways': ';'.join(kps)
     }
 
-def parse_interpro(row):
-    """ This function parses all of the Interpro families out of the "interpro"
-        field of a record. It assumes the "interpro" field, if it is present,
-        contains a list of dictionaries, and each dictionary contains a key
-        called "desc" which gives the description of that family.
+def parse_interpro(row:pd.Series) -> Dict:
+    """ Parse the Interpro families out of the `interpro` field of `row`
+    
+    It assumes the `interpro` field, if it is present, contains a list of
+    dictionaries, and each dictionary contains a key called `desc` which
+    gives the description of that family.
+         
+    Parameters
+    ----------
+    row : pandas.Series
+        Presumably, the result of a call to `mygene.get_genes` or similar
         
-        Args:
-            row (pd.Series, or dictionary): presumably, the result of a call
-                to mygene.get_genes
-            
-        Returns:
-            dictionary: containing the keys:
-                'gene_id': which is retrieved from the 'query' field of row
-                'interpro_families': a semi-colon delimited list of the Interpro families
+    Returns
+    -------
+    kegg_pathways : typing.Dict
+        A dictionary containing the keys:
+        * 'gene_id': which is retrieved from the 'query' field of row
+        * 'interpro_families': a semi-colon delimited list of the Interpro families
     """
     interpro_terms = []
     
@@ -173,69 +190,77 @@ def parse_interpro(row):
         'interpro_families': ';'.join(interpro_terms)
     }
 
-def query_mygene(gene_ids, species='all', scopes=None, unique_only=True, 
-            mygene_url="http://mygene.info/v3"):
-
-    """ This function uses mygene.info to find information about the
-        genes specified in the provided list. In particular, this function
-        looks for information (via mygene) from Swiss-Prot, TrEMBL,
-        Interpro, PDB, Pfam, PROSITE, the Gene Ontology, and KEGG.
+def query_mygene(
+        gene_ids:Iterable[str],
+        species:Optional[str]='all',
+        scopes:Optional[str]=None,
+        unique_only:bool=True, 
+        mygene_url:str="http://mygene.info/v3") -> pd.DataFrame:
+    """ Query mygene.info to find information about the `gene_ids`
+    
+    In particular, this function looks for information (via mygene) from
+    Swiss-Prot, TrEMBL, Interpro, PDB, Pfam, PROSITE, the Gene Ontology,
+    and KEGG.
         
-        Args:
-            gene_ids (list-like): A list of gene identifiers for the query.
-                This list is passed directly to MyGeneInfo.getgenes, so any
-                identifiers which are valid for it are valid here.
-                
-                As of 1.7.2016, it supports entrez/ensembl gene ids, 
-                where the entrez gene id can be either a string or integer.
-                
-                Example valid identifiers:
-                    ENSG00000004059 (from human)
-                    ENSMUSG00000051951 (from mouse)
-                    WBGene00022277 (from c. elegans)
+    Parameters
+    ----------
+    gene_ids : typing.Iterable[str]
+        A list of gene identifiers for the query. This list is passed
+        directly to MyGeneInfo.getgenes, so any identifiers which are valid
+        for it are valid here.
 
-            scopes (csv string): Optionally, scopes can be given for the
-                "gene_ids" (so they may not necessarily be entrez/ensembl
-                gene identifiers. 
-                
-                Please see the mygene.info docs for more details about 
-                valid scopes: 
-                
-                http://mygene.info/doc/query_service.html#available_fields
-            
-            species (csv string): The list of species to check. By default,
-                all species are considered. For ensembl identifiers, this
-                is unlikely to be a problem; for other scopes (such as gene
-                symbols), it could cause unexpected behavior, though.
+        As of 1.7.2016, it supports entrez/ensembl gene ids, where the entrez
+        gene id can be either a string or integer.
 
-                Please see the mygene.info docs for more details about valid
-                species:
+        Example valid identifiers:
+            ENSG00000004059 (from human)
+            ENSMUSG00000051951 (from mouse)
+            WBGene00022277 (from c. elegans)
 
-                http://mygene.info/doc/data.html#species
+    species : typing.Optional[str]
+        Optionally, a comma-delimited list of species can be given. By default,
+        all species are considered. For ensembl identifiers, this is unlikely
+        to be a problem; for other scopes (such as gene symbols), it could cause
+        unexpected behavior, though.
 
-            unique_only (bool): whether to use only unique gene_ids. Typically,
-                duplicates in the gene_ids list can cause problems for the joins
-                in this function and cause huge memory usage. Unless some 
-                specific use-case is known, duplicates should be removed.
+        Please see the mygene.info docs for more details about valid
+        species: http://mygene.info/doc/data.html#species
+    
+    scopes : typing.Optional[str]
+        Optionally, a comma-delimited list of scopes can be given for the
+        `gene_ids` (so they need not necessarily be entrez/ensembl gene
+        identifiers. 
 
-            mygene_url (string): the url to use to connect to the mygene server.
-                In principle, "v2" could be used instead of "v3".
-                    
-        Returns:
-            pd.DataFrame: a data frame with the following columns. All values are strings
-                and separated by semi-colons if multiple values are present:
-                
-            'gene_id': the original query
-            'swiss_prot': any matching Swiss-Prot identifier (e.g., "Q9N4D9")
-            'trembl': any matching TrEMBL identifiers (e.g., "H2KZI1;Q95Y41")
-            'name': a short description of the gene
-            'summary': a longer description of the gene
-            'pdb': any matching Protein Data Bank identifiers (e.g., "2B6H")
-            'pfam': any matching Pfam protein families (e.g., "PF00254;PF00515")
-            'prosite': any matching PROSITE protein domains, etc. (e.g., "PS50114;PS51156")
-            'kegg_pathways': the name of any matching KEGG pathways
-            'go_terms': the term name of any associated GO terms
-            'interpro_families': the description of any associated Interpro family
+        Please see the mygene.info docs for more details about 
+        valid scopes: http://mygene.info/doc/query_service.html#available-fields
+
+    unique_only : bool
+        Whether to use only unique `gene_ids`. Typically, duplicates in the
+        `gene_ids` list can cause problems for the joins in this function and
+        cause huge memory usage. Unless some specific use-case is known,
+        duplicates should be removed.
+
+    mygene_url : str
+        The url to use to connect to the mygene server. In principle, "v2" could
+        be used instead of "v3".
+
+    Returns
+    -------
+    df_gene_info : pandas.DataFrame
+        A data frame with the following columns. All values are strings and separated
+        by semi-colons if multiple values are present:
+
+        * 'gene_id': the original query
+        * 'swiss_prot': any matching Swiss-Prot identifier (e.g., "Q9N4D9")
+        * 'trembl': any matching TrEMBL identifiers (e.g., "H2KZI1;Q95Y41")
+        * 'name': a short description of the gene
+        * 'summary': a longer description of the gene
+        * 'pdb': any matching Protein Data Bank identifiers (e.g., "2B6H")
+        * 'pfam': any matching Pfam protein families (e.g., "PF00254;PF00515")
+        * 'prosite': any matching PROSITE protein domains, etc. (e.g., "PS50114;PS51156")
+        * 'kegg_pathways': the name of any matching KEGG pathways
+        * 'go_terms': the term name of any associated GO terms
+        * 'interpro_families': the description of any associated Interpro family
     """
 
     MG = mygene.MyGeneInfo()
@@ -257,22 +282,22 @@ def query_mygene(gene_ids, species='all', scopes=None, unique_only=True,
     msg = "Parsing KEGG pathways"
     logger.info(msg)
 
-    kps = parallel.apply_df_simple(res, parse_kegg_pathways)
-    kps = [k for k in kps if k is not None]
+    kps = pd_utils.apply(res, parse_kegg_pathways)
+    kps = collection_utils.remove_nones(kps)
     kps_df = pd.DataFrame(kps)
     
     msg = "Parsing GO annotations"
     logger.info(msg)
 
-    gos = parallel.apply_df_simple(res, parse_go_terms)
-    gos = [g for g in gos if g is not None]
+    gos = pd_utils.apply(res, parse_go_terms)
+    gos = collection_utils.remove_nones(gos)
     gos_df = pd.DataFrame(gos)
     
     msg = "Parsing Interpro families"
     logger.info(msg)
 
-    interpros = parallel.apply_df_simple(res, parse_interpro)
-    interpros = [i for i in interpros if i is not None]
+    interpros = pd_utils.apply(res, parse_interpro)
+    interpros = collection_utils.remove_nones(interpors)
     interpros_df = pd.DataFrame(interpros)
     
     # make sure our columns of interest are there and have the right names
@@ -299,7 +324,7 @@ def query_mygene(gene_ids, species='all', scopes=None, unique_only=True,
     dfs = [res_df, kps_df, gos_df, interpros_df]
     dfs = [df for df in dfs if len(df.columns) > 0]
     
-    res_df = functools.reduce(lambda df1, df2: pd.merge(df1, df2, how='inner', on='gene_id'), dfs)
+    res_df = pd_utils.join_df_list(dfs, join_col='gene_id', how='inner')
     
     # clean up the data frame and return it
     msg = "Cleaning mygene data frame, phase 2"
@@ -311,81 +336,19 @@ def query_mygene(gene_ids, species='all', scopes=None, unique_only=True,
     # fix the string vs. list of string fields
     sep_join = lambda l: ";".join(l)
 
-    res_df['trembl'] = res_df['trembl'].apply(utils.wrap_string_in_list)
+    res_df['trembl'] = res_df['trembl'].apply(collection_utils.wrap_string_in_list)
     res_df['trembl'] = res_df['trembl'].apply(sep_join)
 
-    res_df['pdb'] = res_df['pdb'].apply(utils.wrap_string_in_list)
+    res_df['pdb'] = res_df['pdb'].apply(collection_utils.wrap_string_in_list)
     res_df['pdb'] = res_df['pdb'].apply(sep_join)
 
-    res_df['pfam'] = res_df['pfam'].apply(utils.wrap_string_in_list)
+    res_df['pfam'] = res_df['pfam'].apply(collection_utils.wrap_string_in_list)
     res_df['pfam'] = res_df['pfam'].apply(sep_join)
 
-    res_df['prosite'] = res_df['prosite'].apply(utils.wrap_string_in_list)
+    res_df['prosite'] = res_df['prosite'].apply(collection_utils.wrap_string_in_list)
     res_df['prosite'] = res_df['prosite'].apply(sep_join)
     
     msg = "Finished compiling mygene annotations"
     logger.info(msg)
 
     return res_df
-
-
-###
-#   The following set of functions is used to map Ensembl transcript identifers
-#   to Ensembl gene identifers.
-###
-def _parse_transcript_to_gene_query_result(entry):
-    gene = None
-    transcript = entry['query']
-    ret = []
-    
-    if 'ensembl.gene' in entry:
-        gene = entry['ensembl.gene']
-        r = {
-            'transcript_id': transcript,
-            'gene_id': gene
-        }
-        ret.append(r)
-        
-    elif 'ensembl' in entry:
-        for ensembl_entry in entry['ensembl']:
-            if 'gene' in ensembl_entry:
-                gene = ensembl_entry['gene']
-                r = {
-                    'transcript_id': transcript,
-                    'gene_id': gene
-                }
-                ret.append(r)
-                     
-    return ret
-
-def _parse_gene_to_transcript_query_result(entry):
-    """ This helper function parses the results from the 
-        get_gene_to_transcript_mapping query.
-
-        It is not intended for external use.
-    """ 
-    transcript = None
-    gene = entry['query']
-    ret = []
-    
-    if 'ensembl.transcript' in entry:
-        transcripts = entry['ensembl.transcript']        
-        transcripts = utils.wrap_string_in_list(transcripts)
-        
-        ret = [
-            {'transcript_id': transcript, 'gene_id': gene}
-                for transcript in transcripts
-        ]
-
-    elif 'ensembl' in entry:
-        ensembl_entry = entry['ensembl']
-        if 'transcript' in ensembl_entry:
-            transcripts = ensembl_entry['transcript']
-            transcripts = utils.wrap_string_in_list(transcripts)
-                    
-            ret = [
-                {'transcript_id': transcript, 'gene_id': gene}
-                    for transcript in transcripts
-            ]
-        
-    return ret
