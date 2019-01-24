@@ -291,7 +291,7 @@ def wrap_in_list(maybe_sequence:Any) -> Sequence:
     """
     ret = maybe_sequence
     
-    is_sequence = validation_utils.validate_is_sequence(ret, raise_on_fail=False)
+    is_sequence = validation_utils.validate_is_sequence(ret, raise_on_invalid=False)
     
     if not is_sequence:
         ret = [ret]
