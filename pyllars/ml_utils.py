@@ -7,6 +7,7 @@ helpers for use directly in :py:class:`sklearn.pipeline.Pipeline`.
 """
 import collections
 import joblib
+import json
 import networkx as nx
 import numpy as np
 import pandas as pd
@@ -14,6 +15,7 @@ import sklearn
 import tqdm
 import warnings
 
+import sklearn
 import sklearn.metrics
 import sklearn.model_selection
 import sklearn.preprocessing
@@ -24,7 +26,7 @@ import pyllars.collection_utils as collection_utils
 import pyllars.utils as utils
 import pyllars.validation_utils as validation_utils
 
-from typing import Dict, Iterable, NamedTuple, Optional, Set
+from typing import Any, Callable, Container, Dict, Iterable, List, NamedTuple, Optional, Set, Tuple
 
 ###
 # Data structures
@@ -76,6 +78,39 @@ class split_masks(NamedTuple):
     training : np.ndarray
     validation : np.ndarray
     test : np.ndarray
+    
+class estimators_predictions_metrics(NamedTuple):
+    """
+    A named tuple for holding fit estimators, predictions on the
+    respective datasets, and results.
+    
+    Attributes
+    ------------
+    estimator_{val,test} : sklearn.base.BaseEstimators
+        Estimators fit on the respective datasets.
+    predictions_{val,test} : numpy.ndarray
+        Predictions of the respective models.
+    metrics_{val,test} : typing.Dict
+        Metrics for the respective datasets.
+    fold_{train,val,test} : typing.Any
+        The identifiers of the respective folds. 
+    hyperparameters{_str} : typing.Optional[typing.Dict]
+        The hyperparameters (in a string format) for
+        training the models.
+    """
+    estimator_val : sklearn.base.BaseEstimator
+    estimator_test : sklearn.base.BaseEstimator
+    predictions_val : np.ndarray
+    predictions_test : np.ndarray
+    true_val : np.ndarray
+    true_test : np.ndarray
+    metrics_val : Dict
+    metrics_test : Dict
+    fold_train : Any
+    fold_val : Any
+    fold_test : Any
+    hyperparameters : Optional[Dict]
+    hyperparameters_str : str
     
 ###
 # Cross-validation helpers
@@ -315,21 +350,253 @@ def get_fold_data(
     
     return ret
     
+###
+# Training helpers
+###
 
+def _train_and_evaluate(
+        estimator,
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        target_transform,
+        target_inverse_transform,
+        collect_metrics,
+        collect_metrics_kwargs):
+    """ Train and evaluate `estimator` on the given datasets
+    
+    This function is a helper for `evaluate_hyperparameters`. It is
+    not intended for external use.
+    """
+    
+    # transform the target, if necessary
+    if target_transform is not None:
+        y_train = target_transform(y_train)
+        
+    # train the estimator
+    estimator_fit = estimator.fit(X_train, y_train)
+    
+    # make predictions
+    y_pred = estimator_fit.predict(X_test)
+    
+    # transform back, if needed
+    if target_inverse_transform is not None:
+        y_pred = target_inverse_transform(y_pred)
+        
+    # evaluate
+    metrics = collect_metrics(
+        y_test,
+        y_pred,
+        **collect_metrics_kwargs
+    )
+    
+    return estimator_fit, y_pred, metrics
+    
+def evaluate_hyperparameters(
+        estimator_template:sklearn.base.BaseEstimator,
+        hyperparameters:Dict,
+        validation_folds:Any,
+        test_folds:Any,
+        data:pd.DataFrame,
+        collect_metrics:Callable,
+        train_folds:Optional[Any]=None,
+        split_field:str='fold',
+        target_field:str='target',
+        target_transform:Optional[Callable]=None,
+        target_inverse_transform:Optional[Callable]=None,
+        collect_metrics_kwargs:Optional[Dict]=None,
+        fields_to_ignore:Optional[Container[str]]=None) -> estimators_predictions_metrics:
+    """ Evaluate `hyperparameters` for `fold`
+    
+    **N.B.** This function is not particularly efficient with
+    creating copies of data.
+    
+    This function performs the following steps:
+    
+    0.  Create `estimator_val` and `estimator_test` based on
+        `estimator_template` and `hyperparameters`
+    1.  Split `data` into `train`, `val`, `test` based on `validation_fold`
+        and `test_fold`
+    2.  Transform `target_field` using the `target_transform` function
+    3.  Train `estimator_val` using `train`
+    4.  Evaluate the trained `estimator_val` on `val` using `collect_metrics`
+    5.  Train `estimator_test` using both `train` and `val`
+    6.  Evaluate the trained `estimator_test` on `test` using `collect_metrics`
+    
+    Paramters
+    ---------
+    estimator_template : sklearn.base.BaseEstimator
+        The template for creating the `estimator`.
+        
+    hyperparameters : typing.Dict
+        The hyperparameters for the model. These should be compatible
+        with `estimator_template.set_params`.
+        
+    validation_folds : typing.Any
+        The fold(s) to use for validation. The validation fold will be selected
+        based on `isin`. If `validation_fold` is not a container, it will be
+        cast as one.
+        
+    test_folds : typing.Any
+        The fold(s) to use for testing. The test fold will be selected
+        based on `isin`. If `test_fold` is not a container, it will be
+        cast as one.
+        
+    data : pandas.DataFrame
+        The data.
+        
+    collect_metrics : typing.Callable
+        The function for evaluating the model performance. It should have
+        at least two arguments, `y_true` and `y_pred`, in that order. This
+        function will eventually return whatever this function returns.
+        
+    train_folds : typing.Optional[typing.Any]
+        The fold(s) to use for training. If not given, the training fold
+        will be taken as all rows in `data` which are not part of the
+        validation or testing set.
+        
+    split_field : str
+        The name of the column with the fold identifiers
+        
+    target_field : str
+        The name of the column with the target value
+        
+    target_transform : typing.Optional[typing.Callable]
+        A function for transforming the target before training models.
+        Example: :py:func:`numpy.log1p`
+    
+    target_inverse_transform : typing.Optional[typing.Callable]
+        A function for transforming model predictions back to the original
+        domain. This should be a mathematical inverse of `target_transform`.
+        Example: :py:func:`numpy.expm1` is the inverse of :py:func:`numpy.log1p`.
+        
+    collect_metrics_kwargs : typing.Optional[typing.Dict]
+        Additional keyword arguments for `collect_metrics`.
+        
+    fields_to_ignore : typing.Optional[typing.Container[str]]
+        The names of the columns to ignore.
+        
+    Returns
+    -------
+    estimators_predictions_metrics : typing.NamedTuple
+        The fit estimators, predictions on the respective datasets,
+        and results from `collect_metrics`.
+    """
+    ###
+    # Based on the template of our estimator pipeline template
+    # and hyperparameters, create a concrete estimator with the
+    # specified hyperparameters.
+    ###
+    estimator_val = sklearn.clone(estimator_template)
+    estimator_val = estimator_val.set_params(**hyperparameters)
+    
+    estimator_test = sklearn.clone(estimator_template)
+    estimator_test = estimator_test.set_params(**hyperparameters)
+        
+    ###
+    # Split `data` into `train`, `val`, `test` based on
+    # `validation_fold` and `test_fold`.
+    ###
+    split_masks = get_train_val_test_splits(
+        df=data,
+        training_splits=train_folds,
+        validation_splits=validation_folds,
+        test_splits=test_folds,
+        split_field=split_field
+    )
+    
+    ###
+    # Create the data matrices necessary for the various
+    #    sklearn operations we will perform later.
+    ###
+    if fields_to_ignore is None:
+        fields_to_ignore = list()
+        
+    fields_to_ignore = fields_to_ignore + [split_field]
+
+    val_fold_data = get_fold_data(
+        df=data,
+        target_field=target_field,
+        m_train=split_masks.training,
+        m_test=split_masks.test,
+        m_validation=split_masks.validation,
+        fields_to_ignore=fields_to_ignore
+    )
+    
+    if collect_metrics_kwargs is None:
+        collect_metrics_kwargs= dict()
+    
+    # get the validation performance
+    estimator_val_fit, y_val, metrics_val = _train_and_evaluate(
+        estimator_val,
+        X_train=val_fold_data.X_train,
+        y_train=val_fold_data.y_train,
+        X_test=val_fold_data.X_validation,
+        y_test=val_fold_data.y_validation,
+        target_transform=target_transform,
+        target_inverse_transform=target_inverse_transform,
+        collect_metrics=collect_metrics,
+        collect_metrics_kwargs=collect_metrics_kwargs
+    )
+    
+    # for predictions on the test set, we will train on
+    # both the training and validation sets
+    X_train = np.concatenate([val_fold_data.X_train, val_fold_data.X_validation])
+    y_train = np.concatenate([val_fold_data.y_train, val_fold_data.y_validation])
+    
+    # get the testing performance
+    estimator_test_fit, y_test, metrics_test = _train_and_evaluate(
+        estimator_test,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=val_fold_data.X_test,
+        y_test=val_fold_data.y_test,
+        target_transform=target_transform,
+        target_inverse_transform=target_inverse_transform,
+        collect_metrics=collect_metrics,
+        collect_metrics_kwargs=collect_metrics_kwargs
+    )
+    
+    hyperparameters_str = json.dumps(hyperparameters)
+    
+    ret = estimators_predictions_metrics(
+        estimator_val=estimator_val_fit,
+        estimator_test=estimator_test_fit,
+        predictions_val=y_val,
+        predictions_test=y_test,
+        true_val=val_fold_data.y_train,
+        true_test=val_fold_data.y_test,
+        metrics_val=metrics_val,
+        metrics_test=metrics_test,
+        fold_train=train_folds,
+        fold_val=validation_folds,
+        fold_test=test_folds,
+        hyperparameters=hyperparameters,
+        hyperparameters_str=hyperparameters_str,
+    )
+    
+    return ret
 
 ###
 # Evaluation helpers
 ###
-def collect_regression_metrics(y_true : np.ndarray, y_pred : np.ndarray) -> Dict:
+def collect_regression_metrics(
+        y_true : np.ndarray,
+        y_pred : np.ndarray,
+        prefix:str = "") -> Dict:
     """ Collect various regression performance metrics for the predictions
 
     Parameters
     ----------
-    y_true: numpy.ndarray
+    y_true : numpy.ndarray
         The true value of each instance
 
-    y_pred: numpy.ndarray
+    y_pred : numpy.ndarray
         The prediction for each instance
+        
+    prefix : str
+        An optional prefix for the keys in the `metrics` dictionary
     
     Returns
     -------
@@ -346,18 +613,21 @@ def collect_regression_metrics(y_true : np.ndarray, y_pred : np.ndarray) -> Dict
     validation_utils.validate_equal_shape(y_true, y_pred)
 
     ret = {
-        "explained_variance": sklearn.metrics.explained_variance_score(y_true, y_pred),
-        "mean_absolute_error": sklearn.metrics.mean_absolute_error(y_true, y_pred),
-        "mean_squared_error": sklearn.metrics.mean_squared_error(y_true, y_pred),
-        #"mean_squared_log_error": sklearn.metrics.mean_squared_log_error(y_true, y_pred),
-        "median_absolute_error": sklearn.metrics.median_absolute_error(y_true, y_pred),
-        "r2": sklearn.metrics.r2_score(y_true, y_pred)
+        "{}explained_variance".format(prefix): sklearn.metrics.explained_variance_score(y_true, y_pred),
+        "{}mean_absolute_error".format(prefix): sklearn.metrics.mean_absolute_error(y_true, y_pred),
+        "{}mean_squared_error".format(prefix): sklearn.metrics.mean_squared_error(y_true, y_pred),
+        #"{}mean_squared_log_error".format(prefix): sklearn.metrics.mean_squared_log_error(y_true, y_pred),
+        "{}median_absolute_error".format(prefix): sklearn.metrics.median_absolute_error(y_true, y_pred),
+        "{}r2".format(prefix): sklearn.metrics.r2_score(y_true, y_pred)
     }
 
     return ret
 
 
-def collect_multiclass_classification_metrics(y_true:np.ndarray, y_score:np.ndarray) -> Dict:
+def collect_multiclass_classification_metrics(
+        y_true : np.ndarray,
+        y_pred : np.ndarray,
+        prefix:str = "") -> Dict:
     """ Calculate various multi-class classification performance metrics
     
     Parameters
@@ -374,6 +644,9 @@ def collect_multiclass_classification_metrics(y_true:np.ndarray, y_score:np.ndar
         they are not required to be probabilities.
         
         This should have shape (n_samples, n_classes).
+        
+    prefix : str
+        An optional prefix for the keys in the `metrics` dictionary
         
     Returns
     -------
@@ -399,24 +672,24 @@ def collect_multiclass_classification_metrics(y_true:np.ndarray, y_score:np.ndar
 
     # now collect all statistics
     ret = {
-         "cohen_kappa":  sklearn.metrics.cohen_kappa_score(y_true, y_pred),
-         #"matthews_corrcoef":  sklearn.metrics.matthews_corrcoef(y_true, y_pred),
-         "accuracy":  sklearn.metrics.accuracy_score(y_true, y_pred),
-         "micro_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
+         "{}cohen_kappa".format(prefix):  sklearn.metrics.cohen_kappa_score(y_true, y_pred),
+         #"{}matthews_corrcoef".format(prefix):  sklearn.metrics.matthews_corrcoef(y_true, y_pred),
+         "{}accuracy".format(prefix):  sklearn.metrics.accuracy_score(y_true, y_pred),
+         "{}micro_f1_score".format(prefix):  sklearn.metrics.f1_score(y_true, y_pred,
             average='micro'),
-         "macro_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
+         "{}macro_f1_score".format(prefix):  sklearn.metrics.f1_score(y_true, y_pred,
             average='macro'),
-         "hamming_loss":  sklearn.metrics.hamming_loss(y_true, y_pred),
-         "micro_precision":  sklearn.metrics.precision_score(y_true, y_pred,
+         "{}hamming_loss".format(prefix):  sklearn.metrics.hamming_loss(y_true, y_pred),
+         "{}micro_precision".format(prefix):  sklearn.metrics.precision_score(y_true, y_pred,
             average='micro'),
-         "macro_precision":  sklearn.metrics.precision_score(y_true, y_pred,
+         "{}macro_precision".format(prefix):  sklearn.metrics.precision_score(y_true, y_pred,
             average='macro'),
-         "micro_recall":  sklearn.metrics.recall_score(y_true, y_pred,
+         "{}micro_recall".format(prefix):  sklearn.metrics.recall_score(y_true, y_pred,
             average='micro'),
-         "macro_recall":  sklearn.metrics.recall_score(y_true, y_pred,
+         "{}macro_recall".format(prefix):  sklearn.metrics.recall_score(y_true, y_pred,
             average='macro'),
-         "hand_and_till_m_score": calc_hand_and_till_m_score(y_true, y_score),
-         "provost_and_domingos_auc": calc_provost_and_domingos_auc(y_true, y_score)
+         "{}hand_and_till_m_score".format(prefix): calc_hand_and_till_m_score(y_true, y_score),
+         "{}provost_and_domingos_auc": calc_provost_and_domingos_auc(y_true, y_score)
     }
 
     return ret
@@ -426,7 +699,8 @@ def collect_binary_classification_metrics(
         y_true:np.ndarray,
         y_probas_pred:np.ndarray,
         threshold:float=0.5,
-        pos_label=1) -> Dict:
+        pos_label=1,
+        prefix:str = "") -> Dict:
     """ Collect various binary classification performance metrics for the predictions
 
     Parameters
@@ -446,6 +720,9 @@ def collect_binary_classification_metrics(
 
     pos_label: str or int
         The "positive" class for some metrics
+        
+    prefix : str
+        An optional prefix for the keys in the `metrics` dictionary
 
     Returns
     -------
@@ -498,40 +775,40 @@ def collect_binary_classification_metrics(
 
     # now collect all statistics
     ret = {
-         "cohen_kappa":  sklearn.metrics.cohen_kappa_score(y_true, y_pred),
-         "hinge_loss":  sklearn.metrics.hinge_loss(y_true, y_score),
-         "matthews_corrcoef":  sklearn.metrics.matthews_corrcoef(y_true, y_pred),
-         "accuracy":  sklearn.metrics.accuracy_score(y_true, y_pred),
-         "binary_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
+         "{}cohen_kappa".format(prefix):  sklearn.metrics.cohen_kappa_score(y_true, y_pred),
+         "{}hinge_loss".format(prefix):  sklearn.metrics.hinge_loss(y_true, y_score),
+         "{}matthews_corrcoef".format(prefix):  sklearn.metrics.matthews_corrcoef(y_true, y_pred),
+         "{}accuracy".format(prefix):  sklearn.metrics.accuracy_score(y_true, y_pred),
+         "{}binary_f1_score".format(prefix):  sklearn.metrics.f1_score(y_true, y_pred,
             average='binary', pos_label=pos_label),
-         "micro_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
+         "{}micro_f1_score".format(prefix):  sklearn.metrics.f1_score(y_true, y_pred,
             average='micro', pos_label=pos_label),
-         "macro_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
+         "{}macro_f1_score".format(prefix):  sklearn.metrics.f1_score(y_true, y_pred,
             average='macro', pos_label=pos_label),
-         "hamming_loss":  sklearn.metrics.hamming_loss(y_true, y_pred),
-         "jaccard_similarity_score":  sklearn.metrics.jaccard_similarity_score(
+         "{}hamming_loss".format(prefix):  sklearn.metrics.hamming_loss(y_true, y_pred),
+         "{}jaccard_similarity_score".format(prefix):  sklearn.metrics.jaccard_similarity_score(
             y_true, y_pred),
-         "log_loss":  sklearn.metrics.log_loss(y_true, y_probas_pred),
-         "micro_precision":  sklearn.metrics.precision_score(y_true, y_pred,
+         "{}log_loss".format(prefix):  sklearn.metrics.log_loss(y_true, y_probas_pred),
+         "{}micro_precision".format(prefix):  sklearn.metrics.precision_score(y_true, y_pred,
             average='micro', pos_label=pos_label),
-         "binary_precision":  sklearn.metrics.precision_score(y_true, y_pred,
+         "{}binary_precision".format(prefix):  sklearn.metrics.precision_score(y_true, y_pred,
             average='binary', pos_label=pos_label),
-         "macro_precision":  sklearn.metrics.precision_score(y_true, y_pred,
+         "{}macro_precision".format(prefix):  sklearn.metrics.precision_score(y_true, y_pred,
             average='macro', pos_label=pos_label),
-         "micro_recall":  sklearn.metrics.recall_score(y_true, y_pred,
+         "{}micro_recall".format(prefix):  sklearn.metrics.recall_score(y_true, y_pred,
             average='micro', pos_label=pos_label),
-         "macro_recall":  sklearn.metrics.recall_score(y_true, y_pred,
+         "{}macro_recall".format(prefix):  sklearn.metrics.recall_score(y_true, y_pred,
             average='macro', pos_label=pos_label),
-         "binary_recall":  sklearn.metrics.recall_score(y_true, y_pred,
+         "{}binary_recall".format(prefix):  sklearn.metrics.recall_score(y_true, y_pred,
             average='binary', pos_label=pos_label),
-         "zero_one_loss":  sklearn.metrics.zero_one_loss(y_true, y_pred),
-         "micro_average_precision":  sklearn.metrics.average_precision_score(
+         "{}zero_one_loss".format(prefix):  sklearn.metrics.zero_one_loss(y_true, y_pred),
+         "{}micro_average_precision".format(prefix):  sklearn.metrics.average_precision_score(
             y_true, y_score, average='micro'),
-         "macro_average_precision":  sklearn.metrics.average_precision_score(
+         "{}macro_average_precision".format(prefix):  sklearn.metrics.average_precision_score(
             y_true, y_score, average='macro'),
-         "micro_roc_auc_score":  sklearn.metrics.roc_auc_score(y_true, y_score,
+         "{}micro_roc_auc_score".format(prefix):  sklearn.metrics.roc_auc_score(y_true, y_score,
             average='micro'),
-         "macro_roc_auc_score":  sklearn.metrics.roc_auc_score(y_true, y_score,
+         "{}macro_roc_auc_score".format(prefix):  sklearn.metrics.roc_auc_score(y_true, y_score,
             average='macro')
     }
 
