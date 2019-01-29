@@ -363,7 +363,8 @@ def _train_and_evaluate(
         target_transform,
         target_inverse_transform,
         collect_metrics,
-        collect_metrics_kwargs):
+        collect_metrics_kwargs,
+        use_predict_proba):
     """ Train and evaluate `estimator` on the given datasets
     
     This function is a helper for `evaluate_hyperparameters`. It is
@@ -378,7 +379,10 @@ def _train_and_evaluate(
     estimator_fit = estimator.fit(X_train, y_train)
     
     # make predictions
-    y_pred = estimator_fit.predict(X_test)
+    if use_predict_proba:
+        y_pred = estimator_fit.predict_proba(X_test)
+    else:        
+        y_pred = estimator_fit.predict(X_test)
     
     # transform back, if needed
     if target_inverse_transform is not None:
@@ -400,6 +404,7 @@ def evaluate_hyperparameters(
         test_folds:Any,
         data:pd.DataFrame,
         collect_metrics:Callable,
+        use_predict_proba:bool=False,
         train_folds:Optional[Any]=None,
         split_field:str='fold',
         target_field:str='target',
@@ -450,6 +455,10 @@ def evaluate_hyperparameters(
         The function for evaluating the model performance. It should have
         at least two arguments, `y_true` and `y_pred`, in that order. This
         function will eventually return whatever this function returns.
+        
+    use_predict_proba : bool
+        Whether to use `predict` (when `False`, the default) or `predict_proba`
+        on the trained model.
         
     train_folds : typing.Optional[typing.Any]
         The fold(s) to use for training. If not given, the training fold
@@ -537,7 +546,8 @@ def evaluate_hyperparameters(
         target_transform=target_transform,
         target_inverse_transform=target_inverse_transform,
         collect_metrics=collect_metrics,
-        collect_metrics_kwargs=collect_metrics_kwargs
+        collect_metrics_kwargs=collect_metrics_kwargs,
+        use_predict_proba=use_predict_proba
     )
     
     # for predictions on the test set, we will train on
@@ -555,7 +565,8 @@ def evaluate_hyperparameters(
         target_transform=target_transform,
         target_inverse_transform=target_inverse_transform,
         collect_metrics=collect_metrics,
-        collect_metrics_kwargs=collect_metrics_kwargs
+        collect_metrics_kwargs=collect_metrics_kwargs,
+        use_predict_proba=use_predict_proba
     )
     
     hyperparameters_str = json.dumps(hyperparameters)
