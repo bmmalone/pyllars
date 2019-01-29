@@ -1,5 +1,8 @@
 """ Helpers for working with 2-d matrices
 """
+import numpy as np
+
+import scipy.io
 
 def permute_matrix(m, is_flat=False, shape=None):
     """ Randomly permute the entries of the matrix. The matrix is first 
@@ -58,7 +61,6 @@ def write_sparse_matrix(target, a, compress=True, **kwargs):
             scipy.io
     """
     import gzip
-    import scipy.io
 
     if compress:
         with gzip.open(target, 'wb') as target_gz:
