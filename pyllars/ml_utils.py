@@ -5,6 +5,9 @@ In particular, this module focuses on tasks "surrounding" machine learning,
 such as cross-fold splitting, performance evaluation, etc. It does not include
 helpers for use directly in :py:class:`sklearn.pipeline.Pipeline`.
 """
+import logging
+logger = logging.getLogger(__name__)
+
 import collections
 import joblib
 import json
@@ -298,7 +301,7 @@ def get_fold_data(
         attribute_fields = df.columns.values.tolist()
         attribute_fields.remove(target_field)
         
-    attribute_fields = attribute_fields.copy()
+    attribute_fields = deepcopy(attribute_fields)
     
     if fields_to_ignore is not None:
         # make sure to wrap strings, etc., so they behave as expected
@@ -311,6 +314,12 @@ def get_fold_data(
         name='attribute_fields',
         caller=caller
     )
+    
+    if len(attribute_fields) == 1:
+        msg = ("[{}]: found a single attribute field. Treating as a "
+            "single column".format(caller))
+        logger.warning(msg)
+        attribute_fields = attribute_fields[0]
     
     X_train = df.loc[m_train, attribute_fields].values
     X_test = df.loc[m_test, attribute_fields].values
@@ -363,13 +372,13 @@ def _train_and_evaluate(
         target_transform,
         target_inverse_transform,
         collect_metrics,
-        collect_metrics_kwargs):
+        collect_metrics_kwargs,
+        use_predict_proba):
     """ Train and evaluate `estimator` on the given datasets
     
     This function is a helper for `evaluate_hyperparameters`. It is
     not intended for external use.
     """
-    
     # transform the target, if necessary
     if target_transform is not None:
         y_train = target_transform(y_train)
@@ -378,7 +387,10 @@ def _train_and_evaluate(
     estimator_fit = estimator.fit(X_train, y_train)
     
     # make predictions
-    y_pred = estimator_fit.predict(X_test)
+    if use_predict_proba:
+        y_pred = estimator_fit.predict_proba(X_test)
+    else:        
+        y_pred = estimator_fit.predict(X_test)
     
     # transform back, if needed
     if target_inverse_transform is not None:
@@ -400,13 +412,16 @@ def evaluate_hyperparameters(
         test_folds:Any,
         data:pd.DataFrame,
         collect_metrics:Callable,
+        use_predict_proba:bool=False,
         train_folds:Optional[Any]=None,
         split_field:str='fold',
         target_field:str='target',
         target_transform:Optional[Callable]=None,
         target_inverse_transform:Optional[Callable]=None,
         collect_metrics_kwargs:Optional[Dict]=None,
-        fields_to_ignore:Optional[Container[str]]=None) -> estimators_predictions_metrics:
+        attribute_fields:Optional[Iterable[str]]=None,
+        fields_to_ignore:Optional[Container[str]]=None,
+        attributes_are_np_arrays:bool=False) -> estimators_predictions_metrics:
     """ Evaluate `hyperparameters` for `fold`
     
     **N.B.** This function is not particularly efficient with
@@ -451,6 +466,10 @@ def evaluate_hyperparameters(
         at least two arguments, `y_true` and `y_pred`, in that order. This
         function will eventually return whatever this function returns.
         
+    use_predict_proba : bool
+        Whether to use `predict` (when `False`, the default) or `predict_proba`
+        on the trained model.
+        
     train_folds : typing.Optional[typing.Any]
         The fold(s) to use for training. If not given, the training fold
         will be taken as all rows in `data` which are not part of the
@@ -474,8 +493,18 @@ def evaluate_hyperparameters(
     collect_metrics_kwargs : typing.Optional[typing.Dict]
         Additional keyword arguments for `collect_metrics`.
         
+    attribute_fields : typing.Optional[typing.Iterable[str]]
+        The names of the columns to use for attributes (that is, `X`). If
+        `None` (default), then all columns except the `target_field` will
+        be used as attributes.
+        
     fields_to_ignore : typing.Optional[typing.Container[str]]
         The names of the columns to ignore.
+        
+    attributes_are_np_arrays : bool
+        Whether to stack the values from the individual rows. This should
+        be set to `True` when some of the columns in `attribute_fields`
+        contain numpy arrays.
         
     Returns
     -------
@@ -521,7 +550,9 @@ def evaluate_hyperparameters(
         m_train=split_masks.training,
         m_test=split_masks.test,
         m_validation=split_masks.validation,
-        fields_to_ignore=fields_to_ignore
+        attribute_fields=attribute_fields,
+        fields_to_ignore=fields_to_ignore,
+        attributes_are_np_arrays=attributes_are_np_arrays
     )
     
     if collect_metrics_kwargs is None:
@@ -537,7 +568,8 @@ def evaluate_hyperparameters(
         target_transform=target_transform,
         target_inverse_transform=target_inverse_transform,
         collect_metrics=collect_metrics,
-        collect_metrics_kwargs=collect_metrics_kwargs
+        collect_metrics_kwargs=collect_metrics_kwargs,
+        use_predict_proba=use_predict_proba
     )
     
     # for predictions on the test set, we will train on
@@ -555,7 +587,8 @@ def evaluate_hyperparameters(
         target_transform=target_transform,
         target_inverse_transform=target_inverse_transform,
         collect_metrics=collect_metrics,
-        collect_metrics_kwargs=collect_metrics_kwargs
+        collect_metrics_kwargs=collect_metrics_kwargs,
+        use_predict_proba=use_predict_proba
     )
     
     hyperparameters_str = json.dumps(hyperparameters)
