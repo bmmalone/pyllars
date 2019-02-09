@@ -1,5 +1,6 @@
 """ Helpers for working with 2-d matrices
 """
+import numpy as np
 
 def permute_matrix(m, is_flat=False, shape=None):
     """ Randomly permute the entries of the matrix. The matrix is first 
