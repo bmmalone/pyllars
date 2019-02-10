@@ -128,7 +128,7 @@ def readme():
         return f.read()
 
 setup(name='pyllars',
-        version='0.99.0',
+        version='0.99.1',
         description="This package contains supporting utilities for Python 3.",
         long_description=readme(),
         long_description_content_type='text/markdown',

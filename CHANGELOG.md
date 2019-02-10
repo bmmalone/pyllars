@@ -19,6 +19,10 @@ the project.
 The tests are very minimal, and it is expected that some import errors have
 not yet been resolved.
 
+## [0.99.xyz]
+These versions are technical changes between the 0.2.xx and 1.xx code base.
+Please ignore these.
+
 ## [0.2.11] - 2018-12-22
 ### Added
 - Helpers for checking and collecting dask futures

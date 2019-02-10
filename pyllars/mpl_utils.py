@@ -581,7 +581,6 @@ def create_simple_bar_chart(ax,
                            ):
 
     
-    
     mpl_bars = []
 
     # first, handle the bars
