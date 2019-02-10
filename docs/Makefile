@@ -1,47 +1,25 @@
-# Makefile
-# 
-# Converts Markdown to other formats (HTML, PDF) using Pandoc
-# <http://johnmacfarlane.net/pandoc/>
+# Minimal makefile for Sphinx documentation
 #
-# Run "make" (or "make all") to convert to all other formats
-#
-# Run "make clean" to delete converted files
-#
-# Adapted from: https://gist.github.com/kristopherjohnson/7466917
 
-# Convert all files in this directory that have a .md suffix
-SOURCE_DOCS := $(wildcard *.md)
+# You can set these variables from the command line.
+SPHINXOPTS    =
+SPHINXBUILD   = sphinx-build
+SOURCEDIR     = source
+BUILDDIR      = build
+SPHINXAPIDOC  = sphinx-apidoc
+SPHINXAPIOPTS = --separate
+PACKAGEBASE   = ../pyllars
 
-EXPORTED_DOCS=\
- $(SOURCE_DOCS:.md=.html) \
- $(SOURCE_DOCS:.md=.pdf) \
+# Put it first so that "make" without argument is like "make help".
+help:
+	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-RM=/bin/rm
+.PHONY: help Makefile
 
-PANDOC=pandoc
+# Catch-all target: route all unknown targets to Sphinx using the new
+# "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
+%: Makefile
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-PANDOC_OPTIONS=--smart --standalone
-
-PANDOC_HTML_OPTIONS=--to html5
-PANDOC_PDF_OPTIONS=
-
-
-# Pattern-matching Rules
-
-%.html : %.md
-	$(PANDOC) $(PANDOC_OPTIONS) $(PANDOC_HTML_OPTIONS) -o $@ $<
-	sed -i 's:\.md:.html:g' $@
-        
-
-%.pdf : %.md
-	$(PANDOC) $(PANDOC_OPTIONS) $(PANDOC_PDF_OPTIONS) -o $@ $<
-
-
-# Targets and dependencies
-
-.PHONY: all clean
-
-all : $(EXPORTED_DOCS)
-
-clean:
-	- $(RM) $(EXPORTED_DOCS)
+api: Makefile
+	@$(SPHINXAPIDOC) -f -o "$(SOURCEDIR)" "$(PACKAGEBASE)" $(SPHINXAPIOPTS)

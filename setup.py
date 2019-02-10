@@ -4,62 +4,113 @@ from setuptools.command.develop import develop as _develop
 
 import importlib
 
+###
+# Console scripts
+###
+console_scripts = []
 
-other_console_scripts = [
-    'call-sbatch=misc.call_sbatch:main',
-    'scancel-range=misc.scancel_range:main',
-    'test-gzip=misc.test_gzip:main',
-    'call-program=misc.call_program:main'
-]
-
+###
+# Dependencies
+###
 install_requires = [
     'cython',
-    'numpy',
-    'scipy',
-    'statsmodels',
+    'dask[complete]',
+    'docopt',
+    'graphviz',
+    'joblib',
     'matplotlib',
     'matplotlib_venn',
-    'pandas',
-    'sklearn',
-    'sklearn_pandas',
-    'fastparquet',
     'more_itertools',
     'networkx>=2.0',
-    'docopt',
-    'tqdm',
-    'joblib',
-    'xlrd',
-    'openpyxl',
-    'graphviz',
-    'pydot',
-    'tables',
-    'paramiko',
-    'spur',
-    'six',
     'nltk',
-    'dask[complete]',
+    'numpy',
+    'openpyxl',
+    'pandas',
+    'paramiko',
+    'pydot',
+    'scipy',
+    'six',
+    'sklearn',
+    'sklearn_pandas',
+    'spur',
+    'statsmodels',
+    'tables',
+    'tqdm',
+    'xlrd',
+]
+
+setup_requires = [
+    'pytest-runner'
 ]
 
 tests_require = [
-    'nose',
+    'pytest',
+    'coverage',
+    'pytest-cov',
+    'coveralls',
+    'pytest-runner',
 ]
+
+parquet_requires = [
+    'fastparquet'
+]
+
+bio_requires = [
+    'goatools',
+    'mygene',
+    'biopython',
+]
+
+docs_require = [
+    'sphinx',
+    'sphinx_rtd_theme',
+]
+
+pypi_requires = [
+    'twine',
+    'readme_renderer[md]'
+]
+
+all_requires = (
+    tests_require + 
+    parquet_requires + 
+    bio_requires + 
+    setup_requires + 
+    docs_require +
+    pypi_requires
+)
 
 extras = {
     'test': tests_require,
+    'parquest': parquet_requires,
+    'bio': bio_requires,
+    'all': all_requires,
+    'setup': setup_requires,
+    'docs': docs_require,
+    'pypi': pypi_requires,
 }
 
+classifiers=[
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+]
 
-# previously, there were other types of scripts
-console_scripts = other_console_scripts
+
 
 def _post_install(self):
     import site
     importlib.reload(site)
 
     # already download the nltk resources used in nlp_utils
-    import nltk
-    nltk.download('stopwords')
-    nltk.download('punkt')
+    
+    nltk_spec = importlib.util.find_spec("nltk")
+    nltk_found = nltk_spec is not None
+    
+    if nltk_found:
+        import nltk
+        nltk.download('stopwords')
+        nltk.download('punkt')
 
 class my_install(_install):
     def run(self):
@@ -76,22 +127,24 @@ def readme():
     with open('README.md') as f:
         return f.read()
 
-setup(name='misc',
-        version='0.2.11',
-        description="This package contains python3 utilities I find useful.",
+setup(name='pyllars',
+        version='0.99.0',
+        description="This package contains supporting utilities for Python 3.",
         long_description=readme(),
+        long_description_content_type='text/markdown',
         keywords="utilities",
-        url="https://github.com/bmmalone/pymisc-utils",
+        url="https://github.com/bmmalone/pyllars",
         author="Brandon Malone",
         author_email="bmmalone@gmail.com",
         license='MIT',
+        classifiers=classifiers,
         packages=find_packages(),
+        setup_requires=setup_requires,
         install_requires=install_requires,
         include_package_data=True,
         cmdclass={'install': my_install,  # override install
                   'develop': my_develop   # develop is used for pip install -e .
         },
-        test_suite='nose.collector',
         tests_require=tests_require,
         extras_require=extras,
         entry_points = {
