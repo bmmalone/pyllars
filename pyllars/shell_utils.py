@@ -396,3 +396,125 @@ def call_if_not_exists(cmd, out_files, in_files=[], overwrite=False, call=True,
     return ret_code
 
 
+
+def check_gzip_file(filename, has_tar=False, raise_on_error=True, logger=logger):
+    """ This function wraps a call to "gunzip -t". Optionally, it 
+        raises an exception if the return code is not 0. Otherwise, it writes
+        a "critical" warning message.
+
+        This function can also test that a tar insize the gzipped file is valid.
+
+        This code is adapted from: http://stackoverflow.com/questions/2001709/
+
+        Args:
+            filename (str): a path to the bam file
+
+            has_tar (bool): whether to check for a valid tar inside the
+                gzipped file
+
+            raise_on_error (bool): whether to raise an OSError (if True) or log
+                a "critical" message (if false)
+
+            logger (logging.Logger): a logger for writing the message if an
+                error is not raised
+
+        Returns:
+            bool: whether the file was valid
+
+        Raises:
+            OSError: if gunzip does not return 0 and raise_on_error is True
+    """
+    
+    programs = ['gunzip', 'tar']
+    shell_utils.check_programs_exist(programs)
+
+    if has_tar:
+        cmd = "gunzip -c {} | tar t > /dev/null".format(filename)
+    else:
+        cmd = "gunzip -t {}".format(filename)
+
+    ret = shell_utils.check_call_step(cmd, raise_on_error=False)
+
+    if ret != 0:
+        msg = "The gzip file does not appear to be valid: {}".format(filename)
+
+        if raise_on_error:
+            raise OSError(msg)
+
+        logger.critical(msg)
+        return False
+
+    # then the file was okay
+    return True
+
+def ensure_path_to_file_exists(f):
+    """ If the base path to f does not exist, create it. """
+
+    out_dir = os.path.dirname(f)
+
+    # if we are given just a filename, do not do anything
+    if len(out_dir) > 0:
+        msg = "Ensuring directory exists: {}".format(out_dir)
+        logger.debug(msg)
+        os.makedirs(out_dir, exist_ok=True)
+
+def check_files_exist(files, raise_on_error=True, logger=logger, 
+        msg="The following files were missing: ", source=None):
+    """ This function ensures that all of the files in the list exists. If any
+        do not, it will either raise an exception or print a warning, depending
+        on the value of raise_on_error.
+
+        Parameters
+        ----------
+        files: list of strings
+            the file paths to check
+
+        raise_on_error: bool
+            whether to raise an error if any of the files are missing
+
+        logger: logging.Logger
+            a logger to use for writing the warning if an error is not raised
+
+        msg: string
+            a message to write before the list of missing files
+
+        source: string
+            a description of where the check is made, such as a module name. If
+            this is not None, it will be prepended in brackets before msg.
+
+        Returns
+        -------
+        all_exist: bool
+            True if all of the files existed, False otherwise
+
+        Raises
+        ------
+        FileNotFoundError, if raise_on_error is True and any of the files
+                do not exist.
+    """
+    missing_files = []
+
+    for f in files:
+        if not os.path.exists(f):
+            missing_files.append(f)
+
+    if len(missing_files) == 0:
+        return True
+
+    missing_files_str = ",".join(missing_files)
+    source_str = ""
+    if source is not None:
+        source_str = "[{}]: ".format(source)
+    msg = "{}{}{}".format(source_str, msg, missing_files_str)
+    if raise_on_error:
+        raise FileNotFoundError(msg)
+    else:
+        logger.warn(msg)
+
+    return False
+
+def remove_file(filename):
+    """Remove the file, if it exists. Ignore FileNotFound errors.""" 
+
+    with contextlib.suppress(FileNotFoundError):
+        os.remove(filename)
