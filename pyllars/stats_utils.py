@@ -1,4 +1,5 @@
-""" Helpers for statistical calculations
+"""
+This module contains helpers for various statistical calculations.
 """
 import logging
 logger = logging.getLogger(__name__)
@@ -9,26 +10,28 @@ import pandas as pd
 import scipy.stats
 import typing
 
+from typing import Any, Callable, Iterable, Optional, Tuple
+
 ###
-# Probability distribution helpers
+# KL-divergence helpers
 ###
 def calculate_symmetric_kl_divergence(
-        p:typing.Any,
-        q:typing.Any,
-        calculate_kl_divergence:typing.Callable) -> float:
+        p:Any,
+        q:Any,
+        calculate_kl_divergence:Callable) -> float:
     """ Calculates the symmetric KL-divergence between distributions p and q
     
     In particular, this function defines the symmetric KL-divergence to be\:
     
-    .. math:: ``D_{sym}(p||q) \:= \\frac{D(p||q) + D(p||p)}{2}``
+    .. math:: D_{sym}(p||q) \:= \\frac{D(p||q) + D(q||p)}{2}
         
     Parameters
     ----------
-    p, q
+    {p,q} : typing.Any
         A representation of a distribution that can be used by the 
         function `calculate_kl_divergence`
             
-    calculate_kl_divergence : callable
+    calculate_kl_divergence : typing.Callable
         A function the calculates the KL-divergence between :math:`p`
         and :math:`q`
 
@@ -43,21 +46,21 @@ def calculate_symmetric_kl_divergence(
     return symmetric_kl
 
 def calculate_univariate_gaussian_kl(
-        mean_p_var_p:typing.Tuple[float,float],
-        mean_q_var_q:typing.Tuple[float,float]) -> float:
+        mean_p_var_p:Tuple[float,float],
+        mean_q_var_q:Tuple[float,float]) -> float:
     """ Calculate the (asymmetric) KL-divergence between the univariate
-    Gaussian distributions p and q
+    Gaussian distributions :math:`p` and :math:`q`
 
-    N.B. This function uses the variance!
+    **N.B.** This function uses the variance!
 
-    N.B. The parameters for each distribution are passed as pairs 
+    **N.B.** The parameters for each distribution are passed as pairs 
     for easy use with `calculate_symmetric_kl_divergence`.
 
     See, for example, [1]_ for the formula.
 
     Parameters
     ----------
-    mean_p_var_p, mean_q_var_q : tuples of floats
+    {mean_p_var_p,mean_q_var_q} : Typing.Tuple[float,float]
         The parameters of the distributions.
 
     Returns
@@ -80,11 +83,11 @@ def calculate_univariate_gaussian_kl(
     return kl
 
 def symmetric_entropy(p, q) -> float:
-    """ Calculate the symmetric scipy.stats.entropy. """
+    """ Calculate the symmetric :func:`scipy.stats.entropy`. """
     return calculate_symmetric_kl_divergence(p, q, scipy.stats.entropy)
 
 def symmetric_gaussian_kl(p, q) -> float:
-    """ Calculate the symmetric gaussian KL divergence. """
+    """ Calculate the symmetric :func:`pyllars.stats_utils.calculate_univariate_gaussian_kl`. """
     return calculate_symmetric_kl_divergence(
         p, q, 
         calculate_univariate_gaussian_kl
@@ -94,30 +97,29 @@ def symmetric_gaussian_kl(p, q) -> float:
 # Frequentist statistics
 ###
 def get_population_statistics(
-        subpopulation_sizes,
-        subpopulation_means,
-        subpopulation_variances):
+        subpopulation_sizes:np.ndarray,
+        subpopulation_means:np.ndarray,
+        subpopulation_variances:np.ndarray) -> Tuple[float,float,float,float]:
     """ Calculate the population size, mean and variance based on subpopulation statistics
     
-    This code is based on "Chap"'s answer here:
-        https://stats.stackexchange.com/questions/30495
+    This code is based on "Chap"'s answer here: https://stats.stackexchange.com/questions/30495
         
     This calculation seems to underestimate the variance relative
-    to `np.var` on the entire dataset (determined by simulation). This may
+    to :func:`numpy.var` on the entire dataset (determined by simulation). This may
     somehow relate to "biased" vs. "unbiased" variance estimates (basically,
     whether to subtract 1 from the population size). Still, naive
     approaches to correct for that do not produce variance estimates which
-    exactly match those from `np.var`.
+    exactly match those from :func:`numpy.var`.
     
     Parameters
     ----------
-    subpopulation_{sizes,means,variances} : np.arrays of numbers
+    subpopulation_{sizes,means,variances} : numpy.ndarray
         The subpopulation sizes, means, and variances, respectively. These should
         all be the same size.
         
     Returns
     -------
-    population_{size,mean,variance,std} : floats
+    population_{size,mean,variance,std} : float
         The respective statistics about the entire population
     """
     
@@ -144,48 +146,51 @@ def get_population_statistics(
 # Bayesian hypothesis testing
 ###
 
-
-
-def bayesian_proportion_test(x, n, prior=(0.5,0.5), prior2=None, 
-        num_samples=1000, seed=None):
+def bayesian_proportion_test(
+        x:Tuple[int,int],
+        n:Tuple[int,int],
+        prior:Tuple[float,float]=(0.5,0.5),
+        prior2:Optional[Tuple[float,float]]=None, 
+        num_samples:int=1000,
+        seed:int=8675309) -> Tuple[float,float,float]:
     """ Perform a Bayesian test to identify significantly different proportions.
     
-    This test is based on a beta-binomial conjugate model. It uses simulations to
-    estimate the posterior of the difference between the proportions, as well as
-    the likelihood that \pi_1 > \pi_2 (where \pi_i is the likelihood of success in 
-    sample i).
+    This test is based on a beta-binomial conjugate model. It uses Monte Carlo
+    simulations to estimate the posterior of the difference between the
+    proportions, as well as the likelihood that :math:`\pi_1 > \pi_2` (where
+    :math:`\pi_i` is the likelihood of success in sample :math:`i`).
     
     Parameters
     ----------
-    x: two-element array-like of integers
+    x : typing.Tuple[int,int]
         The number of successes in each sample
         
-    n: two-element array-like of integers
+    n : typing.Tuple[int,int]
         The number of trials in each sample
         
-    prior: two-element array-like of floats
+    prior : typing.Tuple[float,float]
         The parameters of the beta distribution used as the prior in the conjugate
         model for the first sample.
         
-    prior2: two-element array-like of floats, or None
+    prior2 : typing.Optional[typing.Tuple[float,float]]
         The parameters of the beta distribution used as the prior in the conjugate
-        model for the second sample. If this is not specified, then prior is used.
+        model for the second sample. If this is not specified, then `prior` is used.
         
-    num_samples: int
+    num_samples : int
         The number of simulations
         
-    seed: int
+    seed : int
         The seed for the random number generator
         
     Returns
     -------
-    (difference_mean, difference_var) : a 2-tuple of floats
+    difference_{mean,var} : float
         The posterior mean and variance of the difference in the likelihood of success 
         in the two samples. A negative mean indicates that the likelihood in sample 2 
         is higher.
         
     p_pi_1_greater : float
-        The probability that pi_1 > pi_2
+        The probability that :math:`\pi_1 > \pi_2`
     """
     
     # copy over the prior if not specified for sample 2
@@ -205,7 +210,6 @@ def bayesian_proportion_test(x, n, prior=(0.5,0.5), prior2=None,
     if len(prior2) != 2:
         msg = "[bayesian_proportion_test]: please ensure prior2 has exactly two elements"
         raise ValueError(msg)
-        
     
     # set the seed
     if seed is not None:
@@ -226,7 +230,7 @@ def bayesian_proportion_test(x, n, prior=(0.5,0.5), prior2=None,
     
     p_pi_1_greater = sum(s1_posterior_samples > s2_posterior_samples) / num_samples
     
-    return (diff_posterior_mean, diff_posterior_var), p_pi_1_greater
+    return diff_posterior_mean, diff_posterior_var, p_pi_1_greater
 
 def normal_inverse_chi_square(m, k, r, s, size=1):
     """ Sample from a normal-inverse-chi-square distribution with parameters
@@ -257,54 +261,63 @@ def normal_inverse_chi_square(m, k, r, s, size=1):
         
     return w, v
 
-def bayesian_means_test(x1, x2, jeffreys_prior=True, prior1=None, prior2=None, 
-        num_samples=1000, seed=None):
+def bayesian_means_test(
+        x1:np.ndarray,
+        x2:np.ndarray,
+        use_jeffreys_prior:bool=True,
+        prior1:Optional[Tuple[float,float,float,float]]=None,
+        prior2:Optional[Tuple[float,float,float,float]]=None,
+        num_samples:int=1000,
+        seed:int=8675309) -> Tuple[float,float,float]:
     """ Perform a Bayesian test to identify significantly different means.
     
     The test is based on a Gaussian conjugate model. (The normal-inverse-chi-square
-    distribution is the prior.) It uses simulation to estimate the posterior of the 
-    difference between the means of the populations, under the (probably dubious) 
-    assumption that the observations are Gaussian distributed. It also estimates the
-    likelihood that \mu_1 > \mu_2, where \mu_i is the mean of each sample.
+    distribution is the prior.) It uses Monte Carlo simulation to estimate the
+    posterior of the difference between the means of the populations, under the
+    (probably dubious) assumption that the observations are Gaussian distributed.
+    It also estimates the likelihood that :math:`\mu_1 > \mu_2`, where :math`\mu_i`
+    is the mean of each sample.
     
     Parameters
     ----------
-    x{1,2}: array-like of floats
+    x{1,2} : numpy.ndarray
         The observations of each sample
         
-    jeffreys_prior: bool
+    use_jeffreys_prior : bool
         Whether to use the Jeffreys prior. For more details, see:
         
             Murphy, K. Conjugate Bayesian analysis of the Gaussian distribution. 
             Technical report, 2007.
             
-        Briefly, the Jeffreys prior is: (sample mean, n, n-1, sample variance)
+        Briefly, the Jeffreys prior is: :math:`(\\text{sample mean}, n, n-1,
+        \\text{sample variance})`, according to a
+        :func:`pyllars.stats_utils.normal_inverse_chi_square` distribution.
             
-    prior{1,2}: four-element tuple, or None
+    prior{1,2} : typing.Optional[typing.Tuple[float,float,float,float]]
         If the Jeffreys prior is not used, then these parameters are used as the
         priors for the normal-inverse-chi-square. If only prior1 is given, then
         those values are also used for prior2, where prior_i is taken as the prior
         for x_i.
         
-    num_samples: int
+    num_samples : int
         The number of simulations
         
-    seed: int
+    seed : int
         The seed for the random number generator
         
     Returns
     -------
-    (difference_mean, difference_var) : a 2-tuple of floats
+    difference_{mean,var} : float
         The posterior mean and variance of the difference in the mean of the two
         samples. A negative difference_mean indicates that the mean of x2 is 
         higher.
         
     p_m1_greater : float
-        The probability that mu_1 > mu_2
+        The probability that :math:`\mu_1 > \mu_2`
 
     """
     
-    if jeffreys_prior:
+    if use_jeffreys_prior:
         prior1 = (np.mean(x1), len(x1), int(len(x1)-1), np.var(x1))
         prior2 = (np.mean(x2), len(x2), int(len(x2)-1), np.var(x2))
         
@@ -350,35 +363,35 @@ def bayesian_means_test(x1, x2, jeffreys_prior=True, prior1=None, prior2=None,
 ###
 
 def get_categorical_mle_estimates(
-        observations,
-        cardinality=None,
-        use_laplacian_smoothing=False,
-        base_1=False):
+        observations:Iterable[int],
+        cardinality:Optional[int]=None,
+        use_laplacian_smoothing:bool=False,
+        base_1:bool=False) -> np.ndarray:
     """ Calculate the MLE estimates for the categorical observations
     
     Parameters
     ----------
-    observations: iterable of ints
+    observations : typing.Iterable[int]
         The observed values. These are taken to already be "label encoded",
         so they should be integers in [0,cardinality).
         
-    cardinality: int or None
+    cardinality : typing.Optional[int]
         The cardinality of the categorical variable. If `None`, then this
         is taken as the number of unique values in `observations`.
         
-    use_laplacian_smoothing: bool
+    use_laplacian_smoothing : bool
         Whether to use Laplacian ("add one") smoothing for the estimates.
         This can also be interpreted as a symmetric Dirichlet prior with 
         a concentration parameter of 1.
 
-    base_1: bool
+    base_1 : bool
         Whether the observations are base 1. If so, then the range is taken
         as [1, cardinality].
         
     Returns
     -------
-    mle_estimates: np.array of size `cardinality`
-        The estimates
+    mle_estimates : numpy.ndarray
+        The estimates. The size of the array is `cardinality`.
     """
     if base_1:
         observations = np.array(observations) - 1
@@ -404,31 +417,36 @@ class polynomial_order(Enum):
     linear = 1
     quadratic = 2
 
-def fit_with_least_squares(x, y, w=None, order=polynomial_order.linear):
-    """ Fit a polynomial relationship between x and y. Optionally, the values
-    can be weighted.
+def fit_with_least_squares(
+        x:np.ndarray,
+        y:np.ndarray,
+        w:Optional[np.ndarray]=None,
+        order=polynomial_order.linear) -> Tuple[float,float,float,float]:
+    """ Fit a polynomial relationship between `x` and `y`.
+    
+    Optionally, the values can be weighted.
 
     Parameters
     ----------
-    x, y : arrays of floats
+    {x,y} : numpy.ndarray
         The input arrays
 
-    w : array of floats
+    w : numpy.ndarray
         A weighting of each of the (x,y) pairs for regression
 
-    order : from polynomial_order enum
+    order : polynomial_order
         The order of the fit
 
     Returns
     -------
-    intercept, slope, power : floats
+    {intercept,slope,power} : float
         The coefficients of the fit. power is 0 if the order is linear.
 
     r_sqr : float
         The coefficient of determination
     """
 
-    #Calculate trendline
+    # Calculate trendline
     coeffs = np.polyfit(x, y, order.value, w=w)
 
     intercept = coeffs[-1]
