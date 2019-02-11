@@ -8,7 +8,13 @@ This project contains supporting utilities for Python 3.
 
 **Installation**
 
-This package is written in Python 3. `pip` can be used to install it:
+This package is available on PyPI.
+
+```
+pip3 install pyllars
+```
+
+Alternatively, the package can be installed from source.
 
 ```
 git clone https://github.com/bmmalone/pyllars
