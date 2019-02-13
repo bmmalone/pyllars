@@ -4,7 +4,7 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.0.0] - In progress
+## [1.0.0] - 2019-02-11
 This version change significantly rearranges the package structure. In particular,
 the functionality of the large `utils` and `math_utils` modules has been split
 into more specific modules (some of which already existed). Deprecated functionality
@@ -18,6 +18,10 @@ the project.
 
 The tests are very minimal, and it is expected that some import errors have
 not yet been resolved.
+
+## [0.99.xyz]
+These versions are technical changes between the 0.2.xx and 1.xx code base.
+Please ignore these.
 
 ## [0.2.11] - 2018-12-22
 ### Added

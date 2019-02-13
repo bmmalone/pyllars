@@ -4,7 +4,7 @@ __pycache__
 .eggs
 dask-worker-space
 coverage
-
+dist
 .coverage*
 
 # sphinx

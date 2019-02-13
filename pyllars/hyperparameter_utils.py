@@ -48,7 +48,7 @@ import itertools
 import json
 
 import pyllars.ml_utils as ml_utils
-import pullars.pandas_utils as pd_utils
+import pyllars.pandas_utils as pd_utils
 
 def get_hp_fold_iterator(hp_grid, num_folds):
     """ Create an iterator over all combinations of hyperparameters and folds
@@ -61,14 +61,12 @@ def get_hp_fold_iterator(hp_grid, num_folds):
     
     return hp_fold_it
 
-def evaluate_hyperparameters_helper(hv, args, *args, **kwargs):
+def evaluate_hyperparameters_helper(hv, *args, **kwargs):
     
     # these come from our iterator
     hyperparameters = hv[0]
     validation_folds = hv[1]
-    
-    # we know we are doing 10-fold cv
-    test_folds = (validation_folds + 1) % args.num_folds
+    test_folds = hv[2]
     
     res = ml_utils.evaluate_hyperparameters(
         hyperparameters=hyperparameters,

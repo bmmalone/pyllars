@@ -45,8 +45,4 @@ def test_connect_local(local_args):
     # now, close the connection
     dask_client.close()
     
-    # and make sure we are closed
-    with pytest.raises(RuntimeError):
-        dask_client.scheduler_info()
-    
     

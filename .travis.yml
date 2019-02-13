@@ -1,11 +1,16 @@
 language: python
 python:
   - "3.6"
+
+branches:
+  only:
+    - master
+    - dev
 # command to install dependencies
 
 before_install:
-  - pip install pytest pytest-cov
-  - pip install coveralls
+  - pip install pytest==4.2.0 pytest-cov==2.6.1
+  - pip install coveralls==1.5.1
   
 install:
   - pip install -e .
