@@ -1,8 +1,14 @@
 """ Helpers for working with 2-d matrices
 """
+import logging
+logger = logging.getLogger(__name__)
+
 import numpy as np
 
 import scipy.io
+import scipy.sparse
+
+from typing import List
 
 def permute_matrix(m, is_flat=False, shape=None):
     """ Randomly permute the entries of the matrix. The matrix is first 
@@ -207,6 +213,28 @@ def sparse_matrix_to_dense(sparse_matrix):
     """
     dense = np.array(sparse_matrix.todense())
     return dense
+
+def sparse_matrix_to_list(sparse_matrix:scipy.sparse.spmatrix) -> List:
+    """ Convert `sparse_matrix` to a list of "sparse row vectors".
+    
+    In this context, a "sparse row vector" is simply a sparse matrix
+    with dimensionality (1, sparse_matrix.shape[1]).
+    
+    Parameters
+    ----------
+    sparse_matrix: scipy.sparse.spmatrix
+        The sparse scipy matrix
+
+    Returns
+    -------
+    list_of_sparse_row_vectors : typing.List[scipy.sparse.spmatrix]
+    """
+    list_of_sparse_row_vectors = [
+        sparse_matrix[i] for i in range(sparse_matrix.shape[0])
+    ]
+    
+    return list_of_sparse_row_vectors
+    
 
 def matrix_multiply(m1, m2, m3):
     """ This helper function multiplies the three matrices. It minimizes the
