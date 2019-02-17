@@ -28,6 +28,7 @@ install_requires = [
     'pandas',
     'paramiko',
     'pydot',
+    'requests',
     'scipy',
     'six',
     'sklearn',
