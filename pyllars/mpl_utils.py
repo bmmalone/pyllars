@@ -1,7 +1,7 @@
 """
 This module contains a number of helper functions for matplotlib.
 """
-
+import argparse
 import itertools
 
 import matplotlib
@@ -10,35 +10,42 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 
+import typing
+from typing import Collection, Iterable, Optional, Tuple, Union
+
+IntOrString = Union[int, str]
+FigAx = Tuple[matplotlib.figure.Figure, plt.Axes]
+
 import pyllars.utils as utils
 import pyllars.validation_utils as validation_utils
 
 import logging
 logger = logging.getLogger(__name__)
 
-_VALID_AXIS_VALUES = {
-    'both',
-    'x',
-    'y'
-}
+VALID_AXIS_VALUES = {'both', 'x', 'y'}
+VALID_WHICH_VALUES = {'major', 'minor', 'both'}
+X_AXIS_VALUES = {'both', 'x'}
+Y_AXIS_VALUES = {'both', 'y'}
 
-_X_AXIS_VALUES = {
-    'both',
-    'x'
-}
+def _get_fig_ax(ax:Optional[plt.Axes]):
+    """ Grab a figure and axis from `ax`, or create a new one
+    """    
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.get_figure()
+        
+    return fig, ax
+    
 
-_Y_AXIS_VALUES = {
-    'both',
-    'y'
-}
-
-def add_fontsizes_to_args(args,
-        legend_title_fontsize=12,
-        legend_fontsize=10,
-        title_fontsize=20,
-        label_fontsize=15,
-        ticklabels_fontsize=10):
-    """ Add reasonable default fontsize values to the arguments
+def add_fontsizes_to_args(
+        args:argparse.Namespace,
+        legend_title_fontsize:int=12,
+        legend_fontsize:int=10,
+        title_fontsize:int=20,
+        label_fontsize:int=15,
+        ticklabels_fontsize:int=10):
+    """ Add reasonable default fontsize values to `args`
     """
     args.legend_title_fontsize = legend_title_fontsize
     args.legend_fontsize = legend_fontsize
@@ -46,17 +53,16 @@ def add_fontsizes_to_args(args,
     args.label_fontsize = label_fontsize
     args.ticklabels_fontsize = ticklabels_fontsize
 
-
-
-def set_legend_title_fontsize(ax, fontsize):
+def set_legend_title_fontsize(
+        ax:plt.Axes, fontsize:IntOrString) -> None:
     """ Set the font size of the title of the legend.
 
     Parameters
     ----------
-    ax: mpl.Axis
+    ax : matplotlib.axes.Axes
         The axis
 
-    fontsize: int, or string mpl recognizes
+    fontsize : int, or a str recognized by matplotlib
         The size of the legend title
 
     Returns
@@ -65,16 +71,18 @@ def set_legend_title_fontsize(ax, fontsize):
     """
     legend = ax.legend_
     plt.setp(legend.get_title(),fontsize=fontsize)
+    
 
-def set_legend_fontsize(ax, fontsize):
+def set_legend_fontsize(
+        ax:plt.Axes, fontsize:IntOrString) -> None:
     """ Set the font size of the items of the legend.
 
     Parameters
     ----------
-    ax: mpl.Axis
+    ax : matplotlib.axes.Axes
         The axis
 
-    fontsize: int, or string mpl recognizes
+    fontsize : int, or a str recognized by matplotlib
         The size of the legend text
 
     Returns
@@ -85,15 +93,16 @@ def set_legend_fontsize(ax, fontsize):
     plt.setp(legend.get_texts(),fontsize=fontsize)
 
     
-def set_title_fontsize(ax, fontsize):
+def set_title_fontsize(
+        ax:plt.Axes, fontsize:IntOrString) -> None:
     """ Set the font size of the title of the axis.
 
     Parameters
     ----------
-    ax: mpl.Axis
+    ax : matplotlib.axes.Axes
         The axis
 
-    fontsize: int, or string mpl recognizes
+    fontsize : int, or a str recognized by matplotlib
         The size of the title font
  
     Returns
@@ -102,24 +111,27 @@ def set_title_fontsize(ax, fontsize):
     """
     ax.title.set_fontsize(fontsize=fontsize)
 
-def set_label_fontsize(ax, fontsize, axis='both'):
-    """ Set the font size of the label of the axis.
+def set_label_fontsize(
+        ax:plt.Axes, fontsize:IntOrString, axis:str='both') -> None:
+    """ Set the font size of the labels of the axis.
 
     Parameters
     ----------
-    ax: mpl.Axis
+    ax : matplotlib.axes.Axes
         The axis
 
-    fontsize: int, or string mpl recognizes
-        The size of the title font
+    fontsize : int, or a str recognized by matplotlib
+        The size of the label font
 
-    which: string
-        Should be 'both', 'x', or 'y'
+    axis : str in {`both`, `x`, `y`}
+        Which label(s) to update
 
     Returns
     -------
     None, but the respective label fontsizes are updated
     """
+    validation_utils.validate_in_set(axis, VALID_AXIS_VALUES, "axis")
+    
     if (axis == 'both') or (axis=='x'):
         l = ax.xaxis.label
         l.set_fontsize(fontsize)
@@ -129,22 +141,20 @@ def set_label_fontsize(ax, fontsize, axis='both'):
         l.set_fontsize(fontsize)
 
 
+def center_splines(ax:plt.Axes) -> None:
+    """ Places the splines of `ax` in the center of the plot.
+    
+    This is useful for things like scatter plots where (0,0) should be
+    in the center of the plot.
 
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        The axis
 
-
-def center_splines(ax):
-    """ This function places the splines of the given axis in the center of the
-        plot. This is useful for things like scatter plots where (0,0) should be
-        in the center of the plot.
-
-        Parameters
-        ----------
-        ax : mpl.Axis
-            The axis
-
-        Returns
-        -------
-        None, but the splines are updated
+    Returns
+    -------
+    None, but the splines are updated
     """
     
     ax.spines['left'].set_position('zero')
@@ -160,12 +170,12 @@ def center_splines(ax):
     ax.xaxis.set_label_coords(0.5, 0)
     ax.yaxis.set_label_coords(-0.05, 0.5)
 
-def hide_first_y_tick_label(ax):
-    """ Hide the first tick label on the y-axis.
+def hide_first_y_tick_label(ax:plt.Axes) -> None:
+    """ Hide the first tick label on the y-axis
 
     Parameters
     ----------
-    ax: mpl.Axis
+    ax : matplotlib.axes.Axes
         The axis
 
     Returns
@@ -175,16 +185,23 @@ def hide_first_y_tick_label(ax):
     yticks = ax.yaxis.get_major_ticks()
     yticks[0].label1.set_visible(False)
 
-def hide_tick_labels_by_text(ax, to_remove_x=[], to_remove_y=[]):
+def hide_tick_labels_by_text(
+        ax:plt.Axes,
+        to_remove_x:Collection=set(),
+        to_remove_y:Collection=set()) -> None:
     """ Hide tick labels which match the given values.
 
     Parameters
     ----------
-    ax: mpl.Axis
+    ax : matplotlib.axes.Axes
         The axis
 
-    to_remove_{x,y}: list-like of strings
+    to_remove_{x,y}: typing.Collection[str]
         The values to remove
+        
+    Returns
+    -------
+    None, but the specified tick labels are hidden
     """
     xticks = ax.xaxis.get_major_ticks()
     num_xticks = len(xticks)
@@ -198,19 +215,25 @@ def hide_tick_labels_by_text(ax, to_remove_x=[], to_remove_y=[]):
     hide_tick_labels(ax, keep_x=keep_x, keep_y=keep_y)
 
 
-def hide_tick_labels(ax, keep_x=[], keep_y=[], axis='both'):
-    """ Hide the tick labels on both axes. Optionally, some can be preserved.
+def hide_tick_labels_by_index(
+        ax:plt.Axes,
+        keep_x:Collection=set(),
+        keep_y:Collection=set(),
+        axis:str='both') -> None:
+    """ Hide the tick labels on both axes.
+    
+    Optionally, some can be preserved.
 
     Parameters
     ----------
-    ax : mp.Axis
+    ax : matplotlib.axes.Axes
         The axis
 
-    keep_{x,y} : list-like of ints
+    keep_{x,y} : typing.Collection[int]
         The indices of any x-axis ticks to keep. The numbers are passed directly
-        as indices to the xticks array.
+        as indices to the "ticks" arrays.
         
-    axis : string in {'both', 'x', 'y'}
+    axis : str in {`both`, `x`, `y`}
         Axis of the tick labels to hide
 
     Returns
@@ -218,9 +241,9 @@ def hide_tick_labels(ax, keep_x=[], keep_y=[], axis='both'):
     None, but the tick labels of the axis are removed, as specified
     """
     
-    validation_utils.validate_in_set(axis, _VALID_AXIS_VALUES, "axis")
+    validation_utils.validate_in_set(axis, VALID_AXIS_VALUES, "axis")
 
-    if axis in _X_AXIS_VALUES:
+    if axis in X_AXIS_VALUES:
         xticks = ax.xaxis.get_major_ticks()
         for xtick in xticks:
             xtick.label1.set_visible(False)
@@ -228,7 +251,7 @@ def hide_tick_labels(ax, keep_x=[], keep_y=[], axis='both'):
         for x in keep_x:
             xticks[x].label1.set_visible(True)
 
-    if axis in _Y_AXIS_VALUES:
+    if axis in Y_AXIS_VALUES:
         yticks = ax.yaxis.get_major_ticks()
         for ytick in yticks:
             ytick.label1.set_visible(False)
@@ -236,57 +259,59 @@ def hide_tick_labels(ax, keep_x=[], keep_y=[], axis='both'):
         for y in keep_y:
             yticks[y].label1.set_visible(True)
 
-def set_ticklabels_fontsize(ax, fontsize, axis='both', which='major'):
-    """ Set the font size of the tick labels.
+def set_ticklabels_fontsize(
+        ax:plt.Axes,
+        fontsize:IntOrString,
+        axis:str='both',
+        which:str='major'):
+    """ Set the font size of the tick labels
 
     Parameters
     ----------
-    ax: mpl.Axis
+    ax: matplotlib.axes.Axes
         The axis
 
-    fontsize: int, or string mpl recognizes
+    fontsize: int, or a str recognized by matplotlib
         The size of the ticklabels
 
-    axis, which: strings
-        Values passed to ax.tick_params. Please see the mpl documentation for
-        more details.
+    {axis,which}: str
+        Values passed to :meth:`matplotlib.axes.Axes.tick_params`. Please see
+        the matplotlib documentation for more details.
 
     Returns
     -------
     None, but the ticklabel fontsizes are updated
     """
+    validation_utils.validate_in_set(axis, VALID_AXIS_VALUES, "axis")
+    validation_utils.validate_in_set(which, VALID_WHICH_VALUES, "which")
+    
     ax.tick_params(axis=axis, which=which, labelsize=fontsize)
 
-VALID_AXIS_VALUES = {'x', 'y', 'both'}
-VALID_WHICH_VALUES = {'major', 'minor', 'both'}
-def set_ticklabel_rotation(ax, rotation, axis='x', which='both'):
-    """ Set the rotation of the tick labels.
+def set_ticklabel_rotation(
+        ax:plt.Axes,
+        rotation:IntOrString,
+        axis:str='x',
+        which:str='both'):
+    """ Set the rotation of the tick labels
 
     Parameters
     ----------
-    ax: mpl.Axis
+    ax: matplotlib.axes.Axes
         The axis
 
     rotation: int, or a string mpl recognizes
         The rotation of the labels
 
-    axis: 'x', 'y', 'both'
-        The axis whose tick labels will be rotated
-
-    which: 'major', 'minor', 'both'
-        Which of the tick labels to affect
+    {axis,which}: str
+        Values passed to :func:`matplotlib.pyplot.setp`. Please see
+        the matplotlib documentation for more details.
 
     Returns
     -------
     None, but the ticklabels are rotated
     """
-    if axis not in VALID_AXIS_VALUES:
-        msg = "{} is not a valid axis value".format(axis)
-        raise ValueError(msg)
-
-    if which not in VALID_WHICH_VALUES:
-        msg = "{} is not a valid which value".format(which)
-        raise ValueError(msg)
+    validation_utils.validate_in_set(axis, VALID_AXIS_VALUES, "axis")
+    validation_utils.validate_in_set(which, VALID_WHICH_VALUES, "which")
 
     adjust_xaxis = (axis == 'x') or (axis == 'both')
     adjust_yaxis = (axis == 'y') or (axis == 'both')
@@ -313,40 +338,59 @@ def set_ticklabel_rotation(ax, rotation, axis='x', which='both'):
         plt.setp(yticklabels, rotation=rotation)
 
 
-
-def remove_top_and_right_splines(ax):
-    """ This function removes the spines on the top and right of the axis.
-
-        Parameters
-        ----------
-        ax : mpl.Axis
-            The axis
-
-        Returns
-        -------
-        None, but the splines and ticks of the axis are updated
-    """
-
-    ax.spines['top'].set_color('none')
-    ax.spines['right'].set_color('none')
-    ax.xaxis.set_ticks_position('bottom')
-    ax.yaxis.set_ticks_position('left')
-
-def plot_roc_curve(tpr, fpr, auc=None, field_names=None, out=None, cmaps=None, alphas=None, 
-    title="Receiver operating characteristic curves", font_size=20, legend_font_size=15, 
-    top_adjustment=0.9, xlabel="False positive rate", ylabel="True positive rate"):
+def plot_roc_curve(
+        tpr,
+        fpr,
+        auc:Optional[float]=None,
+        ax:Optional[plt.Axes]=None,
+        field_names:Optional[Iterable[str]]=None,
+        out:Optional[str]=None,
+        cmaps:Optional[Iterable[plt.cm.ColorMap]]=None,
+        default_cmap=plt.cm.Blues,
+        alphas=None, 
+        title:str="Receiver operating characteristic curves",
+        font_size:int=20,
+        legend_font_size:int=15, 
+        top_adjustment:float=0.9,
+        xlabel:str="False positive rate",
+        ylabel:str="True positive rate") -> FigAx:
+    """ Plot the ROC curve for the given `fpr` and `tpr` values
     
-    import numpy as np
-    import matplotlib.pyplot as plt
-    import matplotlib.colors
-
-    fig, ax = plt.subplots()
-
+    Currently, this function plots multiple ROC curves.
+    
+    Optionally, add a note of the `auc`.
+    
+    Parameters
+    ----------
+    tpr : asdf
+        The true positive rate at each threshold
+    
+    fpr : asdf
+        The false positive rate at each threshold
+        
+    auc : typing.Optional[float]
+        The calculated area under the ROC curve
+    
+    ax : typing.Optional[matplotlib.axes.Axes]
+        The axis
+        
+    field_names : typing.Optional[typing.Iterable[str]]
+        The name of each method
+        
+    out : typing.Optional[str]
+        The output filename
+        
+    cmaps : typing.Optional[typing.Iterable[plt.cm.ColorMap]]
+        Color maps for each ROC curve
+    
+    """
+    fig, ax = _get_fig_ax(ax)
+    
     if alphas is None:
         alphas = [np.ones(len(tpr[0]))] * len(tpr)
 
     if cmaps is None:
-        cmaps = [plt.cm.Blues] * len(alphas)
+        cmaps = [default_cmap] * len(alphas)
     elif len(cmaps) != len(alphas):
         msg = "The ROC curve must have the same number of cmaps as alphas"
         raise ValueError(msg)
@@ -360,7 +404,7 @@ def plot_roc_curve(tpr, fpr, auc=None, field_names=None, out=None, cmaps=None, a
             l += " "
             l += "AUC: {:.2f}".format(auc[i])
                 
-        color = 'k' # cmap(i/len(tpr))
+        color = 'k'
         for j in range(1, len(fpr[i])):
             points_y = [tpr[i][j-1], tpr[i][j]]
             points_x = [fpr[i][j-1], fpr[i][j]]
@@ -386,21 +430,21 @@ def plot_roc_curve(tpr, fpr, auc=None, field_names=None, out=None, cmaps=None, a
     fig.subplots_adjust(top=top_adjustment)
 
     if out is not None:
-        plt.savefig(out, bbox_inches='tight')
+        fig.savefig(out, bbox_inches='tight')
 
 def plot_confusion_matrix(
         confusion_matrix,
         ax=None,
-        show_cell_labels=True,
-        show_colorbar=True,
-        title="Confusion matrix", 
+        show_cell_labels:bool=True,
+        show_colorbar:bool=True,
+        title:str="Confusion matrix", 
         cmap=None, 
         true_tick_labels = None, 
         predicted_tick_labels = None, 
-        ylabel="True labels", 
-        xlabel="Predicted labels", 
-        title_font_size=20, 
-        label_font_size=15,
+        ylabel:str="True labels", 
+        xlabel:str="Predicted labels", 
+        title_font_size:int=20, 
+        label_font_size:int=15,
         true_tick_rotation=None,
         predicted_tick_rotation=None,
         out=None):
@@ -481,9 +525,15 @@ def plot_confusion_matrix(
     if out is not None:
         plt.savefig(out, bbox_inches='tight')
 
-def plot_venn_diagram(sets, ax=None, set_labels=None, weighted=False, use_sci_notation=False,
-                               labels_fontsize=14, counts_fontsize=12, sci_notation_limit=999):
-
+def plot_venn_diagram(
+        sets,
+        ax=None,
+        set_labels=None,
+        weighted:bool=False,
+        use_sci_notation:bool=False,
+        labels_fontsize:int=14,
+        counts_fontsize:int=12,
+        sci_notation_limit:float=999):
     """ This function is a wrapper around matplotlib_venn. It most just makes
         setting the fonts and and label formatting a bit easier.
 
@@ -893,10 +943,10 @@ def create_stacked_bar_graph(
 def plot_simple_scatter(
         x, y,
         ax=None,
-        equal_aspect=True,
-        set_lim=True,
-        show_y_x_line=True,
-        xy_line_kwargs={},
+        equal_aspect:bool=True,
+        set_lim:bool=True,
+        show_y_x_line:bool=True,
+        xy_line_kwargs:dict={},
         **kwargs):
     """ Plot a simple scatter plot of x vs. y on `ax`
     
@@ -961,7 +1011,13 @@ def plot_simple_scatter(
         
     return fig, ax
     
-def plot_trend_line(ax, x, intercept, slope, power, **kwargs):
+def plot_trend_line(
+        ax,
+        x,
+        intercept:float,
+        slope:float,
+        power:float,
+        **kwargs):
     """ Draw the trend line implied by the given coefficients.
 
     Parameters
@@ -988,11 +1044,19 @@ def plot_trend_line(ax, x, intercept, slope, power, **kwargs):
     #Plot trendline
     ax.plot(x, y, **kwargs)
 
-def draw_rectangle(ax, base_x, base_y, width, height, center_x=False, 
-        center_y=False, **kwargs):
-    """ Draw a rectangle at the given x and y coordinates. Optionally, these
-    can be adjusted such that they are the respective centers rather than edge
-    values.
+def draw_rectangle(
+        ax,
+        base_x:float,
+        base_y:float,
+        width:float,
+        height:float,
+        center_x:bool=False, 
+        center_y:bool=False,
+        **kwargs):
+    """ Draw a rectangle at the given x and y coordinates.
+    
+    Optionally, these can be adjusted such that they are the respective
+    centers rather than edge values.
 
     Parameters
     ----------
@@ -1028,7 +1092,13 @@ def draw_rectangle(ax, base_x, base_y, width, height, center_x=False,
     x = base_x - x_offset
     ax.add_patch(patches.Rectangle((x,y), width, height, **kwargs))   
 
-def plot_sorted_values(values, ymin=None, ymax=None, ax=None, scale_x=False, **kwargs):
+def plot_sorted_values(
+        values,
+        ymin:Optional[float]=None,
+        ymax:Optional[float]=None,
+        ax:Optional[plt.Axes]=None,
+        scale_x=False,
+        **kwargs):
     """ Sort `values` and plot them
 
     Parameters
@@ -1036,7 +1106,7 @@ def plot_sorted_values(values, ymin=None, ymax=None, ax=None, scale_x=False, **k
     values : list-like of numbers
         The values to plot
 
-    y{min,max} : floats
+    y_{min,max} : floats
         The min and max values for the y-axis. If not given, then these
         default to the minimum and maximum values in the list.
         
@@ -1044,7 +1114,7 @@ def plot_sorted_values(values, ymin=None, ymax=None, ax=None, scale_x=False, **k
         If True, then the `x` values will be equally-spaced between 0 and 1.
         Otherwise, they will be the values 0 to len(values)
 
-    ax : mpl.Axis
+    ax : typing.Optional[matplotlib.axes.Axes]
         An axis for plotting. If this is not given, then a figure and axis will
         be created.
         
