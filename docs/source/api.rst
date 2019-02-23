@@ -11,5 +11,6 @@ This is the API for the pyllars library.
    dask_utils
    ml_utils
    mpl_utils
+   nlp_utils
    pandas_utils
    stats_utils
