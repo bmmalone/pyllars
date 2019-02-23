@@ -9,6 +9,7 @@ This is the API for the pyllars library.
    
    collection_utils
    dask_utils
+   matrix_utils
    ml_utils
    mpl_utils
    nlp_utils
