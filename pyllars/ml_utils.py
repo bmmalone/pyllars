@@ -439,7 +439,7 @@ def evaluate_hyperparameters(
     5.  Train `estimator_test` using both `train` and `val`
     6.  Evaluate the trained `estimator_test` on `test` using `collect_metrics`
     
-    Paramters
+    Parameters
     ---------
     estimator_template : sklearn.base.BaseEstimator
         The template for creating the `estimator`.

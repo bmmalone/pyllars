@@ -1,20 +1,40 @@
 """
 This module contains a number of helper functions for matplotlib.
+
+For details about various arguments, such as allowed key word
+arguments and how they will be interpreted, please consult the
+appropriate parts of the matplotlib documentation:
+
+* **Lines**: https://matplotlib.org/api/_as_gen/matplotlib.lines.Line2D.html#matplotlib.lines.Line2D
+* **Patches**: https://matplotlib.org/api/_as_gen/matplotlib.patches.Patch.html#matplotlib.patches.Patch
+* **Scatter plots**: https://matplotlib.org/api/_as_gen/matplotlib.pyplot.scatter.html#matplotlib.pyplot.scatter
+* **Text**: https://matplotlib.org/api/text_api.html#matplotlib.text.Text
+
 """
 import argparse
 import itertools
 
 import matplotlib
 import matplotlib.colors
+import matplotlib.pyplot
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 
-import typing
-from typing import Collection, Iterable, Optional, Tuple, Union
+import matplotlib_venn
 
+import typing
+from typing import Collection, Iterable, Mapping, Optional, Sequence, Tuple, Union
+
+BarChartColorOptions = Union[
+    matplotlib.colors.Colormap,
+    Sequence,
+    int,
+    str
+]
 IntOrString = Union[int, str]
 FigAx = Tuple[matplotlib.figure.Figure, plt.Axes]
+MapOrSequence = Union[Mapping,Sequence]
 
 import pyllars.utils as utils
 import pyllars.validation_utils as validation_utils
@@ -22,10 +42,21 @@ import pyllars.validation_utils as validation_utils
 import logging
 logger = logging.getLogger(__name__)
 
+###
+# Constants
+###
+
 VALID_AXIS_VALUES = {'both', 'x', 'y'}
+"""Valid `axis` values"""
+
 VALID_WHICH_VALUES = {'major', 'minor', 'both'}
+"""Valid `which` values"""
+
 X_AXIS_VALUES = {'both', 'x'}
+"""`axis` choices which affect the X axis"""
+
 Y_AXIS_VALUES = {'both', 'y'}
+"""`axis` choices which affect the Y axis"""
 
 def _get_fig_ax(ax:Optional[plt.Axes]):
     """ Grab a figure and axis from `ax`, or create a new one
@@ -37,21 +68,9 @@ def _get_fig_ax(ax:Optional[plt.Axes]):
         
     return fig, ax
     
-
-def add_fontsizes_to_args(
-        args:argparse.Namespace,
-        legend_title_fontsize:int=12,
-        legend_fontsize:int=10,
-        title_fontsize:int=20,
-        label_fontsize:int=15,
-        ticklabels_fontsize:int=10):
-    """ Add reasonable default fontsize values to `args`
-    """
-    args.legend_title_fontsize = legend_title_fontsize
-    args.legend_fontsize = legend_fontsize
-    args.title_fontsize = title_fontsize
-    args.label_fontsize = label_fontsize
-    args.ticklabels_fontsize = ticklabels_fontsize
+###
+# Font helpers
+###
 
 def set_legend_title_fontsize(
         ax:plt.Axes, fontsize:IntOrString) -> None:
@@ -139,8 +158,89 @@ def set_label_fontsize(
     if (axis == 'both') or (axis=='y'):
         l = ax.yaxis.label
         l.set_fontsize(fontsize)
+        
 
+def set_ticklabels_fontsize(
+        ax:plt.Axes,
+        fontsize:IntOrString,
+        axis:str='both',
+        which:str='major'):
+    """ Set the font size of the tick labels
 
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        The axis
+
+    fontsize : int, or a str recognized by matplotlib
+        The size of the ticklabels
+
+    {axis,which} : str
+        Values passed to :meth:`matplotlib.axes.Axes.tick_params`. Please see
+        the matplotlib documentation for more details.
+
+    Returns
+    -------
+    None, but the ticklabel fontsizes are updated
+    """
+    validation_utils.validate_in_set(axis, VALID_AXIS_VALUES, "axis")
+    validation_utils.validate_in_set(which, VALID_WHICH_VALUES, "which")
+    
+    ax.tick_params(axis=axis, which=which, labelsize=fontsize)
+
+def set_ticklabel_rotation(
+        ax:plt.Axes,
+        rotation:IntOrString,
+        axis:str='x',
+        which:str='both'):
+    """ Set the rotation of the tick labels
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        The axis
+
+    rotation : int, or a string matplotlib recognizes
+        The rotation of the labels
+
+    {axis,which} : str
+        Values passed to :func:`matplotlib.pyplot.setp`. Please see
+        the matplotlib documentation for more details.
+
+    Returns
+    -------
+    None, but the ticklabels are rotated
+    """
+    validation_utils.validate_in_set(axis, VALID_AXIS_VALUES, "axis")
+    validation_utils.validate_in_set(which, VALID_WHICH_VALUES, "which")
+
+    adjust_xaxis = (axis == 'x') or (axis == 'both')
+    adjust_yaxis = (axis == 'y') or (axis == 'both')
+
+    adjust_major = (which == 'major') or (which == 'both')
+    adjust_minor = (which == 'minor') or (which == 'both')
+
+    if adjust_xaxis:
+        xticklabels = []
+        if adjust_major:
+            xticklabels.extend(ax.xaxis.get_majorticklabels())
+        if adjust_minor:
+            xticklabels.extend(ax.xaxis.get_minorticklabels())
+            
+        plt.setp(xticklabels, rotation=rotation)
+    
+    if adjust_yaxis:
+        yticklabels = []
+        if adjust_major:
+            yticklabels.extend(ax.yaxis.get_majorticklabels())
+        if adjust_minor:
+            yticklabels.extend(ax.yaxis.get_minorticklabels())
+            
+        plt.setp(yticklabels, rotation=rotation)
+
+###
+# Axes helpers
+###
 def center_splines(ax:plt.Axes) -> None:
     """ Places the splines of `ax` in the center of the plot.
     
@@ -259,377 +359,113 @@ def hide_tick_labels_by_index(
         for y in keep_y:
             yticks[y].label1.set_visible(True)
 
-def set_ticklabels_fontsize(
-        ax:plt.Axes,
-        fontsize:IntOrString,
-        axis:str='both',
-        which:str='major'):
-    """ Set the font size of the tick labels
-
-    Parameters
-    ----------
-    ax: matplotlib.axes.Axes
-        The axis
-
-    fontsize: int, or a str recognized by matplotlib
-        The size of the ticklabels
-
-    {axis,which}: str
-        Values passed to :meth:`matplotlib.axes.Axes.tick_params`. Please see
-        the matplotlib documentation for more details.
-
-    Returns
-    -------
-    None, but the ticklabel fontsizes are updated
-    """
-    validation_utils.validate_in_set(axis, VALID_AXIS_VALUES, "axis")
-    validation_utils.validate_in_set(which, VALID_WHICH_VALUES, "which")
-    
-    ax.tick_params(axis=axis, which=which, labelsize=fontsize)
-
-def set_ticklabel_rotation(
-        ax:plt.Axes,
-        rotation:IntOrString,
-        axis:str='x',
-        which:str='both'):
-    """ Set the rotation of the tick labels
-
-    Parameters
-    ----------
-    ax: matplotlib.axes.Axes
-        The axis
-
-    rotation: int, or a string mpl recognizes
-        The rotation of the labels
-
-    {axis,which}: str
-        Values passed to :func:`matplotlib.pyplot.setp`. Please see
-        the matplotlib documentation for more details.
-
-    Returns
-    -------
-    None, but the ticklabels are rotated
-    """
-    validation_utils.validate_in_set(axis, VALID_AXIS_VALUES, "axis")
-    validation_utils.validate_in_set(which, VALID_WHICH_VALUES, "which")
-
-    adjust_xaxis = (axis == 'x') or (axis == 'both')
-    adjust_yaxis = (axis == 'y') or (axis == 'both')
-
-    adjust_major = (which == 'major') or (which == 'both')
-    adjust_minor = (which == 'minor') or (which == 'both')
-
-    if adjust_xaxis:
-        xticklabels = []
-        if adjust_major:
-            xticklabels.extend(ax.xaxis.get_majorticklabels())
-        if adjust_minor:
-            xticklabels.extend(ax.xaxis.get_minorticklabels())
             
-        plt.setp(xticklabels, rotation=rotation)
-    
-    if adjust_yaxis:
-        yticklabels = []
-        if adjust_major:
-            yticklabels.extend(ax.yaxis.get_majorticklabels())
-        if adjust_minor:
-            yticklabels.extend(ax.yaxis.get_minorticklabels())
-            
-        plt.setp(yticklabels, rotation=rotation)
+###
+# Standard, generic plot helpers
+###
 
-
-def plot_roc_curve(
-        tpr,
-        fpr,
-        auc:Optional[float]=None,
+def plot_simple_bar_chart(
+        bars:Sequence[Sequence[float]],
         ax:Optional[plt.Axes]=None,
-        field_names:Optional[Iterable[str]]=None,
-        out:Optional[str]=None,
-        cmaps:Optional[Iterable[plt.cm.ColorMap]]=None,
-        default_cmap=plt.cm.Blues,
-        alphas=None, 
-        title:str="Receiver operating characteristic curves",
-        font_size:int=20,
-        legend_font_size:int=15, 
-        top_adjustment:float=0.9,
-        xlabel:str="False positive rate",
-        ylabel:str="True positive rate") -> FigAx:
-    """ Plot the ROC curve for the given `fpr` and `tpr` values
-    
-    Currently, this function plots multiple ROC curves.
-    
-    Optionally, add a note of the `auc`.
+        labels:Optional[Sequence[str]]=None,
+        colors:BarChartColorOptions=plt.cm.Blues,
+        xticklabels:Optional[Union[str,Sequence[str]]]='default',
+        xticklabels_rotation:IntOrString='vertical',
+        xlabel:Optional[str]=None,
+        ylabel:Optional[str]=None,
+        spacing:float=0,
+        ymin:Optional[float]=None,
+        ymax:Optional[float]=None,
+        use_log_scale:bool=False,
+        hide_first_ytick:bool=True,
+        show_legend:bool=False,
+        title:Optional[str]=None,
+        tick_fontsize:int=12,
+        label_fontsize:int=12,
+        legend_fontsize:int=12,
+        title_fontsize:int=12,
+        tick_offset:float=0.5):
+    """ Plot a simple bar chart based on the values in `bars`
     
     Parameters
-    ----------
-    tpr : asdf
-        The true positive rate at each threshold
-    
-    fpr : asdf
-        The false positive rate at each threshold
+    -----------
+    bars : typing.Sequence[typing.Sequence[float]]
+        The heights of each bar. The "outer" sequence corresponds to
+        each clustered group of bars, while the "inner" sequence gives
+        the heights of each bar within the group.
         
-    auc : typing.Optional[float]
-        The calculated area under the ROC curve
+        As a data science example, the "outer" groups may correspond
+        to different datasets, while the "inner" group corresponds to
+        different methods.
     
     ax : typing.Optional[matplotlib.axes.Axes]
-        The axis
+        The axis. If not given, then one will be created.
         
-    field_names : typing.Optional[typing.Iterable[str]]
-        The name of each method
+    labels : typing.Optional[typing.Sequence[str]]
+        The label for each "outer" group in `bars`
         
-    out : typing.Optional[str]
-        The output filename
+    colors : BarChartColorOptions
+        The colors of the bars for each "inner" group. The options and
+        their interpretations are:
         
-    cmaps : typing.Optional[typing.Iterable[plt.cm.ColorMap]]
-        Color maps for each ROC curve
+        * color map : the color of each bar will be taken as equi-distant colors sampled from the map. For example, if there are three bars in thei nner group, then the colors will be: `colors(0.0)`, `colors(0.5)`, and `colors(1.0)`.
+            
+        * sequence of colors : the color of each bar will be taken from the respective position in the sequence.
+            
+        * scalar (int or str) : all bars will use this color
+        
+    xticklabels : typing.Optional[typing.Union[str,typing.Sequence[str]]]
+        The tick labels for the "outer" groups. The options and their
+        interpretations are:
+        
+        * None : no tick labels will be shown
+        * "default" : the tick labels will be the numeric tick positions
+        * sequence of strings : the tick labels will be the respective strings
     
+    xticklabels_rotation : typing.Union[str,int]
+        The rotation for the `xticklabels`. If a string is given, it should be
+        something which matplotlib can interpret as a rotation.
+        
+    {x,y}label : typing.Optional[str]
+        Labels for the respective axes
+        
+    spacing : float
+        The distance on the x axis between the "outer" groups.
+        
+    y{min,max} : typing.Optional[float]
+        The min and max for the y axis. If not given, the default min is 0
+        (or 1 if a logarithmic scale is used, see option below), and the default
+        max is 2 times the height of the highest bar in any group.
+        
+    use_log_scale : bool
+        Whether to use a normal or logarithmic scale for the y axis
+        
+    hide_first_ytick : bool
+        Whether to hide the first tick mark and label on the y axis. Typically,
+        the first tick mark is either 0 or 1 (depending on the scale of the y
+        axis). This can be distracting to see, so the default is to hide it.
+        
+    show_legend : bool
+        Whether to show the legend
+        
+    title : typing.Optional[str]
+        A title for the axis
+        
+    {tick,label,legend,title}_fontsize : int
+        The font size for the respective elements
+        
+    tick_offset : float
+        The offset of the tick mark and label for the outer groups on the x axis
+        
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        The figure on which the bars were plotted
+    
+    ax : matplotlib.axes.Axes
+        The axis on which the bars were plotted    
     """
     fig, ax = _get_fig_ax(ax)
-    
-    if alphas is None:
-        alphas = [np.ones(len(tpr[0]))] * len(tpr)
-
-    if cmaps is None:
-        cmaps = [default_cmap] * len(alphas)
-    elif len(cmaps) != len(alphas):
-        msg = "The ROC curve must have the same number of cmaps as alphas"
-        raise ValueError(msg)
-
-    for i in range(len(tpr)):
-        l = ""
-        if field_names is not None:
-            l += field_names[i]
-
-        if auc is not None:
-            l += " "
-            l += "AUC: {:.2f}".format(auc[i])
-                
-        color = 'k'
-        for j in range(1, len(fpr[i])):
-            points_y = [tpr[i][j-1], tpr[i][j]]
-            points_x = [fpr[i][j-1], fpr[i][j]]
-            # this plots the lines connecting each point
-            ax.plot( points_x, points_y, color=color, zorder=1 )
-
-
-        ax.scatter(fpr[i], tpr[i], label=l, linewidths=0.1, c=alphas[i], cmap=cmaps[i], zorder=2)
-
-    ax.plot([0,1], [0,1])
-    ax.set_aspect('equal')
-    ax.set_xlim((0,1))
-    ax.set_ylim((0,1))
-
-    ax.legend(loc='lower right', fontsize=legend_font_size)
-
-    if title != None and len(title) > 0:
-        fig.suptitle(title, fontsize=font_size)
-
-    ax.set_xlabel(xlabel, fontsize=font_size)
-    ax.set_ylabel(ylabel, fontsize=font_size)
-    fig.tight_layout()
-    fig.subplots_adjust(top=top_adjustment)
-
-    if out is not None:
-        fig.savefig(out, bbox_inches='tight')
-
-def plot_confusion_matrix(
-        confusion_matrix,
-        ax=None,
-        show_cell_labels:bool=True,
-        show_colorbar:bool=True,
-        title:str="Confusion matrix", 
-        cmap=None, 
-        true_tick_labels = None, 
-        predicted_tick_labels = None, 
-        ylabel:str="True labels", 
-        xlabel:str="Predicted labels", 
-        title_font_size:int=20, 
-        label_font_size:int=15,
-        true_tick_rotation=None,
-        predicted_tick_rotation=None,
-        out=None):
-
-    """ Plot the given confusion matrix
-    """
-    if ax is None:
-        fig, ax = plt.subplots()
-    else:
-        fig = ax.get_figure()
-
-    # a hack to give cmap a default without importing pyplot for arguments
-    if cmap == None:
-        cmap = plt.cm.Blues
-
-    mappable = ax.imshow(confusion_matrix, interpolation='nearest', cmap=cmap)
-    
-    if show_colorbar:
-        fig.colorbar(mappable)
-    ax.grid(False)
-    
-    true_tick_marks = np.arange(confusion_matrix.shape[0])
-    ax.set_ylabel(ylabel, fontsize=label_font_size)
-    ax.set_yticks(true_tick_marks)
-
-    if true_tick_labels is None:
-        true_tick_labels = list(true_tick_marks)
-
-    ax.set_yticklabels(
-        true_tick_labels,
-        fontsize=label_font_size,
-        rotation=true_tick_rotation
-    )
-    
-    predicted_tick_marks = np.arange(confusion_matrix.shape[1])
-    ax.set_xlabel(xlabel, fontsize=label_font_size)
-    ax.set_xticks(predicted_tick_marks)
-
-    if predicted_tick_labels is None:
-        predicted_tick_labels = list(predicted_tick_marks)
-
-    ax.set_xticklabels(
-        predicted_tick_labels,
-        fontsize=label_font_size,
-        rotation=predicted_tick_rotation
-    )
-
-    if show_cell_labels:
-        # the choice of color is based on this SO thread:
-        # https://stackoverflow.com/questions/2509443
-        color_threshold = 125
-
-        s = confusion_matrix.shape
-        it = itertools.product(range(s[0]), range(s[1]))
-        for i,j in it:
-            
-            val = confusion_matrix[i,j]
-            cell_color = cmap(mappable.norm(val))
-
-            # see the SO thread mentioned above
-            color_intensity = (
-                (255*cell_color[0] * 299) +
-                (255*cell_color[1] * 587) +
-                (255*cell_color[2] * 114)
-            ) / 1000
-
-            
-            font_color = "white"
-            if color_intensity > color_threshold:
-                font_color = "black"
-            text = val
-            ax.text(j, i, text, ha='center', va='center', color=font_color,
-                size=label_font_size)
-    
-    ax.set_title(title, fontsize=title_font_size)
-    fig.tight_layout()
-
-    if out is not None:
-        plt.savefig(out, bbox_inches='tight')
-
-def plot_venn_diagram(
-        sets,
-        ax=None,
-        set_labels=None,
-        weighted:bool=False,
-        use_sci_notation:bool=False,
-        labels_fontsize:int=14,
-        counts_fontsize:int=12,
-        sci_notation_limit:float=999):
-    """ This function is a wrapper around matplotlib_venn. It most just makes
-        setting the fonts and and label formatting a bit easier.
-
-        Args:
-            sets: either a dictionary, a list-like of two sets or a list-like of
-                three sets. If a dictionary, it must follow the conventions of
-                matplotlib_venn. If a dictionary is given, the number of sets
-                will be guessed based on the length of a random key.
-
-            ax (mpl.axis): an axis for drawing
-
-            set_labels (list of strings): the label for each set. The order
-                of the labels must match the order of the sets
-
-            weighted (bool): whether to draw a weighted or unweighted diagram
-
-            use_sci_notation (bool): whether to convert numbers to scientific
-                notation
-
-            sci_notation_limit (float): the maximum number to show before
-                switching to scientific notation
-
-            labels_fontsize, counts_fontsize (int): the respective fontsizes
-
-        Returns:
-            matplotlib_venn.VennDiagram: the diagram
-
-        Imports:
-            matplotlib_venn
-
-    """
-
-
-    import matplotlib_venn
-
-    
-    key_len = 0
-    if isinstance(sets, dict):
-        random_key = list(sets.keys())[0]
-        key_len = len(random_key)
-    
-    if (len(sets) == 2) or (key_len == 2):
-        if weighted:
-            v = matplotlib_venn.venn2(sets, ax=ax, set_labels=set_labels)
-        else:
-            v = matplotlib_venn.venn2_unweighted(sets, ax=ax, set_labels=set_labels)
-    elif (len(sets) == 3) or (key_len == 3):
-        if weighted:
-            v = matplotlib_venn.venn3(sets, ax=ax, set_labels=set_labels)
-        else:
-            v = matplotlib_venn.venn3_unweighted(sets, ax=ax, set_labels=set_labels)
-    else:
-        msg = "Only two or three sets are supported"
-        raise ValueError(msg)
-    
-    
-    for l in v.set_labels:
-        if l is not None:
-            l.set_fontsize(labels_fontsize)
-        
-    for l in v.subset_labels:
-        if l is None:
-            continue
-
-        l.set_fontsize(counts_fontsize)
-        
-        if use_sci_notation:
-            val = int(l.get_text())
-            if val > sci_notation_limit:
-                val = "{:.0E}".format(val)
-                l.set_text(val)
-
-    return v
-
-def create_simple_bar_chart(ax,
-                            bars,
-                            labels=None,
-                            colors=None, # this will not accept an (rgba list-like specification)
-                            xticklabels='default',
-                            xticklabels_rotation='vertical',
-                            xlabel=None,
-                            spacing=0,
-                            ymin=None,
-                            ymax=None,
-                            ylabel=None,
-                            use_log_scale=False,
-                            hide_first_ytick=True,
-                            show_legend=False,
-                            title=None,
-                            fontsize=12,
-                            label_fontsize=12,
-                            legend_fontsize=12,
-                            title_fontsize=12,
-                            tick_offset=0.5
-                           ):
-
     
     mpl_bars = []
 
@@ -641,10 +477,6 @@ def create_simple_bar_chart(ax,
     width = 1 - 2*spacing
     width /= len(bars)
     
-    # figure out what to do with "colors"
-    if colors is None:
-        colors = plt.cm.Blues
-
     if isinstance(colors, matplotlib.colors.Colormap):
         # then use "num_bars" equi-distant colors
         ls = np.linspace(0, 1, len(bars))
@@ -683,14 +515,19 @@ def create_simple_bar_chart(ax,
 
     if xticklabels is not None:
         ax.set_xticks(xticks+tick_offset)
-        ax.set_xticklabels(xticklabels, fontsize=fontsize, 
-                        rotation=xticklabels_rotation)
+        ax.set_xticklabels(
+            xticklabels,
+            fontsize=tick_fontsize, 
+            rotation=xticklabels_rotation
+        )
     else:
-        ax.tick_params(axis='x', 
-                        which='both', 
-                        bottom='off',
-                        top='off',
-                        labelbottom='off')
+        ax.tick_params(
+            axis='x', 
+            which='both', 
+            bottom='off',
+            top='off',
+            labelbottom='off'
+        )
 
     ax.set_xlim((-width, len(xticks)+width/2))
     
@@ -725,31 +562,79 @@ def create_simple_bar_chart(ax,
     if title is not None:
         ax.set_title(title, fontsize=title_fontsize)
     
-    return ax
+    return fig, ax
 
 
-def get_diff_counts(data_np):
-    """ This function extracts the differential counts necessary for visualization
-        with stacked_bar_graph. It assumes the counts for each bar are given as a
-        separate row in the numpy 2-d array. Within the rows, the counts are ordered
-        in ascending order. That is, the first column contains the smallest count, the
-        second column contains the next-smallest count, etc.
+def plot_simple_scatter(
+        x:Sequence[float],
+        y:Sequence[float],
+        ax:Optional[plt.Axes]=None,
+        equal_aspect:bool=True,
+        set_lim:bool=True,
+        show_y_x_line:bool=True,
+        xy_line_kwargs:dict={},
+        **kwargs)->FigAx:
+    """ Plot a simple scatter plot of `x` vs. `y` on `ax`
+    
+    See the matplotlib documentation for more keyword arguments and details: https://matplotlib.org/api/_as_gen/matplotlib.pyplot.scatter.html#matplotlib.pyplot.scatter
+    
+    Parameters
+    ----------
+    {x,y} : typing.Sequence[float]
+        The values to plot
         
-        For example, if the columns represnt some sort of filtering approach, then the
-        last column would contain the unfiltered count, the next-to-last column 
-        would give the count after the first round of filtering, etc.
+    ax : typing.Optional[matplotlib.axes.Axes]
+        The axis. If not given, then one will be created.
+        
+    equal_aspect : bool
+        Whether to set the aspect of the axis to `equal`
+        
+    set_lim : bool
+        Whether to automatically set the min and max axis limits
+        
+    show_y_x_line : bool
+        Whether to draw the y=x line. This will look weird if `set_lim` is False.
+        
+    xy_line_kwargs : typing.Mapping
+        keyword arguments for plotting the y=x line, if it plotting
+        
+    **kwargs : <key>=<value> pairs
+        Additional keyword arguments to pass to the scatter function. Some useful
+        keyword arguments are:
+        
+        * `label` : the label for a legend
+        * `marker` : https://matplotlib.org/examples/lines_bars_and_markers/marker_reference.html
+        
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        The figure on which the scatter points were plotted
+    
+    ax : matplotlib.axes.Axes
+        The axis on which the scatter points were plotted
     """
+    fig, ax = _get_fig_ax(ax)
+        
+    ax.scatter(x,y, **kwargs)
+
+    min_val = min(min(x), min(y))
+    max_val = max(max(x), max(y))
+    lim = (min_val, max_val)
     
-    # add an extra column so the diff counts will work
-    zeros = np.zeros((data_np.shape[0], 1))
-    data_np = np.append(zeros, data_np, axis=1)
+    if set_lim:
+        ax.set_xlim(lim)
+        ax.set_ylim(lim)
+        
+    if show_y_x_line:
+        ax.plot(lim, lim, **xy_line_kwargs)
     
-    # get the diffs so the stacks work correctly
-    diff = np.diff(data_np)
-    return diff
+    if equal_aspect:
+        ax.set_aspect('equal')
+        
+    return fig, ax
 
 
-def create_stacked_bar_graph(
+def plot_stacked_bar_graph(
                    ax,                                 # axes to plot onto
                    data,                               # data to plot
                    colors=plt.cm.Blues,                # color map for each level or list of colors
@@ -940,173 +825,21 @@ def create_stacked_bar_graph(
 
     return bars
 
-def plot_simple_scatter(
-        x, y,
-        ax=None,
-        equal_aspect:bool=True,
-        set_lim:bool=True,
-        show_y_x_line:bool=True,
-        xy_line_kwargs:dict={},
-        **kwargs):
-    """ Plot a simple scatter plot of x vs. y on `ax`
-    
-    If `fig` and `ax` are not given, then will be created.
-    
-    See the matplotlib documentation for more keyword arguments and details:
-        https://matplotlib.org/api/_as_gen/matplotlib.pyplot.plot.html
-    
-    Parameters
-    ----------
-    x,y : array-like of numbers
-        The values to plot
-        
-    ax : mpl.Axis
-        An axis for plotting. If this is not given, then a figure and axis will
-        be created.
-        
-    equal_aspect : bool
-        Whether to set the aspect of the axis to `equal`
-        
-    set_lim : bool
-        Whether to automatically set the min and max axis limits
-        
-    show_y_x_line : bool
-        Whether to draw the y=x line. This will look weird if `set_lim` is False.
-        
-    xy_line_kwargs : dict
-        keyword arguments for plotting the y=x line, if it plotting
-        
-    **kwargs : <key>=<value> pairs
-        Additional keyword arguments to pass to the plot function. Some useful
-        keyword arguments are:
-        
-        * `label` : the label for a legend
-        * `marker` : https://matplotlib.org/examples/lines_bars_and_markers/marker_reference.html
-        
-    Returns
-    -------
-    fig, ax : mpl.Figure and mpl.Axis
-        The figure and axis on which the scatter points were plotted
-    """
-    if ax is None:
-        fig, ax = plt.subplots()
-    else:
-        fig = ax.figure
-        
-    ax.scatter(x,y, **kwargs)
-
-    min_val = min(min(x), min(y))
-    max_val = max(max(x), max(y))
-    lim = (min_val, max_val)
-    
-    if set_lim:
-        ax.set_xlim(lim)
-        ax.set_ylim(lim)
-        
-    if show_y_x_line:
-        ax.plot(lim, lim, **xy_line_kwargs)
-    
-    if equal_aspect:
-        ax.set_aspect('equal')
-        
-    return fig, ax
-    
-def plot_trend_line(
-        ax,
-        x,
-        intercept:float,
-        slope:float,
-        power:float,
-        **kwargs):
-    """ Draw the trend line implied by the given coefficients.
-
-    Parameters
-    ----------
-    ax : mpl.Axis
-        The axis on which the line will be drawn
-
-    x : list of floats
-        The points at which the line will be drawn
-
-    intercept, slope, power : floats
-        The coefficients of the trend line
-
-    **kwargs : <key>=<value> pairs
-        Keyword arguments to pass to the ax.plot function (color, etc.)
-
-    Returns
-    -------
-    None, but the line will be drawn on the axis
-    """
-    x = np.sort(x)
-    y = power * x ** 2 + slope * x + intercept
-
-    #Plot trendline
-    ax.plot(x, y, **kwargs)
-
-def draw_rectangle(
-        ax,
-        base_x:float,
-        base_y:float,
-        width:float,
-        height:float,
-        center_x:bool=False, 
-        center_y:bool=False,
-        **kwargs):
-    """ Draw a rectangle at the given x and y coordinates.
-    
-    Optionally, these can be adjusted such that they are the respective
-    centers rather than edge values.
-
-    Parameters
-    ----------
-    ax: mpl.Axis
-        The axis on which the rectangle will be drawn
-
-    base_{x,y}: number
-        The base x and y coordinates
-
-    width, height: number
-        The width (change in x) and height (change in y) of the rectangle
-
-    center_{x,y}: bool
-        Whether to adjust the x and y coordinates such that they become the
-        center rather than lower left. In particular, if center_x is True, then
-        base_x will be shifted left by width/2; likewise, if center_y is True,
-        then base_y will be shifted down by height/2.
-
-    kwargs: key=value pairs
-        Additional keywords are passed to the patches.Rectangle constructor
-
-    base
-    """
-    y_offset = 0
-    if center_y:
-        y_offset = height/2
-        
-    x_offset = 0
-    if center_x:
-        x_offset = width/2
-        
-    y = base_y - y_offset
-    x = base_x - x_offset
-    ax.add_patch(patches.Rectangle((x,y), width, height, **kwargs))   
-
 def plot_sorted_values(
-        values,
+        values:Sequence[float],
         ymin:Optional[float]=None,
         ymax:Optional[float]=None,
         ax:Optional[plt.Axes]=None,
-        scale_x=False,
-        **kwargs):
+        scale_x:bool=False,
+        **kwargs) -> FigAx:
     """ Sort `values` and plot them
 
     Parameters
     ----------
-    values : list-like of numbers
+    values : typing.Sequence[float]
         The values to plot
 
-    y_{min,max} : floats
+    y_{min,max} : float
         The min and max values for the y-axis. If not given, then these
         default to the minimum and maximum values in the list.
         
@@ -1126,21 +859,16 @@ def plot_sorted_values(
         * `lw` : the line width
         * `ls` : https://matplotlib.org/gallery/lines_bars_and_markers/line_styles_reference.html
         * `marker` : https://matplotlib.org/examples/lines_bars_and_markers/marker_reference.html
-        
 
     Returns
     -------
-    fig : mpl.Figure
+    fig :  matplotlib.figure.Figure
         The Figure associated with `ax`, or a new Figure
 
-    ax : mpl.Axis
+    ax : matplotlib.axes.Axes
         Either `ax` or a new Axis
     """
-    
-    if ax is None:
-        fig, ax = plt.subplots()
-    else:
-        fig = ax.figure
+    fig, ax = _get_fig_ax(ax)
         
     y = np.sort(values)
     
@@ -1161,3 +889,509 @@ def plot_sorted_values(
     ax.set_xlim((0, len(y)))
     
     return fig, ax 
+
+###
+# High-level, ML and statistics plotting helpers
+###
+def plot_confusion_matrix(
+        confusion_matrix:np.ndarray,
+        ax:Optional[plt.Axes]=None,
+        show_cell_labels:bool=True,
+        show_colorbar:bool=True,
+        title:Optional[str]="Confusion matrix", 
+        cmap:matplotlib.colors.Colormap=plt.cm.Blues, 
+        true_tick_labels:Optional[Sequence[str]]=None, 
+        predicted_tick_labels:Optional[Sequence[str]]=None, 
+        ylabel:Optional[str]="True labels", 
+        xlabel:Optional[str]="Predicted labels", 
+        title_font_size:int=20, 
+        label_font_size:int=15,
+        true_tick_rotation:Optional[IntOrString]=None,
+        predicted_tick_rotation:Optional[IntOrString]=None,
+        out:Optional[str]=None) -> FigAx:
+
+    """ Plot the given confusion matrix
+    
+    Parameters
+    -----------
+    confusion_matrix : numpy.ndarray
+        A 2-d array, presumably from :func:`sklearn.metrics.confusion_matrix`
+        or something similar. The rows (Y axis) are the "true" classes while
+        the columns (X axis) are the "predicted" classes.
+    
+    ax : typing.Optional[matplotlib.axes.Axes]
+        The axis. If not given, then one will be created.
+        
+    show_cell_labels : bool
+        Whether to show the values within each cell
+        
+    show_colorbar : bool
+        Whether to show a color bar
+        
+    title : typing.Optional[str]
+        If given, the title of the axis is set to this value
+        
+    cmap : matplotlib.colors.Colormap
+        A colormap to determine the cell colors
+    
+    {true,predicted}_tick_labels : typing.Optional[typing.Sequence[str]]
+        Text for the Y (true) and X (predicted) axis, respectively
+        
+    {y,x}label : typing.Optional[str]
+        Text for the respective labels
+    
+    {title,label}_font_size : int
+        The font sizes for the respective elements. The class labels (on the
+        tick marks) use the `label_font_size`.
+        
+    {true,predicted}_tick_rotation : typing.Optional[IntOrString]
+        The rotation arguments for the respective tick labels. Please see
+        the matplotlib text documentation (https://matplotlib.org/api/text_api.html#matplotlib.text.Text)
+        for more details.
+        
+    out : typing.Optional[str]
+        If given, the plot will be saved to this file.
+        
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        The figure on which the confusion matrix was plotted
+    
+    ax : matplotlib.axes.Axes
+        The axis on which the confusion matrix was plotted
+    """
+    fig, ax = _get_fig_ax(ax)
+
+    # a hack to give cmap a default without importing pyplot for arguments
+    if cmap == None:
+        cmap = plt.cm.Blues
+
+    mappable = ax.imshow(confusion_matrix, interpolation='nearest', cmap=cmap)
+    
+    if show_colorbar:
+        fig.colorbar(mappable)
+    ax.grid(False)
+    
+    true_tick_marks = np.arange(confusion_matrix.shape[0])
+    ax.set_yticks(true_tick_marks)
+    
+    if ylabel is not None:
+        ax.set_ylabel(ylabel, fontsize=label_font_size)
+
+    if true_tick_labels is None:
+        true_tick_labels = list(true_tick_marks)
+
+    ax.set_yticklabels(
+        true_tick_labels,
+        fontsize=label_font_size,
+        rotation=true_tick_rotation
+    )
+    
+    predicted_tick_marks = np.arange(confusion_matrix.shape[1])
+    ax.set_xticks(predicted_tick_marks)
+    
+    if xlabel is not None:
+        ax.set_xlabel(xlabel, fontsize=label_font_size)
+
+    if predicted_tick_labels is None:
+        predicted_tick_labels = list(predicted_tick_marks)
+
+    ax.set_xticklabels(
+        predicted_tick_labels,
+        fontsize=label_font_size,
+        rotation=predicted_tick_rotation
+    )
+
+    if show_cell_labels:
+        # the choice of color is based on this SO thread:
+        # https://stackoverflow.com/questions/2509443
+        color_threshold = 125
+
+        s = confusion_matrix.shape
+        it = itertools.product(range(s[0]), range(s[1]))
+        for i,j in it:
+            
+            val = confusion_matrix[i,j]
+            cell_color = cmap(mappable.norm(val))
+
+            # see the SO thread mentioned above
+            color_intensity = (
+                (255*cell_color[0] * 299) +
+                (255*cell_color[1] * 587) +
+                (255*cell_color[2] * 114)
+            ) / 1000
+
+            
+            font_color = "white"
+            if color_intensity > color_threshold:
+                font_color = "black"
+            text = val
+            ax.text(j, i, text, ha='center', va='center', color=font_color,
+                size=label_font_size)
+    
+    if title is not None:
+        ax.set_title(title, fontsize=title_font_size)
+        
+    fig.tight_layout()
+
+    if out is not None:
+        plt.savefig(out, bbox_inches='tight')
+        
+    return fig, ax
+
+def plot_roc_curve(
+        tpr:Sequence[Sequence[float]],
+        fpr:Sequence[Sequence[float]],
+        auc:Optional[float]=None,
+        ax:Optional[plt.Axes]=None,
+        method_names:Optional[Sequence[str]]=None,
+        out:Optional[str]=None,
+        cmaps:Optional[Sequence[matplotlib.colors.Colormap]]=None,
+        default_cmap:matplotlib.colors.Colormap=plt.cm.Blues,
+        alphas:Optional[Sequence[float]]=None, 
+        title:Optional[str]="Receiver operating characteristic curves",
+        xlabel:Optional[str]="False positive rate",
+        ylabel:Optional[str]="True positive rate",
+        title_font_size:int=25,
+        label_font_size:int=20,
+        legend_font_size:int=15) -> FigAx:
+    """ Plot the ROC curve for the given `fpr` and `tpr` values
+    
+    Currently, this function plots multiple ROC curves.
+    
+    Optionally, add a note of the `auc`.
+    
+    Parameters
+    ----------
+    tpr : typing.Sequence[typing.Sequence[float]]
+        The true positive rate at each threshold
+    
+    fpr : typing.Sequence[typing.Sequence[float]]
+        The false positive rate at each threshold
+        
+    auc : typing.Optional[float]
+        The calculated area under the ROC curve
+    
+    ax : typing.Optional[matplotlib.axes.Axes]
+        The axis. If not given, then one will be created.
+        
+    method_names : typing.Optional[typing.Sequence[str]]
+        The name of each method
+        
+    out : typing.Optional[str]
+        If given, the plot will be saved to this file.
+        
+    cmaps : typing.Optional[typing.Sequence[matplotlib.colors.Colormap]]
+        Color maps for each ROC curve
+        
+    default_cmap : matplotlib.colors.Colormap
+        A colormap for each method
+    
+    alphas : typing.Optional[typing.Sequence[float]]
+        An alpha value for each method
+        
+    title : typing.Optional[str]
+        If given, the title of the axis is set to this value
+        
+    {x,y}label : typing.Optional[str]
+        Text for the respective labels
+        
+    {title,label,legend}_font_size : int
+        The font sizes for the respective elements
+    
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        The figure on which the ROC curves were plotted
+    
+    ax : matplotlib.axes.Axes
+        The axis on which the ROC curves were plotted
+    """
+    fig, ax = _get_fig_ax(ax)
+    
+    if alphas is None:
+        alphas = [np.ones(len(tpr[0]))] * len(tpr)
+
+    if cmaps is None:
+        cmaps = [default_cmap] * len(alphas)
+    elif len(cmaps) != len(alphas):
+        msg = "The ROC curve must have the same number of cmaps as alphas"
+        raise ValueError(msg)
+
+    for i in range(len(tpr)):
+        l = ""
+        if method_names is not None:
+            l += method_names[i]
+
+        if auc is not None:
+            l += " "
+            l += "AUC: {:.2f}".format(auc[i])
+                
+        color = 'k'
+        for j in range(1, len(fpr[i])):
+            points_y = [tpr[i][j-1], tpr[i][j]]
+            points_x = [fpr[i][j-1], fpr[i][j]]
+            # this plots the lines connecting each point
+            ax.plot( points_x, points_y, color=color, zorder=1 )
+
+
+        ax.scatter(fpr[i], tpr[i], label=l, linewidths=0.1, c=alphas[i], cmap=cmaps[i], zorder=2)
+
+    ax.plot([0,1], [0,1])
+    ax.set_aspect('equal')
+    ax.set_xlim((0,1))
+    ax.set_ylim((0,1))
+
+    ax.legend(loc='lower right', fontsize=legend_font_size)
+
+    if title is not None and len(title) > 0:
+        ax.set_title(title, fontsize=title_font_size)
+
+    if xlabel is not None:
+        ax.set_xlabel(xlabel, fontsize=label_font_size)
+        
+    if ylabel is not None:
+        ax.set_ylabel(ylabel, fontsize=label_font_size)
+        
+    if out is not None:
+        fig.savefig(out, bbox_inches='tight')
+        
+    return fig, ax
+    
+def plot_trend_line(
+        x:Sequence[float],
+        intercept:float,
+        slope:float,
+        power:float,
+        ax:Optional[plt.Axes]=None,
+        **kwargs) -> FigAx:
+    """ Draw the trend line implied by the given coefficients.
+
+    Parameters
+    ----------
+    x : typing.Sequence[float]
+        The points at which the function will be evaluated and where 
+        the line will be drawn
+
+    {intercept,slope,power} : float
+        The coefficients of the trend line. Presumably, these come from
+        :func:`pyllars.stats_utils.fit_with_least_squares` or something
+        similar.
+    
+    ax : typing.Optional[matplotlib.axes.Axes]
+        The axis. If not given, then one will be created.
+
+    **kwargs : <key>=<value> pairs
+        Keyword arguments to pass to the ax.plot function (color, etc.). Please
+        consult the matplotlib documentation for more details: https://matplotlib.org/api/_as_gen/matplotlib.lines.Line2D.html#matplotlib.lines.Line2D
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        The figure on which the trend line was plotted
+    
+    ax : matplotlib.axes.Axes
+        The axis on which the trend line was plotted
+    """
+    fig, ax = _get_fig_ax(ax)
+    
+    x = np.sort(x)
+    y = power * x ** 2 + slope * x + intercept
+
+    #Plot trendline
+    ax.plot(x, y, **kwargs)
+    
+    return fig, ax
+
+def plot_venn_diagram(
+        sets:MapOrSequence,
+        ax:Optional[plt.Axes]=None,
+        set_labels:Optional[Sequence[str]]=None,
+        weighted:bool=False,
+        use_sci_notation:bool=False,
+        sci_notation_limit:float=999,
+        labels_fontsize:int=14,
+        counts_fontsize:int=12) -> matplotlib_venn._common.VennDiagram:
+    """ Wrap the matplotlib_venn package.
+    
+    Please consult the package documentation for more details: https://github.com/konstantint/matplotlib-venn
+    
+    **N.B.** Unlike most of the other high-level plotting helpers,
+    this function returns the venn diagram object rather than the
+    figure and axis objects.
+    
+    Parameters
+    -----------
+    set : typing.Union[typing.Mapping,typing.Sequence]
+        If a dictionary, it must follow the conventions of 
+        `matplotlib_venn`. If a dictionary is given, the number of sets
+        will be guessed based on the length of one of the entries.
+        
+        If a sequence is given, then it must be of length two or three.
+        
+        The type of venn diagram will be based on the number of sets.
+    
+    ax : typing.Optional[matplotlib.axes.Axes]
+        The axis. If not given, then one will be created.
+        
+    set_labels : typing.Optional[typing.Sequence[str]]
+        The label for each set. The order of the labels must match the
+        order of the sets.
+    
+    weighted : bool
+        Whether the diagram is weighted (in which the size of the circles
+        in the venn diagram are based on the number of elements) or
+        unweighted (in which all circles are the same size)
+        
+    use_sci_notation : bool
+        Whether to convert numbers to scientific notation
+        
+    sci_notation_limit : float
+        The maximum number to show before switching to scientific
+        notation
+        
+    {labels,counts}_fontsize : int
+        The respective font sizes
+        
+    Returns
+    ---------
+    venn_diagram : matplotlib_venn._common.VennDiagram
+        The venn diagram
+    """
+    key_len = 0
+    if isinstance(sets, dict):
+        random_key = list(sets.keys())[0]
+        key_len = len(random_key)
+    
+    if (len(sets) == 2) or (key_len == 2):
+        if weighted:
+            v = matplotlib_venn.venn2(sets, ax=ax, set_labels=set_labels)
+        else:
+            v = matplotlib_venn.venn2_unweighted(sets, ax=ax, set_labels=set_labels)
+            
+    elif (len(sets) == 3) or (key_len == 3):
+        if weighted:
+            v = matplotlib_venn.venn3(sets, ax=ax, set_labels=set_labels)
+        else:
+            v = matplotlib_venn.venn3_unweighted(sets, ax=ax, set_labels=set_labels)
+    else:
+        msg = "Only two or three sets are supported"
+        raise ValueError(msg)
+    
+    
+    for l in v.set_labels:
+        if l is not None:
+            l.set_fontsize(labels_fontsize)
+        
+    for l in v.subset_labels:
+        if l is None:
+            continue
+
+        l.set_fontsize(counts_fontsize)
+        
+        if use_sci_notation:
+            val = int(l.get_text())
+            if val > sci_notation_limit:
+                val = "{:.0E}".format(val)
+                l.set_text(val)
+
+    return v
+
+###
+# Other helpers
+###
+def add_fontsizes_to_args(
+        args:argparse.Namespace,
+        legend_title_fontsize:int=12,
+        legend_fontsize:int=10,
+        title_fontsize:int=20,
+        label_fontsize:int=15,
+        ticklabels_fontsize:int=10):
+    """ Add reasonable default fontsize values to `args`
+    """
+    args.legend_title_fontsize = legend_title_fontsize
+    args.legend_fontsize = legend_fontsize
+    args.title_fontsize = title_fontsize
+    args.label_fontsize = label_fontsize
+    args.ticklabels_fontsize = ticklabels_fontsize
+
+def draw_rectangle(
+        ax:plt.Axes,
+        base_x:float,
+        base_y:float,
+        width:float,
+        height:float,
+        center_x:bool=False, 
+        center_y:bool=False,
+        **kwargs) -> FigAx:
+    """ Draw a rectangle at the given x and y coordinates.
+    
+    Optionally, these can be adjusted such that they are the respective
+    centers rather than edge values.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        The axis on which the rectangle will be drawn
+
+    base_{x,y} : float
+        The base x and y coordinates
+
+    {width,height} : float
+        The width (change in x) and height (change in y) of the rectangle
+
+    center_{x,y}: bool
+        Whether to adjust the x and y coordinates such that they become the
+        center rather than lower left. In particular, if `center_x` is `True`,
+        then `base_x` will be shifted left by `width/2`; likewise, if `center_y`
+        is `True`, then `base_y` will be shifted down by `height/2`.
+
+    **kwargs : key=value pairs
+        Additional keywords are passed to the patches.Rectangle constructor.
+        Please see the matplotlib documentation for more details: https://matplotlib.org/api/_as_gen/matplotlib.patches.Rectangle.html
+        
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        The figure on which the rectangle was drawn
+    
+    ax : matplotlib.axes.Axes
+        The axis on which the rectangle was drawn
+    """
+    fig, ax = _get_fig_ax(ax)
+    
+    y_offset = 0
+    if center_y:
+        y_offset = height/2
+        
+    x_offset = 0
+    if center_x:
+        x_offset = width/2
+        
+    y = base_y - y_offset
+    x = base_x - x_offset
+    ax.add_patch(patches.Rectangle((x,y), width, height, **kwargs))  
+    
+    return fig, ax
+
+
+
+def get_diff_counts(data_np):
+    """ This function extracts the differential counts necessary for visualization
+        with stacked_bar_graph. It assumes the counts for each bar are given as a
+        separate row in the numpy 2-d array. Within the rows, the counts are ordered
+        in ascending order. That is, the first column contains the smallest count, the
+        second column contains the next-smallest count, etc.
+        
+        For example, if the columns represnt some sort of filtering approach, then the
+        last column would contain the unfiltered count, the next-to-last column 
+        would give the count after the first round of filtering, etc.
+    """
+    
+    # add an extra column so the diff counts will work
+    zeros = np.zeros((data_np.shape[0], 1))
+    data_np = np.append(zeros, data_np, axis=1)
+    
+    # get the diffs so the stacks work correctly
+    diff = np.diff(data_np)
+    return diff
