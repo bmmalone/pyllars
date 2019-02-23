@@ -55,15 +55,6 @@ Other helpers
     draw_rectangle
     get_diff_counts
 
-
-Constants
------------
-
-.. autosummary::
-    VALID_AXIS_VALUES
-    VALID_WHICH_VALUES
-    X_AXIS_VALUES
-    Y_AXIS_VALUES
     
 
 
@@ -72,4 +63,3 @@ Definitions
 .. automodule:: pyllars.mpl_utils
     :members:
     :private-members:
-    :exclude-members: 

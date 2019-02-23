@@ -12,17 +12,9 @@ Parsing text
 .. autosummary::
     clean_doc
 
-Constants
------------
-
-.. autosummary::
-    ENGLISH_SNOWBALL_STEMMER
-    ENGLISH_STOP_WORDS
-    STRING_PUNCTUATION_TABLE
-
 Definitions
 -------------
 .. automodule:: pyllars.nlp_utils
     :members:
     :private-members:
-    :exclude-members: 
+    :exclude-members: ENGLISH_SNOWBALL_STEMMER, ENGLISH_STOP_WORDS, STRING_PUNCTUATION_TABLE
