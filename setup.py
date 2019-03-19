@@ -37,6 +37,7 @@ install_requires = [
     'statsmodels',
     'tables',
     'tqdm',
+    'xgboost',
     'xlrd',
 ]
 
