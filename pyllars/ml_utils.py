@@ -9,6 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import collections
+import itertools
 import joblib
 import json
 import networkx as nx
@@ -659,7 +660,7 @@ def collect_regression_metrics(
 
 def collect_multiclass_classification_metrics(
         y_true : np.ndarray,
-        y_pred : np.ndarray,
+        y_score : np.ndarray,
         prefix:str = "") -> Dict:
     """ Calculate various multi-class classification performance metrics
     
@@ -722,7 +723,7 @@ def collect_multiclass_classification_metrics(
          "{}macro_recall".format(prefix):  sklearn.metrics.recall_score(y_true, y_pred,
             average='macro'),
          "{}hand_and_till_m_score".format(prefix): calc_hand_and_till_m_score(y_true, y_score),
-         "{}provost_and_domingos_auc": calc_provost_and_domingos_auc(y_true, y_score)
+         "{}provost_and_domingos_auc".format(prefix): calc_provost_and_domingos_auc(y_true, y_score)
     }
 
     return ret
