@@ -11,6 +11,7 @@ Welcome to the documentation for pyllars!
    
    Introduction <intro>
    api
+   domain
    tutorials
 
 

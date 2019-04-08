@@ -1,7 +1,7 @@
 API
 ****
 
-This is the API for the pyllars library.
+This is the API for the pyllars library. These utilities are generally useful across different problem domains.
 
 
 .. toctree::
