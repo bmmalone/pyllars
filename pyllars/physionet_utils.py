@@ -1,6 +1,15 @@
 """
 This module contains functions for working with datasets from physionet,
-including MIMIC and the Computing in Cardiology Challenge datasets.
+including MIMIC and the Computing in Cardiology Challenge 2012 datasets.
+
+In the future, this module may be renamed and updated to also work with
+the eICU dataset.
+
+Please see the respective documentation for more details:
+
+* MIMIC-III: https://mimic.physionet.org/about/mimic/
+* CINC 2012: https://physionet.org/challenge/2012/
+* eICU: https://eicu-crd.mit.edu/about/eicu/
 """
 
 import logging
@@ -17,6 +26,9 @@ from dask import dataframe as dd
 
 import pyllars.pandas_utils as pd_utils
 import pyllars.utils as utils
+
+import typing
+from typing import Iterable, List
 
 ###
 # MIMIC
@@ -50,7 +62,7 @@ def _fix_mimic_icd(icd):
         
     return icd
 
-def fix_mimic_icds(icds):
+def fix_mimic_icds(icds:Iterable[str]) -> List[str]:
     """ Add the decimal to the correct location for the given ICD codes
 
     Since adding the decimals is a string-based operation, it can be somewhat
@@ -59,12 +71,12 @@ def fix_mimic_icds(icds):
 
     Parameters
     ----------
-    icds: list-like of MIMIC icd codes
+    icds : typing.Iterable[str]
         ICDs from the various mimic ICD columns
 
     Returns
     -------
-    fixed_icds: list of strings
+    fixed_icds: List[str]
         The ICD codes with decimals in the correct location
     """
     fixed_icds = [
@@ -74,25 +86,29 @@ def fix_mimic_icds(icds):
     return fixed_icds
 
 
-def get_admissions(mimic_base, to_pandas=True, **kwargs):
+def get_admissions(mimic_base:str, **kwargs) -> pd.DataFrame:
     """ Load the ADMISSIONS table
+    
+    This function automatically treats the following columns as date-times:
+    
+    * `ADMITTIME`
+    * `DISCHTIME`
+    * `DEATHTIME`
+    * `EDREGTIME`
+    * `EDOUTTIME`
 
     Parameters
     ----------
-    mimic_base: path-like
+    mimic_base : str
         The path to the main MIMIC folder
 
-    to_pandas: bool
-        Whether to read the table as a pandas (True) or dask (False) data frame
-
-    kwargs: key=value pairs
-        Additional key words to pass to the appropriate `read` function
+    kwargs: <key>=<value> pairs
+        Additional key words to pass to `read_df`
 
     Returns
     -------
-    admissions: pd.DataFrame or dd.DataFrame
-        The admissions table as either a pandas or dask data frame,
-            depending on the value of to_pandas
+    admissions : pandas.DataFrame
+        The admissions table as a pandas data frame
     """
     date_cols = [
         'ADMITTIME',
@@ -101,48 +117,39 @@ def get_admissions(mimic_base, to_pandas=True, **kwargs):
         'EDREGTIME',
         'EDOUTTIME'
     ]
+    
     admissions = os.path.join(mimic_base, "ADMISSIONS.csv.gz")
-
-    if to_pandas:
-        admissions = pd_utils.read_df(admissions, parse_dates=date_cols, **kwargs)
-    else:
-        admissions = dd.read_csv(admissions, parse_dates=date_cols, **kwargs)
+    admissions = pd_utils.read_df(admissions, parse_dates=date_cols, **kwargs)
 
     return admissions
 
 
-def get_diagnosis_icds(mimic_base, to_pandas=True,
-    drop_incomplete_records=False, fix_icds=False):
-    """ Load the DIAGNOSES_ICDS table
+def get_diagnosis_icds(
+        mimic_base:str,
+        drop_incomplete_records:bool=False,
+        fix_icds:bool=False) -> pd.DataFrame:
+    """ Load the `DIAGNOSES_ICDS` table
 
     Parameters
     ----------
-    mimic_base: path-like
+    mimic_base : str
         The path to the main MIMIC folder
 
-    to_pandas: bool
-        Whether to read the table as a pandas (True) or dask (False) data frame
-
-    drop_incomplete_records: bool
+    drop_incomplete_records : bool
         Some of the ICD codes are missing. If this flag is `True`, then those
         records will be removed.
 
-    fix_icds: bool
+    fix_icds : bool
         Whether to add the decimal point in the correct position for the
         ICD codes
 
     Returns
     -------
-    diagnosis_icds: pd.DataFrame or dd.DataFrame
-        The diagnosis ICDs table as either a pandas or dask data frame,
-            depending on the value of to_pandas
+    diagnosis_icds : pandas.DataFrame
+        The diagnosis ICDs table as a pandas data frame
     """
     diagnosis_icds = os.path.join(mimic_base, "DIAGNOSES_ICD.csv.gz")
-
-    if to_pandas:
-        diagnosis_icds = pd_utils.read_df(diagnosis_icds)
-    else:
-        diagnosis_icds = dd.read_csv(diagnosis_icds)
+    diagnosis_icds = pd_utils.read_df(diagnosis_icds)
 
     if fix_icds:
         msg = "[mimic_utils]: Adding decimals to ICD codes"
@@ -159,17 +166,17 @@ def get_diagnosis_icds(mimic_base, to_pandas=True,
 
     return diagnosis_icds
 
-def get_followups(mimic_base):
+def get_followups(mimic_base:str) -> pd.DataFrame:
     """ Load the (constructed) FOLLOWUPS table
 
     Parameters
     ----------
-    mimic_base: path-like
+    mimic_base : str
         The path to the main MIMIC folder
 
     Returns
     -------
-    df_followups: pd.DataFrame
+    df_followups : pandas.DataFrame
         A data frame containing the followup information
     """
     followups = os.path.join(mimic_base, 'FOLLOWUPS.jpkl.gz')

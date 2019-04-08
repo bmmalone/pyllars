@@ -46,6 +46,7 @@ logger = logging.getLogger(__name__)
 
 import itertools
 import json
+import pandas as pd
 
 import pyllars.ml_utils as ml_utils
 import pyllars.pandas_utils as pd_utils
@@ -53,7 +54,7 @@ import pyllars.pandas_utils as pd_utils
 def get_hp_fold_iterator(hp_grid, num_folds):
     """ Create an iterator over all combinations of hyperparameters and folds
     """
-    hyperparam_grid = list(hyperparam_grid)
+    hp_grid = list(hp_grid)
     folds = list(range(num_folds))
 
     hp_fold_it = itertools.product(hp_grid, folds)

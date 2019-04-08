@@ -50,6 +50,8 @@ def calculate_univariate_gaussian_kl(
         mean_q_var_q:Tuple[float,float]) -> float:
     """ Calculate the (asymmetric) KL-divergence between the univariate
     Gaussian distributions :math:`p` and :math:`q`
+    
+    That is, this calculates KL(p||q).
 
     **N.B.** This function uses the variance!
 
@@ -76,9 +78,9 @@ def calculate_univariate_gaussian_kl(
     (mean_p, var_p) = mean_p_var_p
     (mean_q, var_q) = mean_q_var_q
 
-    t_1 = 0.5 * (np.log(var_p) - np.log(var_q))
-    t_2 = np.log(mean_q*mean_q + mean_p*mean_p + var_q - 2*mean_q*mean_p)
-    t_3 = np.log(2*var_p)
+    t_1 = 0.5 * (np.log(var_q) - np.log(var_p))
+    t_2 = np.log(mean_q*mean_q + mean_p*mean_p + var_p - 2*mean_q*mean_p)
+    t_3 = np.log(2*var_q)
     kl = t_1 - 0.5 + np.exp(t_2 - t_3)
     return kl
 
