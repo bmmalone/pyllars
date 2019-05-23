@@ -1043,18 +1043,19 @@ def plot_roc_curve(
         tpr:Sequence[Sequence[float]],
         fpr:Sequence[Sequence[float]],
         auc:Optional[float]=None,
+        show_points:bool=True,
         ax:Optional[plt.Axes]=None,
         method_names:Optional[Sequence[str]]=None,
         out:Optional[str]=None,
-        cmaps:Optional[Sequence[matplotlib.colors.Colormap]]=None,
-        default_cmap:matplotlib.colors.Colormap=plt.cm.Blues,
+        line_colors:Optional[Sequence]=None,
+        point_colors:Optional[Sequence]=None,
         alphas:Optional[Sequence[float]]=None, 
         title:Optional[str]="Receiver operating characteristic curves",
         xlabel:Optional[str]="False positive rate",
         ylabel:Optional[str]="True positive rate",
-        title_font_size:int=25,
-        label_font_size:int=20,
-        legend_font_size:int=15) -> FigAx:
+        title_font_size:int=20,
+        label_font_size:int=15,
+        ticklabels_font_size:int=15) -> FigAx:
     """ Plot the ROC curve for the given `fpr` and `tpr` values
     
     Currently, this function plots multiple ROC curves.
@@ -1071,6 +1072,9 @@ def plot_roc_curve(
         
     auc : typing.Optional[float]
         The calculated area under the ROC curve
+        
+    show_points : bool
+        Whether to plot points at each threshold
     
     ax : typing.Optional[matplotlib.axes.Axes]
         The axis. If not given, then one will be created.
@@ -1081,11 +1085,11 @@ def plot_roc_curve(
     out : typing.Optional[str]
         If given, the plot will be saved to this file.
         
-    cmaps : typing.Optional[typing.Sequence[matplotlib.colors.Colormap]]
-        Color maps for each ROC curve
+    line_colors : typing.Optional[typing.Sequence[color]]
+        The color of each ROC line
         
-    default_cmap : matplotlib.colors.Colormap
-        A colormap for each method
+    point_colors : typing.Optional[typing.Sequence[color]]
+        The color of the points on each each ROC line
     
     alphas : typing.Optional[typing.Sequence[float]]
         An alpha value for each method
@@ -1096,7 +1100,7 @@ def plot_roc_curve(
     {x,y}label : typing.Optional[str]
         Text for the respective labels
         
-    {title,label,legend}_font_size : int
+    {title,label,ticklabels}_font_size : int
         The font sizes for the respective elements
     
     Returns
@@ -1110,39 +1114,49 @@ def plot_roc_curve(
     fig, ax = _get_fig_ax(ax)
     
     if alphas is None:
-        alphas = [np.ones(len(tpr[0]))] * len(tpr)
-
-    if cmaps is None:
-        cmaps = [default_cmap] * len(alphas)
-    elif len(cmaps) != len(alphas):
-        msg = "The ROC curve must have the same number of cmaps as alphas"
+        alphas = [1.0] * len(tpr)
+    elif len(alphas) != len(tpr):
+        msg = "The ROC curve must have the same number of alpha values as methods"
+        raise ValueError(msg)
+        
+    if line_colors is None:
+        line_colors = ['k'] * len(tpr)
+    elif len(line_colors) != len(tpr):
+        msg = "The ROC curve must have the same number of line colors as methods"
+        raise ValueError(msg)
+    
+    if point_colors is None:
+        point_colors = ['k'] * len(tpr)
+    elif len(point_colors) != len(tpr):
+        msg = "The ROC curve must have the same number of point colors as methods"
         raise ValueError(msg)
 
     for i in range(len(tpr)):
         l = ""
         if method_names is not None:
-            l += method_names[i]
+            l += str(method_names[i])
 
         if auc is not None:
             l += " "
             l += "AUC: {:.2f}".format(auc[i])
+           
+        
+        if show_points:
+            for j in range(1, len(fpr[i])):
+                points_y = [tpr[i][j-1], tpr[i][j]]
+                points_x = [fpr[i][j-1], fpr[i][j]]
+                # this plots the lines connecting each point
+                ax.plot(points_x, points_y, color=line_colors[i], zorder=1, alpha=alphas[i])
                 
-        color = 'k'
-        for j in range(1, len(fpr[i])):
-            points_y = [tpr[i][j-1], tpr[i][j]]
-            points_x = [fpr[i][j-1], fpr[i][j]]
-            # this plots the lines connecting each point
-            ax.plot( points_x, points_y, color=color, zorder=1 )
+            ax.scatter(fpr[i], tpr[i], label=l, linewidths=0.1, c=point_colors[i], alpha=alphas[i], zorder=2)
+        else:
+            ax.plot(fpr[i], tpr[i], lw=0.2, alpha=alphas[i], c=line_colors[i], label=l)
 
-
-        ax.scatter(fpr[i], tpr[i], label=l, linewidths=0.1, c=alphas[i], cmap=cmaps[i], zorder=2)
-
-    ax.plot([0,1], [0,1])
+    # plot 
+    ax.plot([0,1], [0,1], label='Luck', color='r', ls='--', lw=2)
     ax.set_aspect('equal')
-    ax.set_xlim((0,1))
-    ax.set_ylim((0,1))
-
-    ax.legend(loc='lower right', fontsize=legend_font_size)
+    ax.set_xlim((-0.05, 1.05))
+    ax.set_ylim((-0.05, 1.05))
 
     if title is not None and len(title) > 0:
         ax.set_title(title, fontsize=title_font_size)
@@ -1152,6 +1166,8 @@ def plot_roc_curve(
         
     if ylabel is not None:
         ax.set_ylabel(ylabel, fontsize=label_font_size)
+        
+    set_ticklabels_fontsize(ax, ticklabels_font_size)
         
     if out is not None:
         fig.savefig(out, bbox_inches='tight')
