@@ -61,7 +61,7 @@ class fold_data(NamedTuple):
     X_validation : np.ndarray
     y_validation : np.ndarray
     train_indices : np.ndarray
-    test_indicates : np.ndarray
+    test_indices : np.ndarray
     validation_indices : np.ndarray
 
 class split_masks(NamedTuple):
