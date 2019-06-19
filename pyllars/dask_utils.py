@@ -117,7 +117,7 @@ def add_dask_options(
         default=cluster_location)
 
     dask_options.add_argument('--num-procs', help="The number of processes to use "
-        "for a local cluster", type=int, default=num_cpus)
+        "for a local cluster", type=int, default=num_procs)
 
     dask_options.add_argument('--num-threads-per-proc', help="The number of "
         "threads to allocate for each process. So the total number of threads "
