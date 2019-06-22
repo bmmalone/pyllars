@@ -4,6 +4,15 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.0.2] - In progress
+### Added
+- Additional documentation
+- Helper for plotting binary prediction scores
+- precision@k metric for ML ranking tasks
+
+### Updated
+- Helper for plotting ROC curves to handle arrays of colors
+
 ## [1.0.1] - 2019-08-04
 ### Added
 - Helper for `xgboost`

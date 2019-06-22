@@ -893,6 +893,102 @@ def plot_sorted_values(
 ###
 # High-level, ML and statistics plotting helpers
 ###
+def plot_binary_prediction_scores(
+        y_scores:Sequence[float],
+        y_true:Sequence[int],
+        positive_label:int=1,
+        positive_line_color='g',
+        negative_line_color='r',
+        line_kwargs:typing.Mapping={},
+        positive_line_kwargs:typing.Mapping={},
+        negative_line_kwargs:typing.Mapping={},
+        title:Optional[str]=None,
+        ylabel:Optional[str]="Score",
+        xlabel:Optional[str]="Instance",
+        title_font_size:int=20, 
+        label_font_size:int=15,
+        ticklabels_font_size:int=15,
+        ax:Optional[plt.Axes]=None) -> FigAx:
+    """ Plot separate lines for the scores of the positives and negatives
+    
+    Parameters
+    ----------
+    y_scores : typing.Sequence[float]
+        The predicted scores of the positive class. For example, this may be
+        found using something like: `y_scores = y_proba_pred[:,1]` for
+        probabilistic predictions from most `sklearn` classifiers.
+        
+    y_true : typing.Sequence[int]
+        The ground truth labels
+        
+    positive_label : int
+        The value for the "positive" class
+        
+    {positive,negative}_line_color : color
+        Values to use for the color of the respective lines. These can be
+        anything which `matplotlib.plot` can interpret.
+        
+        These values have precedent over the other `kwargs` parameters.
+        
+    line_kwargs : typing.Mapping
+        Other keyword arguments passed through to `plot` for both lines.
+        
+    {positive,negative}_line_kwargs : typing.Mapping
+        Other keyword arguments pass through to `plot` for only the
+        respective line.
+        
+        These values have precedent over `line_kwargs`.
+    
+    title : typing.Optional[str]
+        If given, the title of the axis is set to this value
+        
+    {y,x}label : typing.Optional[str]
+        Text for the respective labels
+    
+    {title,label,ticklabels}_font_size : int
+        The font sizes for the respective elements.
+    
+    ax : typing.Optional[matplotlib.axes.Axes]
+        The axis. If not given, then one will be created.
+        
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        The figure on which the scores lines were plotted
+    
+    ax : matplotlib.axes.Axes
+        The axis on which the score lines were plotted
+    """
+    
+    fig, ax = _get_fig_ax(ax)
+
+    # pull out the positivies
+    m_positives = (y_true == positive_label)
+
+    y_scores_positive = y_scores[m_positives]
+    y_scores_negative = y_scores[~m_positives]
+
+    positives_kwargs = {**line_kwargs, **positive_line_kwargs}
+    positives_kwargs['color'] = positive_line_color
+    plot_sorted_values(y_scores_positive, ax=ax, **positives_kwargs)
+    
+    negatives_kwargs = {**line_kwargs, **negative_line_kwargs}
+    negatives_kwargs['color'] = negative_line_color
+    plot_sorted_values(y_scores_negative, ax=ax, **negatives_kwargs)
+    
+    if title is not None:
+        ax.set_title(title, fontsize=title_font_size)
+        
+    if ylabel is not None:
+        ax.set_ylabel(ylabel, fontsize=label_font_size)
+        
+    if xlabel is not None:
+        ax.set_xlabel(xlabel, fontsize=label_font_size)
+        
+    set_ticklabels_fontsize(ax, ticklabels_font_size)
+    
+    return fig, ax
+
 def plot_confusion_matrix(
         confusion_matrix:np.ndarray,
         ax:Optional[plt.Axes]=None,
