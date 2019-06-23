@@ -9,6 +9,7 @@ This is the API for the pyllars library. These utilities are generally useful ac
    
    collection_utils
    dask_utils
+   logging_utils
    matrix_utils
    ml_utils
    mpl_utils
