@@ -735,6 +735,7 @@ def collect_binary_classification_metrics(
         threshold:float=0.5,
         pos_label=1,
         k:int=10,
+        include_roc_curve:bool=True,
         prefix:str = "") -> Dict:
     """ Collect various binary classification performance metrics for the predictions
 
@@ -758,6 +759,10 @@ def collect_binary_classification_metrics(
         
     k : int
         The value of `k` to use for `precision_at_k`
+        
+    include_roc_curve : bool
+        Whether to include the fpr and trp points necessary to draw
+        a roc curve
         
     prefix : str
         An optional prefix for the keys in the `metrics` dictionary
@@ -790,6 +795,7 @@ def collect_binary_classification_metrics(
         * :py:func:`sklearn.metrics.roc_auc_score` (macro)
         * :py:func:`sklearn.metrics.roc_auc_score` (micro)
         * :py:func:`pyllars.ml_utils.precision_at_k`
+        * `roc_` {`fpr`, `tpr`, `thresholds`}: :py:func:`sklearn.metrics.roc_curve`
     """
 
     # first, validate the input
@@ -851,6 +857,12 @@ def collect_binary_classification_metrics(
             average='macro'),
          "{}precision_at_k".format(prefix): precision_at_k(y_true, y_score, k, pos_label)
     }
+    
+    if include_roc_curve:
+        fpr, tpr, thresholds = sklearn.metrics.roc_curve(y_true, y_score)
+        ret['roc_fpr'] = fpr
+        ret['roc_tpr'] = tpr
+        ret['roc_thresholds'] = thresholds
 
     return ret
 
