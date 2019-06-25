@@ -11,6 +11,7 @@ import argparse
 import collections
 import dask.distributed
 import pandas as pd
+import shlex
 import tqdm
 import typing
 
@@ -165,6 +166,51 @@ def add_dask_values_to_args(
     args.num_threads_per_proc = num_threads_per_proc
     args.cluster_location = cluster_location
     args.client_restart = client_restart
+    
+
+def get_dask_cmd_options(args:argparse.Namespace) -> List[str]:
+    """ Extract the flags and options specified for dask from
+    the parsed arguments.
+    
+    Presumably, these were added with `add_dask_options`. This function
+    returns the arguments as an array. Thus, they are suitable for use
+    with `subprocess.run` and similar functions.
+    
+    Parameters
+    -----------
+    args : argparse.Namespace
+        The parsed arguments
+        
+    Returns
+    -------
+    dask_options : typing.List[str]
+        The list of dask options and their values.
+    """
+    
+    args_dict = vars(args)
+
+    # first, pull out the text arguments
+    dask_options = [
+        'num_procs',
+        'num_threads_per_proc',
+        'cluster_location'
+    ]
+
+    # create a list of command line arguments
+    ret = []
+    
+    for o in dask_options:
+        arg = str(args_dict[o])
+        if len(arg) > 0:
+            ret.append('--{}'.format(o.replace('_', '-')))
+            ret.append(arg)
+    
+    if args.client_restart:
+        ret.append("--client-restart")
+        
+    ret = [shlex.quote(c) for c in ret]
+        
+    return ret
 
 ###
 #   Helpers to submit arbitrary jobs to a dask cluster
