@@ -20,6 +20,8 @@ import matplotlib.pyplot
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
+import scipy
+import sklearn.metrics
 
 import matplotlib_venn
 
@@ -1135,6 +1137,117 @@ def plot_confusion_matrix(
         
     return fig, ax
 
+
+def plot_mean_roc_curve(
+        tprs:Sequence[Sequence[float]],
+        fprs:Sequence[Sequence[float]],
+        aucs:Optional[float]=None,
+        label_note:Optional[str]=None,
+        line_style:Mapping={'c':'b', 'lw':2, 'alpha':0.8},
+        fill_style:Mapping={'color': 'grey', 'alpha':0.2},
+        show_xy_line:bool=True,
+        xy_line_kwargs:Mapping={'color': 'r', 'ls': '--', 'lw': 2},
+        ax:Optional[plt.Axes]=None,
+        title:Optional[str]=None,
+        xlabel:Optional[str]="False positive rate",
+        ylabel:Optional[str]="True positive rate",
+        title_font_size:int=25,
+        label_font_size:int=20,
+        ticklabels_font_size:int=20) -> FigAx:
+    """ Plot the mean plus/minus the standard deviation of the given ROC curves
+    
+    Parameters
+    ----------
+    tprs : typing.Sequence[typing.Sequence[float]]
+        The true positive rate at each threshold
+    
+    fprs : typing.Sequence[typing.Sequence[float]]
+        The false positive rate at each threshold
+        
+    aucs : typing.Optional[float]
+        The calculated area under the ROC curve
+        
+    label_note : typing.Optional[str]
+        A prefix for the label in the legend for this line.
+        
+    {line,fill}_style : typing.Mapping
+        Keyword arguments for plotting the line and `fill_between`,
+        respectively. Please see the mpl docs for more details.
+        
+    show_xy_line : bool
+        Whether to draw the y=x line
+        
+    xy_line_kwargs : typing.Mapping
+        Keyword arguments for plotting the x=y line.
+    
+    title : typing.Optional[str]
+        If given, the title of the axis is set to this value
+        
+    {x,y}label : typing.Optional[str]
+        Text for the respective labels
+        
+    {title,label,ticklabels}_font_size : int
+        The font sizes for the respective elements
+        
+    ax : typing.Optional[matplotlib.axes.Axes]
+        The axis. If not given, then one will be created.
+        
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        The figure on which the ROC curves were plotted
+    
+    ax : matplotlib.axes.Axes
+        The axis on which the ROC curves were plotted
+    """
+    fig, ax = _get_fig_ax(ax)
+    
+    # interpolate across the different curves so we have the same points
+    mean_fpr = np.linspace(0, 1, 100)
+    interp_tprs = []
+
+    for tpr, fpr in zip(tprs, fprs):
+        interp_tprs.append(scipy.interp(mean_fpr, fpr, tpr))
+        interp_tprs[-1][0] = 0.0
+
+    mean_tpr = np.mean(interp_tprs, axis=0)
+    mean_tpr[-1] = 1.0
+    
+    mean_auc = sklearn.metrics.auc(mean_fpr, mean_tpr)
+    std_auc = np.std(aucs)
+    
+    label = "AUC: {:.2f} $\pm$ {:.2f}".format(mean_auc, std_auc)
+    
+    if label_note is not None:
+        label = label_note + label
+    
+    ax.plot(mean_fpr, mean_tpr, label=label, **line_style)
+
+    std_tpr = np.std(interp_tprs, axis=0)
+    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+    ax.fill_between(mean_fpr, tprs_lower, tprs_upper, **fill_style)
+    
+    if show_xy_line:
+        ax.plot([0,1], [0,1], label='Luck', **xy_line_kwargs)
+        
+    ax.set_aspect('equal')
+    ax.set_xlim((-0.05, 1.05))
+    ax.set_ylim((-0.05, 1.05))
+
+    if title is not None and len(title) > 0:
+        ax.set_title(title, fontsize=title_font_size)
+
+    if xlabel is not None:
+        ax.set_xlabel(xlabel, fontsize=label_font_size)
+        
+    if ylabel is not None:
+        ax.set_ylabel(ylabel, fontsize=label_font_size)
+        
+    set_ticklabels_fontsize(ax, ticklabels_font_size)
+    
+    return fig, ax
+
 def plot_roc_curve(
         tpr:Sequence[Sequence[float]],
         fpr:Sequence[Sequence[float]],
@@ -1145,7 +1258,9 @@ def plot_roc_curve(
         out:Optional[str]=None,
         line_colors:Optional[Sequence]=None,
         point_colors:Optional[Sequence]=None,
-        alphas:Optional[Sequence[float]]=None, 
+        alphas:Optional[Sequence[float]]=None,
+        line_kwargs:Optional[Mapping]=None,
+        point_kwargs:Optional[Mapping]=None,
         title:Optional[str]="Receiver operating characteristic curves",
         xlabel:Optional[str]="False positive rate",
         ylabel:Optional[str]="True positive rate",
@@ -1189,6 +1304,9 @@ def plot_roc_curve(
     
     alphas : typing.Optional[typing.Sequence[float]]
         An alpha value for each method
+        
+    {line,point}_kwargs : typing.Optional[typing.Mapping]
+        Additional keyword arguments for the respective elements
         
     title : typing.Optional[str]
         If given, the title of the axis is set to this value
@@ -1242,11 +1360,11 @@ def plot_roc_curve(
                 points_y = [tpr[i][j-1], tpr[i][j]]
                 points_x = [fpr[i][j-1], fpr[i][j]]
                 # this plots the lines connecting each point
-                ax.plot(points_x, points_y, color=line_colors[i], zorder=1, alpha=alphas[i])
+                ax.plot(points_x, points_y, color=line_colors[i], zorder=1, alpha=alphas[i], **line_kwargs)
                 
-            ax.scatter(fpr[i], tpr[i], label=l, linewidths=0.1, c=point_colors[i], alpha=alphas[i], zorder=2)
+            ax.scatter(fpr[i], tpr[i], label=l, c=point_colors[i], alpha=alphas[i], zorder=2, **point_kwargs)
         else:
-            ax.plot(fpr[i], tpr[i], lw=0.2, alpha=alphas[i], c=line_colors[i], label=l)
+            ax.plot(fpr[i], tpr[i], alpha=alphas[i], c=line_colors[i], label=l, **line_kwargs)
 
     # plot 
     ax.plot([0,1], [0,1], label='Luck', color='r', ls='--', lw=2)
