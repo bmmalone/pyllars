@@ -61,7 +61,7 @@ class fold_data(NamedTuple):
     X_validation : np.ndarray
     y_validation : np.ndarray
     train_indices : np.ndarray
-    test_indicates : np.ndarray
+    test_indices : np.ndarray
     validation_indices : np.ndarray
 
 class split_masks(NamedTuple):
@@ -734,6 +734,8 @@ def collect_binary_classification_metrics(
         y_probas_pred:np.ndarray,
         threshold:float=0.5,
         pos_label=1,
+        k:int=10,
+        include_roc_curve:bool=True,
         prefix:str = "") -> Dict:
     """ Collect various binary classification performance metrics for the predictions
 
@@ -754,6 +756,13 @@ def collect_binary_classification_metrics(
 
     pos_label: str or int
         The "positive" class for some metrics
+        
+    k : int
+        The value of `k` to use for `precision_at_k`
+        
+    include_roc_curve : bool
+        Whether to include the fpr and trp points necessary to draw
+        a roc curve
         
     prefix : str
         An optional prefix for the keys in the `metrics` dictionary
@@ -785,6 +794,8 @@ def collect_binary_classification_metrics(
         * :py:func:`sklearn.metrics.average_precision_score` (micro)
         * :py:func:`sklearn.metrics.roc_auc_score` (macro)
         * :py:func:`sklearn.metrics.roc_auc_score` (micro)
+        * :py:func:`pyllars.ml_utils.precision_at_k`
+        * `roc_` {`fpr`, `tpr`, `thresholds`}: :py:func:`sklearn.metrics.roc_curve`
     """
 
     # first, validate the input
@@ -843,10 +854,56 @@ def collect_binary_classification_metrics(
          "{}micro_roc_auc_score".format(prefix):  sklearn.metrics.roc_auc_score(y_true, y_score,
             average='micro'),
          "{}macro_roc_auc_score".format(prefix):  sklearn.metrics.roc_auc_score(y_true, y_score,
-            average='macro')
+            average='macro'),
+         "{}precision_at_k".format(prefix): precision_at_k(y_true, y_score, k, pos_label)
     }
+    
+    if include_roc_curve:
+        fpr, tpr, thresholds = sklearn.metrics.roc_curve(y_true, y_score)
+        ret['roc_fpr'] = fpr
+        ret['roc_tpr'] = tpr
+        ret['roc_thresholds'] = thresholds
 
     return ret
+
+def precision_at_k(y_true, y_score, k=10, pos_label=1):
+    """Precision at rank k
+    
+    This code was adapted from this gist: https://gist.github.com/mblondel/7337391
+    
+    Parameters
+    ----------
+    y_true : array-like, shape = [n_samples]
+        Ground truth (true relevance labels).
+        
+    y_score : array-like, shape = [n_samples]
+        Predicted scores.
+        
+    k : int
+        Rank.
+        
+    pos_label : int
+        The label for "positive" instances
+        
+    Returns
+    -------
+    precision @k : float
+    """
+    
+    # how many positives in total?
+    n_pos = np.sum(y_true == pos_label)
+
+    # pull out the top-k according to score
+    order = np.argsort(y_score)[::-1]
+    y_true = np.take(y_true, order[:k])
+    
+    # how many positives were retrieved?
+    n_relevant = np.sum(y_true == pos_label)
+
+    # Divide by min(n_pos, k) such that the best achievable score is always 1.0.
+    pak = float(n_relevant) / min(n_pos, k)
+    
+    return pak
 
 def _calc_hand_and_till_a_value(y_true:np.ndarray, y_score:np.ndarray, i:int, j:int) -> float:
     """ Calculate the :math:`\hat{A}` value in Equation (3) of [1]_. Specifically;

@@ -12,6 +12,7 @@ import importlib
 import numpy as np
 import operator
 import scipy.sparse
+import sklearn
 import typing
 
 def _raise_value_error(msg, name="array", caller=None, error_type=ValueError):

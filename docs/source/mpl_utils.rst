@@ -41,6 +41,7 @@ Plotting standard machine learning and statistical results
 ------------------------------------------------------------
 
 .. autosummary::
+    plot_binary_prediction_scores
     plot_confusion_matrix
     plot_roc_curve
     plot_trend_line

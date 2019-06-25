@@ -131,12 +131,11 @@ class XGBClassifierWrapper(object):
 
         if validation_roc > self._best_validation_roc:
             self._best_validation_roc = validation_roc
-            self.best_booster_ = booster
+            self.best_booster_ = booster.copy()
 
             msg = "*** New Best ***"
             self.log(msg, logging.DEBUG)
-
-
+            
     def _callback(self, xgboost_callback_env):
 
         iteration = xgboost_callback_env.iteration

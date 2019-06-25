@@ -4,7 +4,26 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.0.1] - 2019-08-04
+## [1.0.2] - In 2019-06-25
+### Added
+- Additional documentation
+- Helper for plotting binary prediction scores
+- precision@k metric for ML ranking tasks
+- Helper to extract dask command line options as an array. Presumably
+    these would be used in `subprocess.call` or for similar uses.
+- Helper to plot mean ROC curves, including shading for the standard
+    deviation
+
+### Updated
+- Helper for plotting ROC curves to handle arrays of colors
+- Binary classification metrics helper to include points needed for
+    plotting ROC curves (`sklearn.metrics.roc_curve`)
+
+### Fixed
+- `logging_utils` to properly quote extracted command line options.
+- Missing import in `validation_utils`
+
+## [1.0.1] - 2019-04-08
 ### Added
 - Helper for `xgboost`
 - Additional documentation

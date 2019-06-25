@@ -2,23 +2,36 @@
 Utilities for interacting with the python logging module. Mostly, this module
 provides functions for easily adding command line options to an
 `argparse.ArgumentParser` and then setting logging parameters accordingly.
+
+More details and examples for logging are given in the python documentation:
+
+* **Introduction**: https://docs.python.org/3/howto/logging.html
+* **Format string options**: https://docs.python.org/3/library/logging.html#logrecord-attributes
 """
 
 import logging
+import shlex
 import sys
 
-
 def add_logging_options(parser, default_log_file=""):
-    """ This function add options for logging to an argument parser. In 
-        particular, it adds options for logging to a file, stdout and stderr.
-        In addition, it adds options for controlling the logging level of each
-        of the loggers, and a general option for controlling all of the loggers.
-
-        Args:
-            parser (argparse.ArgumentParser): an argument parser
-
-        Returns:
-            None, but the parser has the additional options added
+    """ Add options for controlling logging to an argument parser.
+    
+    In particular, it adds options for logging to a file, stdout and
+    stderr. In addition, it adds options for controlling the logging
+    level of each of the loggers, and a general option for controlling
+    all of the loggers.
+    
+    Parameters
+    ----------
+    parser : argparse.ArgumentParser
+        An argument parser
+        
+    default_log_file : str
+        The default for the `--log-file` flag
+        
+    Returns
+    -------
+    None, but the parser has the additional options added
     """
 
     logging_options = parser.add_argument_group("logging options")
@@ -55,55 +68,91 @@ def add_logging_options(parser, default_log_file=""):
         default=default_specific_logging_level)
 
 def get_logging_options_string(args):
-    """ This function extracts the flags and options specified for logging options
-        added with add_logging_options. Presumably, this is used in "process-all"
-        scripts where we need to pass the logging options to the "process" script.
+    """ Extract the flags and options specified for logging from
+    the parsed arguments and join them as a string.
+    
+    Presumably, these were added with `add_logging_options`. Compared
+    to `get_logging_cmd_options`, this function returns the arguments
+    as a single long string. Thus, they are suitable for use when
+    building single strings to pass to the command line (such as with
+    `subprocess.run` when `shell` is `True`).
+    
+    Parameters
+    -----------
+    args : argparse.Namespace
+        The parsed arguments
+        
+    Returns
+    -------
+    logging_options_str : str
+        A string containing all logging flags and options
+    """        
+    logging_options = get_logging_cmd_options(args)
+    logging_options_str = ' '.join(logging_options)
 
-        Args:
-            args (namespace): a namespace with the arguments added by add_logging_options
+    return logging_options_str
 
-        Returns:
-            string: a string containing all logging flags and options
 
+def get_logging_cmd_options(args):
+    """ Extract the flags and options specified for logging from
+    the parsed arguments.
+    
+    Presumably, these were added with `add_logging_options`. Compared
+    to `get_logging_options_string`, this function returns the arguments
+    as an array. Thus, they are suitable for use with `subprocess.run`
+    and similar functions.
+    
+    Parameters
+    -----------
+    args : argparse.Namespace
+        The parsed arguments
+        
+    Returns
+    -------
+    logging_options : typing.List[str]
+        The list of logging options and their values.
     """
-
+    
     args_dict = vars(args)
 
     # first, pull out the text arguments
     logging_options = ['log_file', 'logging_level', 'file_logging_level',
         'stdout_logging_level', 'stderr_logging_level']
 
-    # create a new dictionary mapping from the flag to the value
-    logging_flags_and_vals = {'--{}'.format(o.replace('_', '-')) : args_dict[o] 
-        for o in logging_options if len(args_dict[o]) > 0}
-
-    s = ' '.join("{} {}".format(k,v) for k,v in logging_flags_and_vals.items())
-
-    # and check the flags
+    # create a list of command line arguments
+    ret = []
+    
+    for o in logging_options:
+        if len(args_dict[o]) > 0:
+            ret.append('--{}'.format(o.replace('_', '-')))
+            ret.append(args_dict[o])
+    
     if args.log_stdout:
-        s = "--log-stdout {}".format(s)
-
+        ret.append("--log-stdout")
+        
     if args.no_log_stderr:
-        s = "--no-log-stderr {}".format(s)
-
-    return s
+        ret.append("--no-log-stderr")
+        
+    ret = [shlex.quote(c) for c in ret]
+    
+    return ret
 
 def update_logging(args, logger=None, 
         format_str='%(levelname)-8s %(name)-8s %(asctime)s : %(message)s'):
-
-    """ This function interprets the logging options in args. Presumably, these
-        were added to an argument parser using add_logging_options.
+    """ Update `logger` to use the settings in `args`
+    
+    Presumably, the logging options were added with `add_logging_options`.
 
     Parameters
     ----------
     args: argparse.Namespace
-        a namespace with the arguments added by add_logging_options
+        A namespace with the arguments added by add_logging_options
 
-    logger: logging.Logger or None
-        a logger which will be updated. If None is given, then the default
+    logger: typing.Optional[logging.Logger]
+        The logger which will be updated. If `None` is given, then the default
         logger will be updated.
 
-    format_str: string
+    format_str: str
         The logging format string. Please see the python logging documentation
         for examples and more description.
 
@@ -154,6 +203,26 @@ def update_logging(args, logger=None,
         logger.addHandler(h)
 
 def get_ipython_logger(logging_level='DEBUG', format_str='%(levelname)-8s : %(message)s'):
+    """ Get a logger for use in jupyter notebooks
+    
+    This function is useful because the default logger in notebooks
+    has a number of handlers by default. This function removes those,
+    so the logger behaves as expected.
+    
+    Parameters
+    ----------
+    logging_level : str
+        The logging level for the logger. This can be updated later.
+        
+    format_str : str
+        The logging format string. Please see the python logging documentation
+        for examples and more description.
+        
+    Returns
+    -------
+    logger : logging.Logger
+        A logger suitable for use in a notebook
+    """
 
     level = logging.getLevelName(logging_level)
     formatter = logging.Formatter(format_str)
