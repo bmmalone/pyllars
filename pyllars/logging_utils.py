@@ -10,6 +10,7 @@ More details and examples for logging are given in the python documentation:
 """
 
 import logging
+import shlex
 import sys
 
 
@@ -132,6 +133,8 @@ def get_logging_cmd_options(args):
         
     if args.no_log_stderr:
         ret.append("--no-log-stderr")
+        
+    ret = [shlex.quote(c) for c in ret]
     
     return ret
 
