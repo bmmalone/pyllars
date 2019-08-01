@@ -4,7 +4,11 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.0.2] - In 2019-06-25
+## [1.0.3] - In progress
+### Updated
+- Binary ML metrics to include precision-recall curves
+
+## [1.0.2] - 2019-06-25
 ### Added
 - Additional documentation
 - Helper for plotting binary prediction scores

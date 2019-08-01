@@ -736,6 +736,7 @@ def collect_binary_classification_metrics(
         pos_label=1,
         k:int=10,
         include_roc_curve:bool=True,
+        include_pr_curve:bool=True,
         prefix:str = "") -> Dict:
     """ Collect various binary classification performance metrics for the predictions
 
@@ -764,6 +765,9 @@ def collect_binary_classification_metrics(
         Whether to include the fpr and trp points necessary to draw
         a roc curve
         
+    include_pr_curve : bool
+        Whether to include details on the precision-recall curve
+        
     prefix : str
         An optional prefix for the keys in the `metrics` dictionary
 
@@ -781,7 +785,7 @@ def collect_binary_classification_metrics(
         * :py:func:`sklearn.metrics.f1_score` (macro)
         * :py:func:`sklearn.metrics.f1_score` (micro)
         * :py:func:`sklearn.metrics.hamming_loss`
-        * :py:func:`sklearn.metrics.jaccard_similarity_score`
+        * :py:func:`sklearn.metrics.jaccard_score`
         * :py:func:`sklearn.metrics.log_loss`
         * :py:func:`sklearn.metrics.precision_score` (binary)
         * :py:func:`sklearn.metrics.precision_score` (macro)
@@ -796,6 +800,9 @@ def collect_binary_classification_metrics(
         * :py:func:`sklearn.metrics.roc_auc_score` (micro)
         * :py:func:`pyllars.ml_utils.precision_at_k`
         * `roc_` {`fpr`, `tpr`, `thresholds`}: :py:func:`sklearn.metrics.roc_curve`
+        * `pr_` {`precisions`, `recalls`, `thresholds`}: :py:func:`sklearn.metrics.precision_recall_curve`
+        * `auprc`: area under the PR curve
+        * `minpse`: See [Harutyunyan et al., 2019] for details
     """
 
     # first, validate the input
@@ -820,42 +827,42 @@ def collect_binary_classification_metrics(
 
     # now collect all statistics
     ret = {
-         "{}cohen_kappa".format(prefix):  sklearn.metrics.cohen_kappa_score(y_true, y_pred),
-         "{}hinge_loss".format(prefix):  sklearn.metrics.hinge_loss(y_true, y_score),
-         "{}matthews_corrcoef".format(prefix):  sklearn.metrics.matthews_corrcoef(y_true, y_pred),
-         "{}accuracy".format(prefix):  sklearn.metrics.accuracy_score(y_true, y_pred),
-         "{}binary_f1_score".format(prefix):  sklearn.metrics.f1_score(y_true, y_pred,
+         "cohen_kappa":  sklearn.metrics.cohen_kappa_score(y_true, y_pred),
+         "hinge_loss":  sklearn.metrics.hinge_loss(y_true, y_score),
+         "matthews_corrcoef":  sklearn.metrics.matthews_corrcoef(y_true, y_pred),
+         "accuracy":  sklearn.metrics.accuracy_score(y_true, y_pred),
+         "binary_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
             average='binary', pos_label=pos_label),
-         "{}micro_f1_score".format(prefix):  sklearn.metrics.f1_score(y_true, y_pred,
+         "micro_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
             average='micro', pos_label=pos_label),
-         "{}macro_f1_score".format(prefix):  sklearn.metrics.f1_score(y_true, y_pred,
+         "macro_f1_score":  sklearn.metrics.f1_score(y_true, y_pred,
             average='macro', pos_label=pos_label),
-         "{}hamming_loss".format(prefix):  sklearn.metrics.hamming_loss(y_true, y_pred),
-         "{}jaccard_similarity_score".format(prefix):  sklearn.metrics.jaccard_similarity_score(
+         "hamming_loss":  sklearn.metrics.hamming_loss(y_true, y_pred),
+         "jaccard_score":  sklearn.metrics.jaccard_score(
             y_true, y_pred),
-         "{}log_loss".format(prefix):  sklearn.metrics.log_loss(y_true, y_probas_pred),
-         "{}micro_precision".format(prefix):  sklearn.metrics.precision_score(y_true, y_pred,
+         "log_loss":  sklearn.metrics.log_loss(y_true, y_probas_pred),
+         "micro_precision":  sklearn.metrics.precision_score(y_true, y_pred,
             average='micro', pos_label=pos_label),
-         "{}binary_precision".format(prefix):  sklearn.metrics.precision_score(y_true, y_pred,
+         "binary_precision":  sklearn.metrics.precision_score(y_true, y_pred,
             average='binary', pos_label=pos_label),
-         "{}macro_precision".format(prefix):  sklearn.metrics.precision_score(y_true, y_pred,
+         "macro_precision":  sklearn.metrics.precision_score(y_true, y_pred,
             average='macro', pos_label=pos_label),
-         "{}micro_recall".format(prefix):  sklearn.metrics.recall_score(y_true, y_pred,
+         "micro_recall":  sklearn.metrics.recall_score(y_true, y_pred,
             average='micro', pos_label=pos_label),
-         "{}macro_recall".format(prefix):  sklearn.metrics.recall_score(y_true, y_pred,
+         "macro_recall":  sklearn.metrics.recall_score(y_true, y_pred,
             average='macro', pos_label=pos_label),
-         "{}binary_recall".format(prefix):  sklearn.metrics.recall_score(y_true, y_pred,
+         "binary_recall":  sklearn.metrics.recall_score(y_true, y_pred,
             average='binary', pos_label=pos_label),
-         "{}zero_one_loss".format(prefix):  sklearn.metrics.zero_one_loss(y_true, y_pred),
-         "{}micro_average_precision".format(prefix):  sklearn.metrics.average_precision_score(
+         "zero_one_loss":  sklearn.metrics.zero_one_loss(y_true, y_pred),
+         "micro_average_precision":  sklearn.metrics.average_precision_score(
             y_true, y_score, average='micro'),
-         "{}macro_average_precision".format(prefix):  sklearn.metrics.average_precision_score(
+         "macro_average_precision":  sklearn.metrics.average_precision_score(
             y_true, y_score, average='macro'),
-         "{}micro_roc_auc_score".format(prefix):  sklearn.metrics.roc_auc_score(y_true, y_score,
+         "micro_roc_auc_score":  sklearn.metrics.roc_auc_score(y_true, y_score,
             average='micro'),
-         "{}macro_roc_auc_score".format(prefix):  sklearn.metrics.roc_auc_score(y_true, y_score,
+         "macro_roc_auc_score":  sklearn.metrics.roc_auc_score(y_true, y_score,
             average='macro'),
-         "{}precision_at_k".format(prefix): precision_at_k(y_true, y_score, k, pos_label)
+         "precision_at_k": precision_at_k(y_true, y_score, k, pos_label)
     }
     
     if include_roc_curve:
@@ -863,7 +870,25 @@ def collect_binary_classification_metrics(
         ret['roc_fpr'] = fpr
         ret['roc_tpr'] = tpr
         ret['roc_thresholds'] = thresholds
-
+        
+    if include_pr_curve:
+        precisions, recalls, thresholds = sklearn.metrics.precision_recall_curve(y_true, y_score)
+        auprc = sklearn.metrics.auc(recalls, precisions)
+        minpse = np.max([min(x, y) for (x, y) in zip(precisions, recalls)])
+        
+        ret['pr_precisions'] = precisions
+        ret['pr_recalls'] = recalls
+        ret['pr_thresholds'] = thresholds
+        ret['auprc'] = auprc
+        ret['minpse'] = minpse
+        
+    # add the prefix, if given
+    if len(prefix) > 0:
+        ret = {
+            "{}{}".format(prefix, key): value
+                for key, value in ret.iteritems()
+        }
+        
     return ret
 
 def precision_at_k(y_true, y_score, k=10, pos_label=1):
