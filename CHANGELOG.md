@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [1.0.3] - In progress
 ### Updated
 - Binary ML metrics to include precision-recall curves
+- Optional progress bar when collecting dask results
 
 ## [1.0.2] - 2019-06-25
 ### Added

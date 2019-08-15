@@ -457,7 +457,8 @@ def check_status(f_list:Iterable[dask.distributed.client.Future]) -> collections
    
 def collect_results(
         f_list:Iterable[dask.distributed.client.Future],
-        finished_only:bool=True) -> List:
+        finished_only:bool=True,
+        progress_bar:bool=False) -> List:
     """ Collect the results from a list of futures
     
     By default, only results from finished tasks will be collected. Thus, the
@@ -470,12 +471,19 @@ def collect_results(
 
     finished_only: bool
         Whether to collect only results for jobs whose status is 'finished'
-    
+
+    progress_bar : bool
+        Whether to show a progress bar when waiting for results. The parameter
+        is only relevant when `return_futures` is `False`.
+        
     Returns
     -------
     results: typing.List
         The results for each (finished, if specified) task
     """
+    
+    if progress_bar:
+        f_list = tqdm.tqdm(f_list)
 
     if finished_only:
         ret = [f.result() for f in f_list if f.status == 'finished']
