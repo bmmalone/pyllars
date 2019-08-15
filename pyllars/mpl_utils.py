@@ -271,6 +271,28 @@ def center_splines(ax:plt.Axes) -> None:
 
     ax.xaxis.set_label_coords(0.5, 0)
     ax.yaxis.set_label_coords(-0.05, 0.5)
+    
+
+def hide_tick_labels(
+        ax:plt.Axes,
+        axis:str='both') -> None:
+    """ Hide the tick labels on the specified axes.
+    
+    Optionally, some can be preserved.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        The axis
+
+    axis : str in {`both`, `x`, `y`}
+        Axis of the tick labels to hide
+
+    Returns
+    -------
+    None, but the tick labels of the axis are removed, as specified
+    """
+    hide_tick_labels_by_index(ax, axis=axis)
 
 def hide_first_y_tick_label(ax:plt.Axes) -> None:
     """ Hide the first tick label on the y-axis
@@ -314,7 +336,7 @@ def hide_tick_labels_by_text(
     num_yticks = len(yticks)
     keep_y = [i for i in range(num_yticks) if yticks[i].label1.get_text() not in to_remove_y]
 
-    hide_tick_labels(ax, keep_x=keep_x, keep_y=keep_y)
+    hide_tick_labels_by_index(ax, keep_x=keep_x, keep_y=keep_y)
 
 
 def hide_tick_labels_by_index(
