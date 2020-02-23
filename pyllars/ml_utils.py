@@ -799,10 +799,10 @@ def collect_binary_classification_metrics(
         * :py:func:`sklearn.metrics.roc_auc_score` (macro)
         * :py:func:`sklearn.metrics.roc_auc_score` (micro)
         * :py:func:`pyllars.ml_utils.precision_at_k`
-        * `roc_` {`fpr`, `tpr`, `thresholds`}: :py:func:`sklearn.metrics.roc_curve`
-        * `pr_` {`precisions`, `recalls`, `thresholds`}: :py:func:`sklearn.metrics.precision_recall_curve`
         * `auprc`: area under the PR curve
         * `minpse`: See [Harutyunyan et al., 2019] for details
+        * `roc_` {`fpr`, `tpr`, `thresholds`}: :py:func:`sklearn.metrics.roc_curve`
+        * `pr_` {`precisions`, `recalls`, `thresholds`}: :py:func:`sklearn.metrics.precision_recall_curve`
     """
 
     # first, validate the input
@@ -824,6 +824,11 @@ def collect_binary_classification_metrics(
 
     # and then make a hard prediction
     y_pred = (y_score >= threshold)
+    
+
+    precisions, recalls, thresholds = sklearn.metrics.precision_recall_curve(y_true, y_score)
+    auprc = sklearn.metrics.auc(recalls, precisions)
+    minpse = np.max([min(x, y) for (x, y) in zip(precisions, recalls)])
 
     # now collect all statistics
     ret = {
@@ -862,7 +867,9 @@ def collect_binary_classification_metrics(
             average='micro'),
          "macro_roc_auc_score":  sklearn.metrics.roc_auc_score(y_true, y_score,
             average='macro'),
-         "precision_at_k": precision_at_k(y_true, y_score, k, pos_label)
+         "precision_at_k": precision_at_k(y_true, y_score, k, pos_label),
+         "auprc": auprc,
+         "minpse": minpse
     }
     
     if include_roc_curve:
@@ -871,22 +878,16 @@ def collect_binary_classification_metrics(
         ret['roc_tpr'] = tpr
         ret['roc_thresholds'] = thresholds
         
-    if include_pr_curve:
-        precisions, recalls, thresholds = sklearn.metrics.precision_recall_curve(y_true, y_score)
-        auprc = sklearn.metrics.auc(recalls, precisions)
-        minpse = np.max([min(x, y) for (x, y) in zip(precisions, recalls)])
-        
+    if include_pr_curve:        
         ret['pr_precisions'] = precisions
         ret['pr_recalls'] = recalls
         ret['pr_thresholds'] = thresholds
-        ret['auprc'] = auprc
-        ret['minpse'] = minpse
         
     # add the prefix, if given
     if len(prefix) > 0:
         ret = {
             "{}{}".format(prefix, key): value
-                for key, value in ret.iteritems()
+                for key, value in ret.items()
         }
         
     return ret
