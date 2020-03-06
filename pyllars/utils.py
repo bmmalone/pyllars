@@ -33,7 +33,12 @@ def load_config(config, required_keys=None):
     msg = "Reading config file"
     logger.info(msg)
 
-    config = yaml.load(open(config))
+    try:
+        config = yaml.load(open(config))
+    except OSError as ex:
+        logger.warning(ex)
+        raise ex
+
 
     if required_keys is not None:
         validation_utils.check_keys_exist(config, required_keys)
