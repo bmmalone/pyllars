@@ -5,9 +5,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.0.3] - In progress
+### Added
+- Helpers for controlling logging options when a command line is not
+    available, such as in notebooks
+
 ### Updated
 - Binary ML metrics to include precision-recall curves
 - Optional progress bar when collecting dask results
+
+### Fixed
+- Safely load YAML config files
 
 ## [1.0.2] - 2019-06-25
 ### Added
