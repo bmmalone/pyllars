@@ -34,7 +34,7 @@ def load_config(config, required_keys=None):
     logger.info(msg)
 
     try:
-        config = yaml.load(open(config))
+        config = yaml.full_load(open(config))
     except OSError as ex:
         logger.warning(ex)
         raise ex
@@ -251,11 +251,6 @@ def list_subdirs(path):
 def get_basename(path):
     return os.path.splitext(os.path.basename(path))[0]
 
-
-
-
-
-
 def get_type(type_string):
     """ Find the type object corresponding to the fully qualified class
 
@@ -284,14 +279,6 @@ def get_type(type_string):
         logger.debug(msg)
 
     return class_
-
-
-
-
-
-
-
-
 
 
 _gzip_extensions = ('gz',)
