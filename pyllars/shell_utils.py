@@ -426,14 +426,14 @@ def check_gzip_file(filename, has_tar=False, raise_on_error=True, logger=logger)
     """
     
     programs = ['gunzip', 'tar']
-    shell_utils.check_programs_exist(programs)
+    check_programs_exist(programs)
 
     if has_tar:
         cmd = "gunzip -c {} | tar t > /dev/null".format(filename)
     else:
         cmd = "gunzip -t {}".format(filename)
 
-    ret = shell_utils.check_call_step(cmd, raise_on_error=False)
+    ret = check_call_step(cmd, raise_on_error=False)
 
     if ret != 0:
         msg = "The gzip file does not appear to be valid: {}".format(filename)
