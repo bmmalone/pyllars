@@ -203,7 +203,7 @@ def encode_all_sequences(
     """
     
     if not same_length:
-        sequences = pad_sequences(
+        sequences = pad_trim_sequences(
             sequences,
             maxlen=maxlen,
             align=align,
