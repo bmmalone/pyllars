@@ -202,6 +202,29 @@ def get_logging_cmd_options(args:argparse.Namespace) -> str:
     
     return ret
 
+    
+
+def set_logging_values(**kwargs) -> None:
+    """ Set the logging options for the default logger as given
+
+    This is intended for use in tests or other cases where a CLI is not
+    easily available.
+
+    Parameters
+    ----------
+    kwargs : key=value pairs
+        These are passed unaltered to `add_logging_values_to_args`. Please see
+        that documentation for details on valid options and their effect.
+
+    Returns
+    -------
+    None : None
+        The respective options will be set for the default logger
+    """
+    args = argparse.Namespace()
+    add_logging_values_to_args(args, **kwargs)
+    update_logging(args)
+
 def update_logging(args, logger=None, 
         format_str='%(levelname)-8s %(name)-8s %(asctime)s : %(message)s'):
     """ Update `logger` to use the settings in `args`
