@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [1.0.3] - In progress
 ### Added
 - Helpers for controlling logging options when a command line is not
-    available, such as in notebooks
+    available, such as in notebooks or from test cases
 
 ### Updated
 - Binary ML metrics to include precision-recall curves
