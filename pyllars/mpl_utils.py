@@ -507,7 +507,7 @@ def plot_simple_bar_chart(
         color_vals = [colors(c) for c in ls]
         colors = color_vals
         
-    elif utils.is_sequence(colors):
+    elif validation_utils.validate_is_sequence(colors, raise_on_invalid=False):
         # make sure this is the correct size
         if len(colors) != len(bars):
             msg = ("The number of colors ({}) and the number of bars({}) does "
@@ -715,7 +715,7 @@ def plot_stacked_bar_graph(
         widths = np.array([1] * num_bars)
         x = np.arange(num_bars)
     else:
-        if not utils.is_sequence(widths):
+        if not validation_utils.validate_is_sequence(widths, raise_on_invalid=False):
             widths = np.full(num_bars, widths)
             print("widths: ", widths)
         x = [0]
@@ -749,7 +749,7 @@ def plot_stacked_bar_graph(
     
     if edge_colors is None:
         edge_colors = colors
-    elif not utils.is_sequence(edge_colors):
+    elif not validation_utils.validate_is_sequence(edge_colors, raise_on_invalid=False):
         edge_colors = np.full(levels, edge_colors, dtype=object)
     elif len(edge_colors) != len(levels):
         msg = "The number of edge_colors must match the number of stacks."
