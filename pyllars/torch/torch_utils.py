@@ -169,8 +169,9 @@ def send_network_to_device(net:nn.Module, device:torch.device) -> NetType:
         The network on the device, possibly wrapped in a DataParallel
     """
     if torch.cuda.device_count() > 1:
-        net = nn.DataParallel(net)
-
+        #net = nn.DataParallel(net)
+        pass
+        
     net = net.to(device=device)
 
     return net
@@ -190,7 +191,7 @@ def send_data_to_device(
     """
     def _to_device(d, device):
         try:
-            d = d.to_device(device)
+            d = d.to(device)
         except:
             # then it isn't a tensor
             pass
@@ -275,7 +276,7 @@ def get_net(model:ray.tune.Trainable) -> nn.Module:
 ###
 # Other pytorch utilities
 ###
-def initialize(gpu:Optional[str]=None, seed=8675309) -> None:
+def initialize(gpu:str="0", seed:int=8675309) -> None:
     """ Initial various environment variables and random seeds
 
     In particular, this sets the following environment variables:
