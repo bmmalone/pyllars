@@ -28,7 +28,7 @@ def test_get_cv_folds_array(colors):
     """ Test splitting into folds with a numpy array
     """
     
-    expected_output = np.array([1, 1, 0, 0, 1, 0, 1, 0, 0])
+    expected_output = np.array([1, 1, 0, 0, 1, 0, 0, 1, 0])
     actual_output = ml_utils.get_cv_folds(colors, num_splits=2)    
     np.testing.assert_array_equal(expected_output, actual_output)
 
@@ -37,6 +37,6 @@ def test_get_cv_folds_series(colors):
     """
     
     # this change from the test above is to make the tests work
-    expected_output = pd.Series([1, 1, 0, 0, 1, 0, 1, 0, 0])
+    expected_output = pd.Series([1, 1, 0, 0, 1, 0, 0, 1, 0])
     actual_output = ml_utils.get_cv_folds(colors, num_splits=2)
     np.testing.assert_array_equal(expected_output, actual_output)
