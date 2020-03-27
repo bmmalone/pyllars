@@ -461,7 +461,7 @@ def validate_is_sequence_of_integers(sequence, name="sequence", caller=None):
     elif np.issubdtype(type(sequence), np.integer):
         # then this validates
         return
-    elif utils.is_sequence(sequence):
+    elif validate_is_sequence(sequence, raise_on_invalid=False):
         for c in sequence:
             validate_is_sequence_of_integers(c)
     else:
@@ -490,7 +490,7 @@ def validate_numeric(array, name="array", caller=None):
             array.dtype)
         _raise_value_error(msg, name, caller)
         
-def validate_pacakges_installed(packages:typing.Iterable[str], caller:str=None) -> None:
+def validate_packages_installed(packages:typing.Iterable[str], caller:str=None) -> None:
     """ Ensure `packages` are installed and can be imported
     
     Parameters
@@ -641,7 +641,7 @@ def validate_is_sequence(
     validated =  is_sequence or is_ndarray
     
     if (not validated) and raise_on_invalid:
-        msg = ("{caller}{name} invalid type. found: " + str(type(var)) + 
+        msg = ("{caller}{name} invalid type. found: " + str(type(maybe_sequence)) + 
             ". allowed: sequence types.")
         _raise_value_error(msg, name, caller, TypeError)
         

@@ -16,3 +16,4 @@ This is the API for the pyllars library. These utilities are generally useful ac
    nlp_utils
    pandas_utils
    stats_utils
+   string_utils

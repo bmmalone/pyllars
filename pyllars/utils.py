@@ -33,7 +33,12 @@ def load_config(config, required_keys=None):
     msg = "Reading config file"
     logger.info(msg)
 
-    config = yaml.load(open(config))
+    try:
+        config = yaml.full_load(open(config))
+    except OSError as ex:
+        logger.warning(ex)
+        raise ex
+
 
     if required_keys is not None:
         validation_utils.check_keys_exist(config, required_keys)
@@ -246,11 +251,6 @@ def list_subdirs(path):
 def get_basename(path):
     return os.path.splitext(os.path.basename(path))[0]
 
-
-
-
-
-
 def get_type(type_string):
     """ Find the type object corresponding to the fully qualified class
 
@@ -279,14 +279,6 @@ def get_type(type_string):
         logger.debug(msg)
 
     return class_
-
-
-
-
-
-
-
-
 
 
 _gzip_extensions = ('gz',)

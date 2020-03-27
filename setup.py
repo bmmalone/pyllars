@@ -30,6 +30,7 @@ install_requires = [
     'pydot',
     'requests',
     'scipy',
+    'seaborn',
     'six',
     'sklearn',
     'sklearn_pandas',
@@ -63,6 +64,12 @@ bio_requires = [
     'biopython',
 ]
 
+torch_requires = [
+    'torch',
+    'torchvision',
+    'ray[tune]'
+]
+
 docs_require = [
     'sphinx',
     'sphinx_rtd_theme',
@@ -77,6 +84,7 @@ all_requires = (
     tests_require + 
     parquet_requires + 
     bio_requires + 
+    torch_requires +
     setup_requires + 
     docs_require +
     pypi_requires
@@ -86,6 +94,7 @@ extras = {
     'test': tests_require,
     'parquest': parquet_requires,
     'bio': bio_requires,
+    'torch': torch_requires,
     'all': all_requires,
     'setup': setup_requires,
     'docs': docs_require,
@@ -95,7 +104,7 @@ extras = {
 classifiers=[
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.6",
 ]
 
 
@@ -130,7 +139,7 @@ def readme():
         return f.read()
 
 setup(name='pyllars',
-        version='1.0.2',
+        version='1.0.3',
         description="This package contains supporting utilities for Python 3.",
         long_description=readme(),
         long_description_content_type='text/markdown',

@@ -15,11 +15,12 @@ Command line helpers
     get_logging_options_string
     update_logging
 
-Jupyter notebook helpers
+Other helpers
 -------------------------
 
 .. autosummary::
     get_ipython_logger
+    set_logging_values
 
 Definitions
 -------------
