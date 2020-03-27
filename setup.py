@@ -104,7 +104,7 @@ extras = {
 classifiers=[
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.6",
 ]
 
 
@@ -139,7 +139,7 @@ def readme():
         return f.read()
 
 setup(name='pyllars',
-        version='1.0.2',
+        version='1.0.3',
         description="This package contains supporting utilities for Python 3.",
         long_description=readme(),
         long_description_content_type='text/markdown',
