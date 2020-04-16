@@ -20,12 +20,13 @@ import tqdm
 
 import openpyxl
 
+import pyllars.shell_utils as shell_utils
 import pyllars.utils as utils
 import pyllars.validation_utils as validation_utils
 
 import typing
 
-from typing import Callable, Dict, Generator, Iterable, List, Set
+from typing import Callable, Dict, Generator, Iterable, List, Sequence, Set
 StrOrList = typing.Union[str,typing.List[str]]
 
 
@@ -367,9 +368,9 @@ def write_df(df:pd.DataFrame, out, create_path:bool=False, filetype:str='AUTO',
     # check if we want to and can create the path
     if create_path:
         if filetype != 'excel_writer':
-            utils.ensure_path_to_file_exists(out)
+            shell_utils.ensure_path_to_file_exists(out)
         else:
-            msg = ("[utils.write_df]: create_path was passed as True, but the "
+            msg = ("[pd_utils.write_df]: create_path was passed as True, but the "
                 "filetype is 'excel_writer'. This combination does not work. "
                 "The path to the writer will not be created.")
             logger.warning(msg)
@@ -716,3 +717,13 @@ def filter_rows(
         d = d.reset_index(drop=True)
         
     return d
+
+def intersect_masks(masks:Sequence[np.ndarray]) -> np.ndarray:
+    """ Take the intersection sof all masks in the list """
+    m_intersect = np.all(list(m for m in masks), axis=0)
+    return m_intersect
+
+def union_masks(masks:Sequence[np.ndarray]) -> np.ndarray:
+    """ Take the union of all masks in the list """
+    m_union = np.any(list(m for m in masks), axis=0)
+    return m_union
