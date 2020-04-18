@@ -103,11 +103,19 @@ class XGBClassifierWrapper(object):
             name:str="XGBClassiferWrapper",
             **kwargs):
         
+        self._initialize()
         self.num_boost_round = num_boost_round
         self.scale_features = scale_features
         self.validation_period = validation_period
         self.name = name
         self.kwargs = kwargs
+
+    def _initialize(self):        
+        self.num_boost_round = None
+        self.scale_features = None
+        self.validation_period = None
+        self.name = None
+        self.kwargs = None
         
     def log(self, msg, level=logging.INFO):
         msg = "[{}]: {}".format(self.name, msg)
@@ -262,7 +270,7 @@ class XGBClassifierWrapper(object):
                 raise ValueError(msg)
                 
             # then this is a valid hyperparameter
-            setattr(self, key, value)
+            setattr(self, k, v)
             
         return self
     
@@ -282,6 +290,23 @@ class XGBClassifierWrapper(object):
         
         params_out = out / "params.jpkl"
         joblib.dump(self.get_params(deep=True), str(params_out))
+
+    def __getstate__(self):
+        state = {
+            'scaler': self.scaler_,
+            'booster': self.best_booster_,
+            'params': self.get_params(deep=True)
+        }
+
+        return state
+
+    def __setstate__(self, state):
+        self._initialize()
+        self.scaler_ = state['scaler']
+        self.best_booster_ = state['booster']
+
+        for k,v in state['params'].items():
+            setattr(self, k, v)
         
     @classmethod
     def load_model(klass, f):
