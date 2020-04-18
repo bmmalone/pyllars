@@ -13,8 +13,10 @@ import pathlib
 import sklearn.exceptions
 import sklearn.metrics
 import sklearn.preprocessing
+import tempfile
 import xgboost as xgb
 
+import pyllars.shell_utils as shell_utils
 import pyllars.validation_utils as validation_utils
 
 from typing import Optional
@@ -51,6 +53,57 @@ def xgbooster_predict_proba(
     y_probas_pred[:,1] = y_score
     
     return y_probas_pred
+    
+
+def xgbooster_to_json(booster:xgb.Booster) -> str:
+    """ Get the JSON representation of `booster`
+
+    Parameters
+    ----------
+    booster : xgboost.Booster
+        The trained booster
+
+    Returns
+    -------
+    booster_json : str
+        The json string
+    """
+    fd, fname = tempfile.mkstemp(suffix=".json")
+    booster.save_model(fname)
+
+    with open(fname) as b_f:
+        booster_json = b_f.readlines()
+
+    shell_utils.remove_file(fname)
+
+    booster_json = booster_json[0]
+    return booster_json
+
+def xgbooster_from_json(booster_json:str) -> xgb.Booster:
+    """ Create a booster based on the json string
+
+    Parameters
+    ----------
+    booster_json : str
+        The json string
+
+    Returns
+    -------
+    booster : xgboost.Booster
+        The trained booster
+    """
+    fd, fname = tempfile.mkstemp(suffix=".json")
+
+    with open(fname, 'w') as b_f:
+        b_f.writelines(booster_json)
+
+    booster = xgb.Booster()
+    booster.load_model(fname)
+    
+    shell_utils.remove_file(fname)
+    return booster
+
+    
 
 
 class XGBClassifierWrapper(object):
