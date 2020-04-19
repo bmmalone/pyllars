@@ -347,7 +347,7 @@ class XGBClassifierWrapper(object):
     def __getstate__(self):
         state = {
             'scaler': self.scaler_,
-            'booster': self.best_booster_,
+            'booster': xgbooster_to_json(self.best_booster_),
             'params': self.get_params(deep=True)
         }
 
@@ -356,10 +356,19 @@ class XGBClassifierWrapper(object):
     def __setstate__(self, state):
         self._initialize()
         self.scaler_ = state['scaler']
-        self.best_booster_ = state['booster']
+        self.best_booster_ = xgbooster_from_json(state['booster'])
 
         for k,v in state['params'].items():
             setattr(self, k, v)
+            
+        # further, set the appropriate kwargs
+        self.kwargs = state['params'].copy()
+        
+        # remove the basic parameters
+        self.kwargs.pop('num_boost_round')
+        self.kwargs.pop('scale_features')
+        self.kwargs.pop('validation_period')
+        self.kwargs.pop('name')
         
     @classmethod
     def load_model(klass, f):
