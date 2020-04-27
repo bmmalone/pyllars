@@ -4,6 +4,10 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.0.4] - In progress
+### Updated
+- xgb_utils to be compatible with `xgboost > 1.0`.
+
 ## [1.0.3] - 2020-03-27
 ### Added
 - Helpers for controlling logging options when a command line is not
