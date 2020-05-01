@@ -26,8 +26,8 @@ import pyllars.validation_utils as validation_utils
 
 import typing
 
-from typing import Callable, Dict, Generator, Iterable, List, Sequence, Set
-StrOrList = typing.Union[str,typing.List[str]]
+from typing import Callable, Dict, Generator, Iterable, List, Optional, Sequence, Set, Union
+StrOrList = Union[str,List[str]]
 
 
 def apply(df:pd.DataFrame, func:Callable, *args, progress_bar:bool=False,
@@ -548,8 +548,61 @@ def group_and_chunk_df(df:pd.DataFrame, groupby_field:str, chunk_size:int) -> pd
     
     return group_chunks
 
-def get_group_extreme(df:pd.DataFrame, ex_field:str, ex_type:str="max",
-        group_fields=None, groups:pd.core.groupby.GroupBy=None) -> pd.DataFrame:
+def get_group_sizes(
+        df:Optional[pd.DataFrame]=None,
+        group_fields:Optional[StrOrList]=None,
+        groups:Optional[pd.core.groupby.GroupBy]=None) -> pd.DataFrame:
+    """ Create a data frame containing the size of each group
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        The data frame. If `groups` are given, then `df` is not needed.
+
+    group_fields: typing.Optional[typing.Union[str, typing.Sequence[str]]]
+        If not `None`, then the field(s) by which to group the data frame. This
+        value must be something which can be interpreted by
+        pd.DataFrame.groupby.
+
+    groups: typing.Optional[pandas.core.groupby.GroupBy]
+        If not None, then these groups will be used to find the counts.
+
+    Returns
+    -------
+    df_counts : pandas.DataFrame
+        The data frame containing the counts. It contains one column for each
+        of the `group_fields` (or whatever the index is if `groups` is instead
+        provided), as well as a `count` column.
+    """
+    if (group_fields is None) and (groups is None):
+        msg = ("[pandas_utils.get_group_sizes]: No groups or group field "
+            "provided")
+        raise ValueError(msg)
+
+    # we also can't have both
+    if (group_fields is not None) and (groups is not None):
+        msg = ("[pandas_utils.get_group_sizes]: Both groups and group field "
+            "provided")
+        raise ValueError(msg)
+
+    # so we either have groups or group_field
+    if group_fields is not None:
+        groups = df.groupby(group_fields)
+        
+    df_counts = groups.size()
+    df_counts = df_counts.reset_index()
+    df_counts = df_counts.rename(columns={0:'count'})
+    df_counts = df_counts.sort_values('count', ascending=False)
+    df_counts = df_counts.reset_index(drop=True)
+
+    return df_counts
+
+def get_group_extreme(
+        df:pd.DataFrame,
+        ex_field:str,
+        ex_type:str="max",
+        group_fields:Optional[StrOrList]=None,
+        groups:Optional[pd.core.groupby.GroupBy]=None) -> pd.DataFrame:
     """ Find the row in each group of `df` with an extreme value for `ex_field`
 
     "ex_type" must be either "max" or "min" and indicated which type of extreme
@@ -567,10 +620,10 @@ def get_group_extreme(df:pd.DataFrame, ex_field:str, ex_type:str="max",
     ex_type: str {"max" or "min"}, case-insensitive
         The type of extreme to consider.
     
-    groups: None or pandas.core.groupby.GroupBy
+    groups: typing.Optional[pandas.core.groupby.GroupBy]
         If not None, then these groups will be used to find the maximum values.
 
-    group_fields: None or str or typing.List[str]
+    group_fields: typing.Optional[typing.Union[str, typing.Sequence[str]]]
         If not `None`, then the field(s) by which to group the data frame. This
         value must be something which can be interpreted by
         pd.DataFrame.groupby.
