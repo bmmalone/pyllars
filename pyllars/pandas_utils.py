@@ -275,7 +275,7 @@ def read_df(filename:str, filetype:str='AUTO', sheet:str=None, **kwargs) -> pd.D
     if filetype == 'csv':
         df = pd.read_csv(filename, **kwargs)
     elif filetype == 'excel':
-        df = pd.read_excel(filename, sheetname=sheet, **kwargs)
+        df = pd.read_excel(filename, sheet_name=sheet, **kwargs)
     elif filetype == 'hdf5':
         df = pd.read_hdf(filename, key=sheet, **kwargs)
     elif filetype == "parquet":
