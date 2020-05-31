@@ -1,12 +1,13 @@
 """
 A hodgepodge of utilities, most of which concern working with basic types.
 """
-
 import logging
 logger = logging.getLogger(__name__)
 
 import collections
+from functools import reduce
 import itertools
+import operator
 import os
 import shutil
 import subprocess
@@ -19,11 +20,9 @@ import pandas as pd
 
 from pyllars.deprecated_decorator import deprecated
 
+from typing import Any, Container, Mapping, Optional, Sequence
 
 ### Parsing and writing utilities
-
-
-
 def load_config(config, required_keys=None):
     """ Read in the config file, print a logging (INFO) statement and verify
     that the required keys are present
@@ -44,6 +43,29 @@ def load_config(config, required_keys=None):
         validation_utils.check_keys_exist(config, required_keys)
 
     return config
+
+    
+def get_by_path(root:Container, item_path:Sequence) -> Any:
+    """Access a nested object in root by item sequence
+    
+    Adapted from this SO question: https://stackoverflow.com/questions/14692690
+
+    Parameters
+    ----------
+    root : typing.Container
+        The "root" container. Presumably, this is something like a dictionary or
+        a list. It should be compatible with `operator.getitem`.
+
+    item_path : typing.Sequence
+        The list of items which will be used as keys, starting at `root`, to
+        retrieve the object of interest.
+
+    Returns
+    -------
+    item : typing.Any
+        The item at `item_path`, starting at `root`.
+    """
+    return reduce(operator.getitem, item_path, root)
 
 def read_commented_file(filename):
     f = open(filename)
