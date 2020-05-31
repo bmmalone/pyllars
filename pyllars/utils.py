@@ -45,10 +45,14 @@ def load_config(config, required_keys=None):
     return config
 
     
-def get_by_path(root:Container, item_path:Sequence) -> Any:
+def get_by_path(root:Container, item_path:Sequence,
+        raise_on_missing:bool=True) -> Optional[Any]:
     """Access a nested object in root by item sequence
     
     Adapted from this SO question: https://stackoverflow.com/questions/14692690
+
+    By default, an exception will be raised if a key is missing. Alternatively,
+    the function can just return `None`.
 
     Parameters
     ----------
@@ -60,12 +64,23 @@ def get_by_path(root:Container, item_path:Sequence) -> Any:
         The list of items which will be used as keys, starting at `root`, to
         retrieve the object of interest.
 
+    raise_on_missing : bool
+        Whether to raise an exception if a key is missing (`True`) or just
+        return `None` (`False`)
+
     Returns
     -------
     item : typing.Any
         The item at `item_path`, starting at `root`.
     """
-    return reduce(operator.getitem, item_path, root)
+    ret = None
+    try:
+        ret = reduce(operator.getitem, item_path, root)
+    except KeyError as ke:
+        if raise_on_missing:
+            raise ke
+
+    return ret
 
 def read_commented_file(filename):
     f = open(filename)
