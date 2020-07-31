@@ -24,11 +24,13 @@ class TorchModelTrainer:
     out_dir = ...
     validation_metric = 'auc'
 
-    model_training = ModelTrainer(
+    model_trainer = ModelTrainer(
         model=model,
         out_dir=out_dir,
         validation_metric=validation_metric
     )
+
+    model_trainer.prepare_for_training()
 
     while model_trainer.continue_training():
         model_trainer.step()
