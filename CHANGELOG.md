@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Helper for counting group sizes in pandas
 - Helper for extracting values from config-like mappings
+- Helpers for sampling from conjugate distributions
 
 ### Updated
 - xgb_utils to be compatible with `xgboost > 1.0`.

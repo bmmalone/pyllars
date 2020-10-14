@@ -29,6 +29,15 @@ Bayesian hypothesis testing
 .. autosummary::
     bayesian_proportion_test
     bayesian_means_test
+
+Distribution sampling
+---------------------
+
+.. autosummary::
+    normal_inverse_chi_square
+    sample_dirichlet_multinomial
+    sample_beta_binomial
+    sample_gamma_poisson
     
 Definitions
 -------------
