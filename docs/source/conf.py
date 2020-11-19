@@ -6,6 +6,41 @@
 # full list see the documentation:
 # http://www.sphinx-doc.org/en/master/config
 
+###
+# CUSTOM AUTODOC COMMANDS
+#
+# This conf.py file also adds a few custom autodoc commands. While these have
+# been somewhat tested, they are all a bit hacky. User beware.
+#
+#   * `autoclass_docstr_only`: This can be used to show only the docstring for
+#       the following class. Presumably, this is used at the top of the
+#       documentation when the class is just introduced. In particular, this
+#       also suppresses the name of the class. Example usage:
+#
+#       ```
+#       .. autoclass_docstr_only:: aa_encode.aa_encoder.AAEncoder
+#       ```
+#
+#   * `autono_docstr_text`: This can be used to suppress the docstring for
+#       the following class. Presumably, this is used when giving the method
+#       definitions for a class. Example usage:
+#
+#       ```
+#       .. autono_docstr_text:: aa_encode.aa_encoder.AAEncoder
+#       ```
+#
+#   * `:exclude-members: module_doc_str`: This option can be used to suppress
+#       the module-level docstring for a module. This is again intended for
+#       use in the "Definitions" section after the module has already been
+#       introduced. Example usage:
+#
+#       ```
+#       .. automodule:: aa_encode.utils
+#           :members:
+#           :exclude-members: module_doc_str
+#       ```
+###
+
 # -- Path setup --------------------------------------------------------------
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -20,14 +55,20 @@
 # -- Project information -----------------------------------------------------
 
 project = 'pyllars'
-copyright = '2018, 2019, Brandon Malone'
+copyright = '2018-2020, Brandon Malone'
 author = 'Brandon'
 
 # The short X.Y version
 version = '1.0'
 # The full version, including alpha/beta/rc tags
-release = '1.0.2'
+release = '1.0.3'
 
+###
+# These are used for LaTeX and man page documents
+###
+base_filename = 'pyllars'
+short_description=  'Documentation for Pyllars'
+category = 'Miscellaneous'
 
 # -- General configuration ---------------------------------------------------
 
@@ -140,8 +181,11 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'Utilities.tex', 'Utilities Documentation',
-     'Brandon', 'manual'),
+    (master_doc,
+    '{}.tex'.format(base_filename),
+    short_description,
+     author,
+     'manual'),
 ]
 
 
@@ -150,7 +194,9 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'utilities', 'Utilities Documentation',
+    (master_doc,
+    base_filename,
+    short_description,
      [author], 1)
 ]
 
@@ -161,9 +207,13 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'Utilities', 'Utilities Documentation',
-     author, 'Utilities', 'One line description of project.',
-     'Miscellaneous'),
+    (master_doc,
+     base_filename,
+     short_description,
+     author,
+     short_description,
+     'Utilities for python3',
+     category),
 ]
 
 
@@ -193,15 +243,104 @@ epub_exclude_files = ['search.html']
 intersphinx_mapping = {
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
     'matplotlib': ('https://matplotlib.org/', None),
-    'sklearn': ('https://scikit-learn.org/0.20', None),
-    'python': ('http://docs.python.org/', None),
-    'pandas': ('http://pandas.pydata.org/pandas-docs/stable/',
-              'http://pandas.pydata.org/pandas-docs/stable/objects.inv'),
-    'numpy': ('https://docs.scipy.org/doc/numpy/',
-             'https://docs.scipy.org/doc/numpy/objects.inv')
+    'sklearn': ('https://scikit-learn.org/stable', None),
+    'python': ('https://docs.python.org/3', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
 }
 
 # -- Options for todo extension ----------------------------------------------
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
+
+# -- Custom sphinx autodoc helpers -------------------------------------------
+from sphinx.ext import autodoc
+from sphinx.deprecation import RemovedInSphinx40Warning
+import warnings
+
+
+ATTRIBUTES_HEADER_MARKER = "__ATTRIBUTES_HEADER_MARKER__"
+
+ATTRIBUTES_HEADER_STR = '**Attributes**'
+METHODS_HEADER_STR = '**Methods**'
+
+class ClassDocstrOnlyDocumenter(autodoc.ClassDocumenter):
+    objtype = "class_docstr_only"
+    directivetype = 'class'
+
+    #do not indent the content
+    content_indent = ""
+    
+    def get_doc(self, encoding: str = None, ignore: int = 1) :
+        if encoding is not None:
+            msg = ("The 'encoding' argument to autodoc.{}.get_doc() is "
+                "deprecated.".format(self.__class__.__name__))
+            warnings.warn(msg, RemovedInSphinx40Warning)
+            
+        ds = super().get_doc(encoding, ignore)
+        
+        if 'Attributes' in ds[0]:
+            i = ds[0].index('Attributes')
+            ds[0] = ds[0][:i]
+            
+        return ds
+    
+    #do not add a header to the docstring
+    def add_directive_header(self, sig):
+        pass
+
+class ClassNoDocstrTextDocumenter(autodoc.ClassDocumenter):
+    objtype = "no_docstr_text"
+    directivetype = 'class'
+    
+    def get_doc(self, encoding: str = None, ignore: int = 1) :
+        if encoding is not None:
+            msg = ("The 'encoding' argument to autodoc.{}.get_doc() is "
+                "deprecated.".format(self.__class__.__name__))
+            warnings.warn(msg, RemovedInSphinx40Warning)
+            
+        ds = super().get_doc(encoding, ignore)
+        
+        if 'Attributes' in ds[0]:
+            i = ds[0].index('Attributes')
+            ds[0] = ds[0][i-1:]
+            ds[0].insert(0, ATTRIBUTES_HEADER_MARKER)
+            
+        else:
+            ds = [[
+                ATTRIBUTES_HEADER_MARKER, '',
+                'This class has no documented attributes.', '',
+            ]]
+            
+        return ds
+    
+def process_docstring(app, what, name, obj, options, lines):
+    
+    # a bit of a hack
+    #
+    # if we start with the "attributes" text, then
+    # we assume the methods will follow.
+    if lines[0] == ATTRIBUTES_HEADER_MARKER:
+        lines[0] = ATTRIBUTES_HEADER_STR
+        lines.append(METHODS_HEADER_STR)
+        lines.append('')
+    
+    # If we are told to exclude the "module_doc_str", then delete
+    # the lines for this docstring (if this is a module).
+    
+    # Since this modified `lines` in-place, this causes a problem if
+    # we want to show the docstring again later on.
+    #
+    # On further checking, this _seems_ to behave as desired. I am leaving
+    # this comment here in case problems arise in the future, though.
+    if what == 'module':
+        if 'exclude-members' in options:
+            if 'module_doc_str' in options['exclude-members']:
+                del lines[:]
+    
+def setup(app):
+    app.add_autodocumenter(ClassNoDocstrTextDocumenter)
+    app.add_autodocumenter(ClassDocstrOnlyDocumenter)
+    
+    app.connect('autodoc-process-docstring', process_docstring)
