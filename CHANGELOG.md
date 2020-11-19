@@ -10,7 +10,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Helper for extracting values from config-like mappings
 
 ### Updated
-- xgb_utils to be compatible with `xgboost > 1.0`.
+- xgb_utils to be compatible with `xgboost > 1.0.
+
+### Fixed
+- Incorrect import in incremental count vectorizer.
 
 ## [1.0.3] - 2020-03-27
 ### Added
