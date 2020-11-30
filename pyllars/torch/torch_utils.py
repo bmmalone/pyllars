@@ -25,6 +25,8 @@ import numpy as np
 import ray.tune
 import torch.nn as nn
 
+import pyllars.shell_utils as shell_utils
+
 from typing import Optional, Sequence, Union
 NetType = Union[nn.Module, nn.DataParallel]
 
@@ -62,9 +64,11 @@ def save_model(model:ray.tune.Trainable, checkpoint_dir:str) -> str:
     checkpoint_dir = pathlib.Path(checkpoint_dir)
     
     path = str(checkpoint_dir / 'checkpoint.pt')
+    shell_utils.ensure_path_to_file_exists(path)
     net = get_net(model)
     torch.save(net.state_dict(), path)
     
+    #TODO: this does not account for schedulers, etc.
     optim_path = str(checkpoint_dir / 'optim.pt')
     torch.save({'optimizer': model.optimizer.state_dict()}, optim_path)
 

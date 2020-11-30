@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Updated
 - xgb_utils to be compatible with `xgboost > 1.0.
+- torch_utils to handle missing directories in IO operations
 
 ### Fixed
 - Incorrect import in incremental count vectorizer.
