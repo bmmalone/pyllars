@@ -599,7 +599,7 @@ def evaluate_hyperparameters(
         estimator_test=estimator_test_fit,
         predictions_val=y_val,
         predictions_test=y_test,
-        true_val=val_fold_data.y_train,
+        true_val=val_fold_data.y_validation,
         true_test=val_fold_data.y_test,
         metrics_val=metrics_val,
         metrics_test=metrics_test,
