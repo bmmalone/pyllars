@@ -11,11 +11,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Helpers for sampling from conjugate distributions
 
 ### Updated
-- xgb_utils to be compatible with `xgboost > 1.0.
+- xgb_utils to be compatible with `xgboost > 1.0
 - torch_utils to handle missing directories in IO operations
 
 ### Fixed
-- Incorrect import in incremental count vectorizer.
+- Incorrect import in incremental count vectorizer
+- Default parameters for plotting ROC curves
+- Return value for hyperparameter evaluation
 
 ## [1.0.3] - 2020-03-27
 ### Added
