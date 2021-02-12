@@ -46,19 +46,76 @@ logger = logging.getLogger(__name__)
 
 import itertools
 import json
+import numpy as np
 import pandas as pd
+import tqdm
+
+import sklearn.model_selection
 
 import pyllars.ml_utils as ml_utils
 import pyllars.pandas_utils as pd_utils
 
-def get_hp_fold_iterator(hp_grid, num_folds):
+_ESTIMATOR_PREFIX = "estimator__"
+
+def get_log_reg_hp_grid(estimator_prefix=_ESTIMATOR_PREFIX):
+
+    log_reg_hp_grid = list(sklearn.model_selection.ParameterGrid({
+        '{}class_weight'.format(estimator_prefix): ['balanced', None],
+        '{}penalty'.format(estimator_prefix): ['l1', 'l2'],
+        '{}C'.format(estimator_prefix): np.concatenate([10.0**-np.arange(0,6)]),#, 10.0**np.arange(1,4)]),
+        '{}random_state'.format(estimator_prefix): [8675309],
+        '{}max_iter'.format(estimator_prefix): [1000],
+        '{}solver'.format(estimator_prefix): ['liblinear']
+    }))
+
+    for p in log_reg_hp_grid:
+        if p['{}penalty'.format(estimator_prefix)] == 'l2':
+            p['{}solver'.format(estimator_prefix)] = 'lbfgs'
+
+    return log_reg_hp_grid
+
+def get_xgb_classifier_hp_grid(estimator_prefix=_ESTIMATOR_PREFIX):
+
+    xgb_hp_grid = list(sklearn.model_selection.ParameterGrid({
+        '{}scale_features'.format(estimator_prefix): [True],
+        '{}num_boost_round'.format(estimator_prefix): [2, 5, 10],
+        '{}max_depth'.format(estimator_prefix): [2, 4, 6],
+        '{}min_child_weight'.format(estimator_prefix): [1, 2, 4],
+        '{}gamma'.format(estimator_prefix): [0, 0.1],
+        '{}subsample'.format(estimator_prefix): [0.25, 0.5, 1.0],
+        '{}scale_pos_weight'.format(estimator_prefix): [1.0],
+    }))
+
+    return xgb_hp_grid
+
+
+
+def get_svc_hyperparameter_grid(estimator_prefix=_ESTIMATOR_PREFIX):
+                
+    svc_hp_grid = list(sklearn.model_selection.ParameterGrid({
+        #'{}C'.format(estimator_prefix):  np.concatenate([10.**-np.arange(0,7), 10.**np.arange(1,8)]),
+        '{}C'.format(estimator_prefix):  np.concatenate([10.**-np.arange(0,2), 10.**np.arange(1,3)]),
+        '{}gamma'.format(estimator_prefix): [1,0.1,0.01,0.001, 'scale', 'auto'],
+        '{}kernel'.format(estimator_prefix): ['rbf', 'poly', 'sigmoid']
+    }))
+
+    return svc_hp_grid
+
+
+
+
+def get_hp_fold_iterator(hp_grid, num_folds, use_tqdm=True):
     """ Create an iterator over all combinations of hyperparameters and folds
     """
     hp_grid = list(hp_grid)
-    folds = list(range(num_folds))
+    val_folds = np.array(list(range(num_folds)))
+    test_folds = (val_folds +1) % num_folds
 
-    hp_fold_it = itertools.product(hp_grid, folds)
+    hp_fold_it = itertools.product(hp_grid, val_folds, test_folds)
     hp_fold_it = list(hp_fold_it)
+
+    if use_tqdm:
+        hp_fold_it = tqdm.tqdm(hp_fold_it)
     
     return hp_fold_it
 
@@ -112,18 +169,23 @@ def get_hp_results(all_res):
     
     return df_results
 
-def get_best_hyperparameters(df_results, evaluation_metric, selection_function):
+def get_best_hyperparameters(
+        results,
+        evaluation_metric,
+        ex_type='max',
+        group_fields='fold_val'):
     """ Based on the performance on the validation, select the best hyperparameters
     """
-    hp_groups = df_results.groupby('hyperparameters_str')
+    if not isinstance(results, pd.DataFrame):
+        results = pd.DataFrame(results)
 
-    validation_evaluation_metric = "validation_{}".format(evaluation_metric)
-    test_evaluation_metric = "test_{}".format(evaluation_metric)
+    validation_evaluation_metric = "val_{}".format(evaluation_metric)
 
-    # find the mean of each set of hp's across all folds
-    val_performance = hp_groups[validation_evaluation_metric].mean()
+    df_best_hps = pd_utils.get_group_extreme(
+        df=results,
+        ex_field=validation_evaluation_metric,
+        ex_type=ex_type,
+        group_fields=group_fields
+    )
 
-    # now, select the best
-    val_best = selection_function(val_performance) 
-    
-    return val_best
+    return df_best_hps

@@ -9,10 +9,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Helper for counting group sizes in pandas
 - Helper for extracting values from config-like mappings
 - Helpers for sampling from conjugate distributions
+- Hyperparameter grids for standard models
 
 ### Updated
 - xgb_utils to be compatible with `xgboost > 1.0
 - torch_utils to handle missing directories in IO operations
+- xgb_utils to accommodate arbitrary hyperparameters
 
 ### Fixed
 - Incorrect import in incremental count vectorizer
