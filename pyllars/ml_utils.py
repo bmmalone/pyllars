@@ -413,6 +413,7 @@ def evaluate_hyperparameters(
         test_folds:Any,
         data:pd.DataFrame,
         collect_metrics:Callable,
+        train_new_test_model:bool=False,
         use_predict_proba:bool=False,
         train_folds:Optional[Any]=None,
         split_field:str='fold',
@@ -422,7 +423,9 @@ def evaluate_hyperparameters(
         collect_metrics_kwargs:Optional[Dict]=None,
         attribute_fields:Optional[Iterable[str]]=None,
         fields_to_ignore:Optional[Container[str]]=None,
-        attributes_are_np_arrays:bool=False) -> estimators_predictions_metrics:
+        attributes_are_np_arrays:bool=False,
+        include_predictions:bool=True,
+        include_models:bool=True) -> estimators_predictions_metrics:
     """ Evaluate `hyperparameters` for `fold`
     
     **N.B.** This function is not particularly efficient with
@@ -437,7 +440,7 @@ def evaluate_hyperparameters(
     2.  Transform `target_field` using the `target_transform` function
     3.  Train `estimator_val` using `train`
     4.  Evaluate the trained `estimator_val` on `val` using `collect_metrics`
-    5.  Train `estimator_test` using both `train` and `val`
+    5.  Train `estimator_test` using both `train` and `val` (if `train_new_test_model`)
     6.  Evaluate the trained `estimator_test` on `test` using `collect_metrics`
     
     Parameters
@@ -466,6 +469,12 @@ def evaluate_hyperparameters(
         The function for evaluating the model performance. It should have
         at least two arguments, `y_true` and `y_pred`, in that order. This
         function will eventually return whatever this function returns.
+        
+    train_new_test_model : bool
+        Whether (when True) to train a model using both the train and
+        validation sets for making predictions on the test set or (False)
+        use the model trained on only the training set for both the test and
+        validation datasets.
         
     use_predict_proba : bool
         Whether to use `predict` (when `False`, the default) or `predict_proba`
@@ -506,6 +515,12 @@ def evaluate_hyperparameters(
         Whether to stack the values from the individual rows. This should
         be set to `True` when some of the columns in `attribute_fields`
         contain numpy arrays.
+        
+    include_predictions : bool
+        Whether to include the predictions and true values in the output
+        
+    include_models : bool
+        Whether to include the trained models in the output
         
     Returns
     -------
@@ -573,26 +588,55 @@ def evaluate_hyperparameters(
         use_predict_proba=use_predict_proba
     )
     
-    # for predictions on the test set, we will train on
-    # both the training and validation sets
-    X_train = np.concatenate([val_fold_data.X_train, val_fold_data.X_validation])
-    y_train = np.concatenate([val_fold_data.y_train, val_fold_data.y_validation])
+    if train_new_test_model:
+
+        # for predictions on the test set, we will train on
+        # both the training and validation sets
+        X_train = np.concatenate([val_fold_data.X_train, val_fold_data.X_validation])
+        y_train = np.concatenate([val_fold_data.y_train, val_fold_data.y_validation])
+
+        # get the testing performance
+        estimator_test_fit, y_test, metrics_test = _train_and_evaluate(
+            estimator_test,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=val_fold_data.X_test,
+            y_test=val_fold_data.y_test,
+            target_transform=target_transform,
+            target_inverse_transform=target_inverse_transform,
+            collect_metrics=collect_metrics,
+            collect_metrics_kwargs=collect_metrics_kwargs,
+            use_predict_proba=use_predict_proba
+        )
+    else:
+        estimator_test_fit = estimator_val_fit
+        if use_predict_proba:
+            y_test = estimator_val_fit.predict_proba(val_fold_data.X_test)
+        else:        
+            y_test = estimator_val_fit.predict(val_fold_data.X_test)
     
-    # get the testing performance
-    estimator_test_fit, y_test, metrics_test = _train_and_evaluate(
-        estimator_test,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=val_fold_data.X_test,
-        y_test=val_fold_data.y_test,
-        target_transform=target_transform,
-        target_inverse_transform=target_inverse_transform,
-        collect_metrics=collect_metrics,
-        collect_metrics_kwargs=collect_metrics_kwargs,
-        use_predict_proba=use_predict_proba
-    )
+        # transform back, if needed
+        if target_inverse_transform is not None:
+            y_test = target_inverse_transform(y_test)
+
+        # evaluate
+        metrics_test = collect_metrics(
+            y_test,
+            val_fold_data.y_test,
+            **collect_metrics_kwargs
+        )
     
     hyperparameters_str = json.dumps(hyperparameters)
+    
+    if not include_models:
+        estimator_val_fit = None
+        estimator_test_fit = None
+        
+    if not include_predictions:
+        predictions_val = None
+        predictions_test = None
+        val_fold_data.y_validation = None
+        val_fold_data.y_test = None
     
     ret = estimators_predictions_metrics(
         estimator_val=estimator_val_fit,
