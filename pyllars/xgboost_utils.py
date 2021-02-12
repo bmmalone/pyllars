@@ -16,6 +16,8 @@ import sklearn.preprocessing
 import tempfile
 import xgboost as xgb
 
+import toolz.dicttoolz
+
 import pyllars.shell_utils as shell_utils
 import pyllars.validation_utils as validation_utils
 
@@ -169,6 +171,7 @@ class XGBClassifierWrapper(object):
         self.validation_period = None
         self.name = None
         self.kwargs = None
+        self.xgb_hyperparams = dict()
         
     def log(self, msg, level=logging.INFO):
         msg = "[{}]: {}".format(self.name, msg)
@@ -253,9 +256,13 @@ class XGBClassifierWrapper(object):
             
         msg = "training the model"
         self.log(msg)
+
+        self.kwargs
+
+        xgb_kwargs = toolz.dicttoolz.merge(self.kwargs, self.xgb_hyperparams)
         
         self.booster_ = xgb.train(
-            self.kwargs,
+            xgb_kwargs,
             self._dtrain,
             self.num_boost_round,
             callbacks=callbacks
@@ -319,8 +326,12 @@ class XGBClassifierWrapper(object):
         
         for k,v in params.items():
             if k not in valid_params:
-                msg = "Invalid parameter: {}".format(k)
-                raise ValueError(msg)
+                pass
+                #msg = "Invalid parameter: {}".format(k)
+                #raise ValueError(msg)
+            else:
+                # this is a hyperparameter for xgb
+                self.xgb_hyperparams[k] = v
                 
             # then this is a valid hyperparameter
             setattr(self, k, v)
