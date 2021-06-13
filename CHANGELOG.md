@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Helper for extracting values from config-like mappings
 - Helpers for sampling from conjugate distributions
 - Hyperparameter grids for standard models
+- Helper for cross product of pandas data frame
 
 ### Updated
 - xgb_utils to be compatible with `xgboost > 1.0

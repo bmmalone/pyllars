@@ -716,6 +716,45 @@ def join_df_list(dfs:List[pd.DataFrame], join_col:StrOrList, *args,
 
     return joined_df
 
+def cross_product(df_left:pd.DataFrame, df_right:pd.DataFrame,
+        tmp_key:str='_tmpkey', **kwargs) -> pd.DataFrame:
+    """ Create the cross product data frame between the two data frames
+
+    Internally, this adds a temporary column names `tmp_key` to both data frames
+    and joins on that. It is not especially efficiant.
+
+    See more official discussion here: https://github.com/pydata/pandas/issues/5401
+    
+    This code is adapted from: https://www.geeksforgeeks.org/python-program-to-perform-cross-join-in-pandas/
+
+    Parameters
+    ----------
+    df_{left, right} : pandas.DataFrame
+        The data frames
+
+    tmp_key : str
+        The name of the temporary column added for the join. This column name
+        should not exist in either of the data frames.
+
+    kwargs
+        Further keyword arguments to pass to :py:func:`pandas.merge`
+
+
+    Returns
+    -------
+    df_cross_product: pandas.DataFrame
+        The cross product of the data frames
+    """
+    df_left[tmp_key] = 1
+    df_right[tmp_key] = 1
+
+    df_cross = pd.merge(df_left, df_right, on=tmp_key, **kwargs)
+    df_cross = df_cross.drop(columns=[tmp_key])
+    
+    df_left.drop(columns=[tmp_key], inplace=True)
+    df_right.drop(columns=[tmp_key], inplace=True)
+
+    return df_cross
 
 def filter_rows(
         df_filter:pd.DataFrame,
