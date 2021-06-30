@@ -24,8 +24,18 @@ pip3 install .
 
 (The "period" at the end is required.)
 
-If possible, I recommend installing inside a virtual environment. See 
+If possible, I recommend installing inside a virtual environment or with conda. See 
 [here](http://www.simononsoftware.com/virtualenv-tutorial-part-2/>), for example.
 
 Please see [the documentation](https://pyllars.readthedocs.io/en/latest/index.html)
 for more details.
+
+**pytorch and ray installation**
+
+The `pytorch.torch` submodule requires `pytorch` and `ray-tune`. Due to the
+various configuration options (CPU vs. GPU, etc.), the `pyllars` installation
+does not attempt to install these dependencies; they need to be installed
+manually, though this can be done after installing `pyllars` with no problems.
+I suggest using these within an anaconda or similar environment. Please see the
+official documentation for installing [`pytorch`](https://pytorch.org/) and
+[`ray-tune`](https://anaconda.org/conda-forge/ray-tune) for details.
