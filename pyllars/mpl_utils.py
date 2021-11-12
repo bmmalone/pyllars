@@ -1020,6 +1020,8 @@ def plot_confusion_matrix(
         show_colorbar:bool=True,
         title:Optional[str]="Confusion matrix", 
         cmap:matplotlib.colors.Colormap=plt.cm.Blues, 
+        vmin:Optional[float]=None,
+        vmax:Optional[float]=None,
         true_tick_labels:Optional[Sequence[str]]=None, 
         predicted_tick_labels:Optional[Sequence[str]]=None, 
         ylabel:Optional[str]="True labels", 
@@ -1086,7 +1088,7 @@ def plot_confusion_matrix(
     if cmap == None:
         cmap = plt.cm.Blues
 
-    mappable = ax.imshow(confusion_matrix, interpolation='nearest', cmap=cmap)
+    mappable = ax.imshow(confusion_matrix, interpolation='nearest', cmap=cmap, vmin=vmin, vmax=vmax)
     
     if show_colorbar:
         fig.colorbar(mappable)
