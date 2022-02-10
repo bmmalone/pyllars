@@ -4,7 +4,7 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.0.4] - In progress
+## [1.0.4] - 2022-02-10
 ### Added
 - Helper for counting group sizes in pandas
 - Helper for extracting values from config-like mappings
