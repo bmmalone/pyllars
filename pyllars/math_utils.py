@@ -129,4 +129,22 @@ def l1_distance(p, q):
     diff = np.abs(p - q)
     return np.sum(diff)
 
-
+def clip_and_scale(x, max_value=100, min_value=0):
+    """ Clip `x` to the given range, and scale it to [0,1]
+    
+    Parameters
+    ----------
+    x : float
+        The number
+        
+    {max,min}_value : float
+        The maximum and minimum values
+        
+    Returns
+    -------
+    x_hat : float
+        The clipped, scaled value
+    """
+    rng = max_value - min_value
+    x_hat = np.clip(x, min_value, max_value) / rng
+    return x_hat

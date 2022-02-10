@@ -15,7 +15,7 @@ import numpy as np
 import scipy.sparse
 from pyllars.validation_utils import check_is_fitted
 
-import pyllars.utils as utils
+import pyllars.collection_utils as collection_utils
 
 class IncrementalCountVectorizer:
     def __init__(self, 
@@ -106,7 +106,7 @@ class IncrementalCountVectorizer:
             ]
             
             # remove those we did not know
-            int_tokens = utils.remove_nones(int_tokens)
+            int_tokens = collection_utils.remove_nones(int_tokens)
             
             Xt.append(int_tokens)
             

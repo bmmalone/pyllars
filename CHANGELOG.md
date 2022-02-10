@@ -4,6 +4,24 @@ All notable changes to this repo will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/), 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.0.4] - 2022-02-10
+### Added
+- Helper for counting group sizes in pandas
+- Helper for extracting values from config-like mappings
+- Helpers for sampling from conjugate distributions
+- Hyperparameter grids for standard models
+- Helper for cross product of pandas data frame
+
+### Updated
+- xgb_utils to be compatible with `xgboost > 1.0
+- torch_utils to handle missing directories in IO operations
+- xgb_utils to accommodate arbitrary hyperparameters
+
+### Fixed
+- Incorrect import in incremental count vectorizer
+- Default parameters for plotting ROC curves
+- Return value for hyperparameter evaluation
+
 ## [1.0.3] - 2020-03-27
 ### Added
 - Helpers for controlling logging options when a command line is not

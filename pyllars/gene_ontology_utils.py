@@ -11,6 +11,7 @@ These utilities are often designed to work with `goatools`.
 import collections
 
 import goatools.associations
+from goatools.anno.genetogo_reader import Gene2GoReader
 
 ###
 # Helpful constants and data structures
@@ -110,10 +111,12 @@ def load_human_gene2go_annotations(gene2go):
         A map from the human Entrez gene IDs to the associated GO annotations
     
     """
-    
-    gene2go_human = goatools.associations.read_ncbi_gene2go(
-        gene2go, taxids=[HUMAN_NCBI_TAXON_ID]
-    )
+    objanno = Gene2GoReader(gene2go, taxids=[HUMAN_NCBI_TAXON_ID])
+
+    gene2go_human = collections.defaultdict(set)
+
+    for i in objanno.associations:
+        gene2go_human[str(i.DB_ID)].add(i.GO_ID)    
     
     return gene2go_human
 

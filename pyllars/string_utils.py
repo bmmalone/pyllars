@@ -150,15 +150,16 @@ def encode_all_sequences(
         encoding_map:encoding_map_type,
         maxlen:Optional[int]=None,
         align:str="start",
-        pad_value:str='J',
+        pad_value:str='-',
         same_length:bool=False,
         flatten:bool=False,
         return_as_numpy:bool=True,
         swap_axes:bool=False,
         progress_bar:bool=True) -> np_array_or_list:
-    """ Extract the amino acid feature vectors for each peptide sequence
+    """ Encode the given strings using the provided encoding map
 
-    See `get_peptide_aa_features` for more details.
+    **N.B.** The encoding works on a **per-character** basis. Thus, all keys in the
+    encoding map should be single chars.
 
     Parameters
     ----------
@@ -169,12 +170,20 @@ def encode_all_sequences(
         The features for each character
 
     maxlen : typing.Optional[int]
+        The maximum allowed length for any single sequence.
+        
+        **N.B.** This is only enforced when `same_length` is `False`!
 
     align : str
+        The strategy for adding padding to short strings
 
     pad_value : str
+        The character value to use for padding. This value must be defined in
+        `encoding_map`.
 
     same_length : bool
+        Whether the input is already the same length (in which case padding and
+        truncating will not be performed).
 
     flatten : bool
         Whether to (attempt to) convert the features of each peptide into
@@ -188,6 +197,9 @@ def encode_all_sequences(
 
     swap_axes : bool
         If the values are returned as a numpy tensor, swap axes 1 and 2.
+
+        This operation is most relevant when formatting input for RNNs in
+        pytorch. See more discussion [here](https://discuss.pytorch.org/t/for-beginners-do-not-use-view-or-reshape-to-swap-dimensions-of-tensors/75524).
 
         N.B. This flag is only compatible with `return_as_numpy=True` and
         `flatten=False`.

@@ -13,8 +13,12 @@ import pathlib
 import sklearn.exceptions
 import sklearn.metrics
 import sklearn.preprocessing
+import tempfile
 import xgboost as xgb
 
+import toolz.dicttoolz
+
+import pyllars.shell_utils as shell_utils
 import pyllars.validation_utils as validation_utils
 
 from typing import Optional
@@ -51,6 +55,57 @@ def xgbooster_predict_proba(
     y_probas_pred[:,1] = y_score
     
     return y_probas_pred
+    
+
+def xgbooster_to_json(booster:xgb.Booster) -> str:
+    """ Get the JSON representation of `booster`
+
+    Parameters
+    ----------
+    booster : xgboost.Booster
+        The trained booster
+
+    Returns
+    -------
+    booster_json : str
+        The json string
+    """
+    fd, fname = tempfile.mkstemp(suffix=".json")
+    booster.save_model(fname)
+
+    with open(fname) as b_f:
+        booster_json = b_f.readlines()
+
+    shell_utils.remove_file(fname)
+
+    booster_json = booster_json[0]
+    return booster_json
+
+def xgbooster_from_json(booster_json:str) -> xgb.Booster:
+    """ Create a booster based on the json string
+
+    Parameters
+    ----------
+    booster_json : str
+        The json string
+
+    Returns
+    -------
+    booster : xgboost.Booster
+        The trained booster
+    """
+    fd, fname = tempfile.mkstemp(suffix=".json")
+
+    with open(fname, 'w') as b_f:
+        b_f.writelines(booster_json)
+
+    booster = xgb.Booster()
+    booster.load_model(fname)
+    
+    shell_utils.remove_file(fname)
+    return booster
+
+    
 
 
 class XGBClassifierWrapper(object):
@@ -103,11 +158,20 @@ class XGBClassifierWrapper(object):
             name:str="XGBClassiferWrapper",
             **kwargs):
         
+        self._initialize()
         self.num_boost_round = num_boost_round
         self.scale_features = scale_features
         self.validation_period = validation_period
         self.name = name
         self.kwargs = kwargs
+
+    def _initialize(self):        
+        self.num_boost_round = None
+        self.scale_features = None
+        self.validation_period = None
+        self.name = None
+        self.kwargs = None
+        self.xgb_hyperparams = dict()
         
     def log(self, msg, level=logging.INFO):
         msg = "[{}]: {}".format(self.name, msg)
@@ -192,9 +256,13 @@ class XGBClassifierWrapper(object):
             
         msg = "training the model"
         self.log(msg)
+
+        self.kwargs
+
+        xgb_kwargs = toolz.dicttoolz.merge(self.kwargs, self.xgb_hyperparams)
         
         self.booster_ = xgb.train(
-            self.kwargs,
+            xgb_kwargs,
             self._dtrain,
             self.num_boost_round,
             callbacks=callbacks
@@ -258,11 +326,15 @@ class XGBClassifierWrapper(object):
         
         for k,v in params.items():
             if k not in valid_params:
-                msg = "Invalid parameter: {}".format(k)
-                raise ValueError(msg)
+                pass
+                #msg = "Invalid parameter: {}".format(k)
+                #raise ValueError(msg)
+            else:
+                # this is a hyperparameter for xgb
+                self.xgb_hyperparams[k] = v
                 
             # then this is a valid hyperparameter
-            setattr(self, key, value)
+            setattr(self, k, v)
             
         return self
     
@@ -282,6 +354,32 @@ class XGBClassifierWrapper(object):
         
         params_out = out / "params.jpkl"
         joblib.dump(self.get_params(deep=True), str(params_out))
+
+    def __getstate__(self):
+        state = {
+            'scaler': self.scaler_,
+            'booster': xgbooster_to_json(self.best_booster_),
+            'params': self.get_params(deep=True)
+        }
+
+        return state
+
+    def __setstate__(self, state):
+        self._initialize()
+        self.scaler_ = state['scaler']
+        self.best_booster_ = xgbooster_from_json(state['booster'])
+
+        for k,v in state['params'].items():
+            setattr(self, k, v)
+            
+        # further, set the appropriate kwargs
+        self.kwargs = state['params'].copy()
+        
+        # remove the basic parameters
+        self.kwargs.pop('num_boost_round')
+        self.kwargs.pop('scale_features')
+        self.kwargs.pop('validation_period')
+        self.kwargs.pop('name')
         
     @classmethod
     def load_model(klass, f):

@@ -20,13 +20,14 @@ import tqdm
 
 import openpyxl
 
+import pyllars.shell_utils as shell_utils
 import pyllars.utils as utils
 import pyllars.validation_utils as validation_utils
 
 import typing
 
-from typing import Callable, Dict, Generator, Iterable, List, Set
-StrOrList = typing.Union[str,typing.List[str]]
+from typing import Callable, Dict, Generator, Iterable, List, Optional, Sequence, Set, Union
+StrOrList = Union[str,List[str]]
 
 
 def apply(df:pd.DataFrame, func:Callable, *args, progress_bar:bool=False,
@@ -274,7 +275,7 @@ def read_df(filename:str, filetype:str='AUTO', sheet:str=None, **kwargs) -> pd.D
     if filetype == 'csv':
         df = pd.read_csv(filename, **kwargs)
     elif filetype == 'excel':
-        df = pd.read_excel(filename, sheetname=sheet, **kwargs)
+        df = pd.read_excel(filename, sheet_name=sheet, **kwargs)
     elif filetype == 'hdf5':
         df = pd.read_hdf(filename, key=sheet, **kwargs)
     elif filetype == "parquet":
@@ -367,9 +368,9 @@ def write_df(df:pd.DataFrame, out, create_path:bool=False, filetype:str='AUTO',
     # check if we want to and can create the path
     if create_path:
         if filetype != 'excel_writer':
-            utils.ensure_path_to_file_exists(out)
+            shell_utils.ensure_path_to_file_exists(out)
         else:
-            msg = ("[utils.write_df]: create_path was passed as True, but the "
+            msg = ("[pd_utils.write_df]: create_path was passed as True, but the "
                 "filetype is 'excel_writer'. This combination does not work. "
                 "The path to the writer will not be created.")
             logger.warning(msg)
@@ -547,8 +548,61 @@ def group_and_chunk_df(df:pd.DataFrame, groupby_field:str, chunk_size:int) -> pd
     
     return group_chunks
 
-def get_group_extreme(df:pd.DataFrame, ex_field:str, ex_type:str="max",
-        group_fields=None, groups:pd.core.groupby.GroupBy=None) -> pd.DataFrame:
+def get_group_sizes(
+        df:Optional[pd.DataFrame]=None,
+        group_fields:Optional[StrOrList]=None,
+        groups:Optional[pd.core.groupby.GroupBy]=None) -> pd.DataFrame:
+    """ Create a data frame containing the size of each group
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        The data frame. If `groups` are given, then `df` is not needed.
+
+    group_fields: typing.Optional[typing.Union[str, typing.Sequence[str]]]
+        If not `None`, then the field(s) by which to group the data frame. This
+        value must be something which can be interpreted by
+        pd.DataFrame.groupby.
+
+    groups: typing.Optional[pandas.core.groupby.GroupBy]
+        If not None, then these groups will be used to find the counts.
+
+    Returns
+    -------
+    df_counts : pandas.DataFrame
+        The data frame containing the counts. It contains one column for each
+        of the `group_fields` (or whatever the index is if `groups` is instead
+        provided), as well as a `count` column.
+    """
+    if (group_fields is None) and (groups is None):
+        msg = ("[pandas_utils.get_group_sizes]: No groups or group field "
+            "provided")
+        raise ValueError(msg)
+
+    # we also can't have both
+    if (group_fields is not None) and (groups is not None):
+        msg = ("[pandas_utils.get_group_sizes]: Both groups and group field "
+            "provided")
+        raise ValueError(msg)
+
+    # so we either have groups or group_field
+    if group_fields is not None:
+        groups = df.groupby(group_fields)
+        
+    df_counts = groups.size()
+    df_counts = df_counts.reset_index()
+    df_counts = df_counts.rename(columns={0:'count'})
+    df_counts = df_counts.sort_values('count', ascending=False)
+    df_counts = df_counts.reset_index(drop=True)
+
+    return df_counts
+
+def get_group_extreme(
+        df:pd.DataFrame,
+        ex_field:str,
+        ex_type:str="max",
+        group_fields:Optional[StrOrList]=None,
+        groups:Optional[pd.core.groupby.GroupBy]=None) -> pd.DataFrame:
     """ Find the row in each group of `df` with an extreme value for `ex_field`
 
     "ex_type" must be either "max" or "min" and indicated which type of extreme
@@ -566,10 +620,10 @@ def get_group_extreme(df:pd.DataFrame, ex_field:str, ex_type:str="max",
     ex_type: str {"max" or "min"}, case-insensitive
         The type of extreme to consider.
     
-    groups: None or pandas.core.groupby.GroupBy
+    groups: typing.Optional[pandas.core.groupby.GroupBy]
         If not None, then these groups will be used to find the maximum values.
 
-    group_fields: None or str or typing.List[str]
+    group_fields: typing.Optional[typing.Union[str, typing.Sequence[str]]]
         If not `None`, then the field(s) by which to group the data frame. This
         value must be something which can be interpreted by
         pd.DataFrame.groupby.
@@ -662,6 +716,45 @@ def join_df_list(dfs:List[pd.DataFrame], join_col:StrOrList, *args,
 
     return joined_df
 
+def cross_product(df_left:pd.DataFrame, df_right:pd.DataFrame,
+        tmp_key:str='_tmpkey', **kwargs) -> pd.DataFrame:
+    """ Create the cross product data frame between the two data frames
+
+    Internally, this adds a temporary column names `tmp_key` to both data frames
+    and joins on that. It is not especially efficiant.
+
+    See more official discussion here: https://github.com/pydata/pandas/issues/5401
+    
+    This code is adapted from: https://www.geeksforgeeks.org/python-program-to-perform-cross-join-in-pandas/
+
+    Parameters
+    ----------
+    df_{left, right} : pandas.DataFrame
+        The data frames
+
+    tmp_key : str
+        The name of the temporary column added for the join. This column name
+        should not exist in either of the data frames.
+
+    kwargs
+        Further keyword arguments to pass to :py:func:`pandas.merge`
+
+
+    Returns
+    -------
+    df_cross_product: pandas.DataFrame
+        The cross product of the data frames
+    """
+    df_left[tmp_key] = 1
+    df_right[tmp_key] = 1
+
+    df_cross = pd.merge(df_left, df_right, on=tmp_key, **kwargs)
+    df_cross = df_cross.drop(columns=[tmp_key])
+    
+    df_left.drop(columns=[tmp_key], inplace=True)
+    df_right.drop(columns=[tmp_key], inplace=True)
+
+    return df_cross
 
 def filter_rows(
         df_filter:pd.DataFrame,
@@ -716,3 +809,13 @@ def filter_rows(
         d = d.reset_index(drop=True)
         
     return d
+
+def intersect_masks(masks:Sequence[np.ndarray]) -> np.ndarray:
+    """ Take the intersection sof all masks in the list """
+    m_intersect = np.all(list(m for m in masks), axis=0)
+    return m_intersect
+
+def union_masks(masks:Sequence[np.ndarray]) -> np.ndarray:
+    """ Take the union of all masks in the list """
+    m_union = np.any(list(m for m in masks), axis=0)
+    return m_union
