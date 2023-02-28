@@ -2,10 +2,6 @@
 
 This project contains supporting utilities for Python 3.
 
-[![Build Status](https://travis-ci.org/bmmalone/pyllars.svg)](https://travis-ci.org/bmmalone/pyllars)
-[![Coverage Status](https://coveralls.io/repos/github/bmmalone/pyllars/badge.svg?branch=dev)](https://coveralls.io/github/bmmalone/pyllars?branch=dev)
-[![Documentation Status](https://readthedocs.org/projects/pyllars/badge/?version=latest)](https://pyllars.readthedocs.io/en/latest/?badge=latest)
-
 **Installation**
 
 This package is available on PyPI.
