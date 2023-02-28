@@ -1,12 +1,15 @@
 """
 This module contains a number of helper functions for matplotlib.
+
 For details about various arguments, such as allowed key word
 arguments and how they will be interpreted, please consult the
 appropriate parts of the matplotlib documentation:
+
 * **Lines**: https://matplotlib.org/api/_as_gen/matplotlib.lines.Line2D.html#matplotlib.lines.Line2D
 * **Patches**: https://matplotlib.org/api/_as_gen/matplotlib.patches.Patch.html#matplotlib.patches.Patch
 * **Scatter plots**: https://matplotlib.org/api/_as_gen/matplotlib.pyplot.scatter.html#matplotlib.pyplot.scatter
 * **Text**: https://matplotlib.org/api/text_api.html#matplotlib.text.Text
+
 """
 import argparse
 import itertools
@@ -74,12 +77,15 @@ def _get_fig_ax(ax:Optional[plt.Axes]):
 def set_legend_title_fontsize(
         ax:plt.Axes, fontsize:IntOrString) -> None:
     """ Set the font size of the title of the legend.
+
     Parameters
     ----------
     ax : matplotlib.axes.Axes
         The axis
+
     fontsize : int, or a str recognized by matplotlib
         The size of the legend title
+
     Returns
     -------
     None, but the legend title fontsize is updated
@@ -91,12 +97,15 @@ def set_legend_title_fontsize(
 def set_legend_fontsize(
         ax:plt.Axes, fontsize:IntOrString) -> None:
     """ Set the font size of the items of the legend.
+
     Parameters
     ----------
     ax : matplotlib.axes.Axes
         The axis
+
     fontsize : int, or a str recognized by matplotlib
         The size of the legend text
+
     Returns
     -------
     None, but the legend text fontsize is updated
@@ -108,10 +117,12 @@ def set_legend_fontsize(
 def set_title_fontsize(
         ax:plt.Axes, fontsize:IntOrString) -> None:
     """ Set the font size of the title of the axis.
+
     Parameters
     ----------
     ax : matplotlib.axes.Axes
         The axis
+
     fontsize : int, or a str recognized by matplotlib
         The size of the title font
  
@@ -124,14 +135,18 @@ def set_title_fontsize(
 def set_label_fontsize(
         ax:plt.Axes, fontsize:IntOrString, axis:str='both') -> None:
     """ Set the font size of the labels of the axis.
+
     Parameters
     ----------
     ax : matplotlib.axes.Axes
         The axis
+
     fontsize : int, or a str recognized by matplotlib
         The size of the label font
+
     axis : str in {`both`, `x`, `y`}
         Which label(s) to update
+
     Returns
     -------
     None, but the respective label fontsizes are updated
@@ -153,15 +168,19 @@ def set_ticklabels_fontsize(
         axis:str='both',
         which:str='major'):
     """ Set the font size of the tick labels
+
     Parameters
     ----------
     ax : matplotlib.axes.Axes
         The axis
+
     fontsize : int, or a str recognized by matplotlib
         The size of the ticklabels
+
     {axis,which} : str
         Values passed to :meth:`matplotlib.axes.Axes.tick_params`. Please see
         the matplotlib documentation for more details.
+
     Returns
     -------
     None, but the ticklabel fontsizes are updated
@@ -177,15 +196,19 @@ def set_ticklabel_rotation(
         axis:str='x',
         which:str='both'):
     """ Set the rotation of the tick labels
+
     Parameters
     ----------
     ax : matplotlib.axes.Axes
         The axis
+
     rotation : int, or a string matplotlib recognizes
         The rotation of the labels
+
     {axis,which} : str
         Values passed to :func:`matplotlib.pyplot.setp`. Please see
         the matplotlib documentation for more details.
+
     Returns
     -------
     None, but the ticklabels are rotated
@@ -225,10 +248,12 @@ def center_splines(ax:plt.Axes) -> None:
     
     This is useful for things like scatter plots where (0,0) should be
     in the center of the plot.
+
     Parameters
     ----------
     ax : matplotlib.axes.Axes
         The axis
+
     Returns
     -------
     None, but the splines are updated
@@ -246,32 +271,15 @@ def center_splines(ax:plt.Axes) -> None:
 
     ax.xaxis.set_label_coords(0.5, 0)
     ax.yaxis.set_label_coords(-0.05, 0.5)
-    
-
-def hide_tick_labels(
-        ax:plt.Axes,
-        axis:str='both') -> None:
-    """ Hide the tick labels on the specified axes.
-    
-    Optionally, some can be preserved.
-    Parameters
-    ----------
-    ax : matplotlib.axes.Axes
-        The axis
-    axis : str in {`both`, `x`, `y`}
-        Axis of the tick labels to hide
-    Returns
-    -------
-    None, but the tick labels of the axis are removed, as specified
-    """
-    hide_tick_labels_by_index(ax, axis=axis)
 
 def hide_first_y_tick_label(ax:plt.Axes) -> None:
     """ Hide the first tick label on the y-axis
+
     Parameters
     ----------
     ax : matplotlib.axes.Axes
         The axis
+
     Returns
     -------
     None, but the tick label is hidden
@@ -284,10 +292,12 @@ def hide_tick_labels_by_text(
         to_remove_x:Collection=set(),
         to_remove_y:Collection=set()) -> None:
     """ Hide tick labels which match the given values.
+
     Parameters
     ----------
     ax : matplotlib.axes.Axes
         The axis
+
     to_remove_{x,y}: typing.Collection[str]
         The values to remove
         
@@ -304,7 +314,7 @@ def hide_tick_labels_by_text(
     num_yticks = len(yticks)
     keep_y = [i for i in range(num_yticks) if yticks[i].label1.get_text() not in to_remove_y]
 
-    hide_tick_labels_by_index(ax, keep_x=keep_x, keep_y=keep_y)
+    hide_tick_labels(ax, keep_x=keep_x, keep_y=keep_y)
 
 
 def hide_tick_labels_by_index(
@@ -315,16 +325,19 @@ def hide_tick_labels_by_index(
     """ Hide the tick labels on both axes.
     
     Optionally, some can be preserved.
+
     Parameters
     ----------
     ax : matplotlib.axes.Axes
         The axis
+
     keep_{x,y} : typing.Collection[int]
         The indices of any x-axis ticks to keep. The numbers are passed directly
         as indices to the "ticks" arrays.
         
     axis : str in {`both`, `x`, `y`}
         Axis of the tick labels to hide
+
     Returns
     -------
     None, but the tick labels of the axis are removed, as specified
@@ -472,7 +485,7 @@ def plot_simple_bar_chart(
         color_vals = [colors(c) for c in ls]
         colors = color_vals
         
-    elif validation_utils.validate_is_sequence(colors, raise_on_invalid=False):
+    elif utils.is_sequence(colors):
         # make sure this is the correct size
         if len(colors) != len(bars):
             msg = ("The number of colors ({}) and the number of bars({}) does "
@@ -680,7 +693,7 @@ def plot_stacked_bar_graph(
         widths = np.array([1] * num_bars)
         x = np.arange(num_bars)
     else:
-        if not validation_utils.validate_is_sequence(widths, raise_on_invalid=False):
+        if not utils.is_sequence(widths):
             widths = np.full(num_bars, widths)
             print("widths: ", widths)
         x = [0]
@@ -714,7 +727,7 @@ def plot_stacked_bar_graph(
     
     if edge_colors is None:
         edge_colors = colors
-    elif not validation_utils.validate_is_sequence(edge_colors, raise_on_invalid=False):
+    elif not utils.is_sequence(edge_colors):
         edge_colors = np.full(levels, edge_colors, dtype=object)
     elif len(edge_colors) != len(levels):
         msg = "The number of edge_colors must match the number of stacks."
@@ -822,10 +835,12 @@ def plot_sorted_values(
         scale_x:bool=False,
         **kwargs) -> FigAx:
     """ Sort `values` and plot them
+
     Parameters
     ----------
     values : typing.Sequence[float]
         The values to plot
+
     y_{min,max} : float
         The min and max values for the y-axis. If not given, then these
         default to the minimum and maximum values in the list.
@@ -833,6 +848,7 @@ def plot_sorted_values(
     scale_x : bool
         If True, then the `x` values will be equally-spaced between 0 and 1.
         Otherwise, they will be the values 0 to len(values)
+
     ax : typing.Optional[matplotlib.axes.Axes]
         An axis for plotting. If this is not given, then a figure and axis will
         be created.
@@ -845,10 +861,12 @@ def plot_sorted_values(
         * `lw` : the line width
         * `ls` : https://matplotlib.org/gallery/lines_bars_and_markers/line_styles_reference.html
         * `marker` : https://matplotlib.org/examples/lines_bars_and_markers/marker_reference.html
+
     Returns
     -------
     fig :  matplotlib.figure.Figure
         The Figure associated with `ax`, or a new Figure
+
     ax : matplotlib.axes.Axes
         Either `ax` or a new Axis
     """
@@ -980,8 +998,6 @@ def plot_confusion_matrix(
         show_colorbar:bool=True,
         title:Optional[str]="Confusion matrix", 
         cmap:matplotlib.colors.Colormap=plt.cm.Blues, 
-        vmin:Optional[float]=None,
-        vmax:Optional[float]=None,
         true_tick_labels:Optional[Sequence[str]]=None, 
         predicted_tick_labels:Optional[Sequence[str]]=None, 
         ylabel:Optional[str]="True labels", 
@@ -1048,7 +1064,7 @@ def plot_confusion_matrix(
     if cmap == None:
         cmap = plt.cm.Blues
 
-    mappable = ax.imshow(confusion_matrix, interpolation='nearest', cmap=cmap, vmin=vmin, vmax=vmax)
+    mappable = ax.imshow(confusion_matrix, interpolation='nearest', cmap=cmap)
     
     if show_colorbar:
         fig.colorbar(mappable)
@@ -1243,8 +1259,8 @@ def plot_roc_curve(
         line_colors:Optional[Sequence]=None,
         point_colors:Optional[Sequence]=None,
         alphas:Optional[Sequence[float]]=None,
-        line_kwargs:Optional[Mapping]={},
-        point_kwargs:Optional[Mapping]={},
+        line_kwargs:Optional[Mapping]=None,
+        point_kwargs:Optional[Mapping]=None,
         title:Optional[str]="Receiver operating characteristic curves",
         xlabel:Optional[str]="False positive rate",
         ylabel:Optional[str]="True positive rate",
@@ -1380,11 +1396,13 @@ def plot_trend_line(
         ax:Optional[plt.Axes]=None,
         **kwargs) -> FigAx:
     """ Draw the trend line implied by the given coefficients.
+
     Parameters
     ----------
     x : typing.Sequence[float]
         The points at which the function will be evaluated and where 
         the line will be drawn
+
     {intercept,slope,power} : float
         The coefficients of the trend line. Presumably, these come from
         :func:`pyllars.stats_utils.fit_with_least_squares` or something
@@ -1392,9 +1410,11 @@ def plot_trend_line(
     
     ax : typing.Optional[matplotlib.axes.Axes]
         The axis. If not given, then one will be created.
+
     **kwargs : <key>=<value> pairs
         Keyword arguments to pass to the ax.plot function (color, etc.). Please
         consult the matplotlib documentation for more details: https://matplotlib.org/api/_as_gen/matplotlib.lines.Line2D.html#matplotlib.lines.Line2D
+
     Returns
     -------
     fig : matplotlib.figure.Figure
@@ -1538,19 +1558,24 @@ def draw_rectangle(
     
     Optionally, these can be adjusted such that they are the respective
     centers rather than edge values.
+
     Parameters
     ----------
     ax : matplotlib.axes.Axes
         The axis on which the rectangle will be drawn
+
     base_{x,y} : float
         The base x and y coordinates
+
     {width,height} : float
         The width (change in x) and height (change in y) of the rectangle
+
     center_{x,y}: bool
         Whether to adjust the x and y coordinates such that they become the
         center rather than lower left. In particular, if `center_x` is `True`,
         then `base_x` will be shifted left by `width/2`; likewise, if `center_y`
         is `True`, then `base_y` will be shifted down by `height/2`.
+
     **kwargs : key=value pairs
         Additional keywords are passed to the patches.Rectangle constructor.
         Please see the matplotlib documentation for more details: https://matplotlib.org/api/_as_gen/matplotlib.patches.Rectangle.html

@@ -2,9 +2,7 @@
 Utilities for interacting with the python logging module. Mostly, this module
 provides functions for easily adding command line options to an
 `argparse.ArgumentParser` and then setting logging parameters accordingly.
-
 More details and examples for logging are given in the python documentation:
-
 * **Introduction**: https://docs.python.org/3/howto/logging.html
 * **Format string options**: https://docs.python.org/3/library/logging.html#logrecord-attributes
 """
@@ -38,10 +36,8 @@ def add_logging_options(parser:argparse.ArgumentParser,
         
     default_log_file : str
         The default for the `--log-file` flag
-
     default_logging_level : str
         The default for the `--logging-level` flag
-
     default_specific_logging_level : str
         The default for the `--{file,stdout,stderr}-logging-level` flags
         
@@ -89,35 +85,27 @@ def add_logging_values_to_args(
         stdout_logging_level:str=_DEFAULT_SPECIFIC_LOGGING_LEVEL,
         stderr_logging_level:str=_DEFAULT_SPECIFIC_LOGGING_LEVEL) -> None:
     """ Add the options from `add_logging_options` to `args`
-
     This is intended for use in notebooks or other settings where the logging
     option functionality is required, but a command line interface is not
     used.
-
     Parameters
     ----------
     args : argparse.Namespace
         The namespace to which the options will be added
-
     log_file : str
         The path to a log file. If this is the empty string, then a log file
         will not be used.
-
     log_stdout : bool
         Whether to log to stdout
-
     no_log_stderr : bool
         Whether to _not_ log to stderr. So, if this is `True`, then logging
         statements _will_ be written to stderr. (The negative is used because
         that is more natural for the command line arguments.)
-
     logging_level : str
         The logging level for all loggers
-
     {file,stdout,stderr}_logging_level : str
         The logging level for the specific loggers. This overrides
         `logging_level` for the respective logger when given.
-
     Returns
     -------
     None : None
@@ -206,16 +194,13 @@ def get_logging_cmd_options(args:argparse.Namespace) -> str:
 
 def set_logging_values(**kwargs) -> None:
     """ Set the logging options for the default logger as given
-
     This is intended for use in tests or other cases where a CLI is not
     easily available.
-
     Parameters
     ----------
     kwargs : key=value pairs
         These are passed unaltered to `add_logging_values_to_args`. Please see
         that documentation for details on valid options and their effect.
-
     Returns
     -------
     None : None
@@ -230,20 +215,16 @@ def update_logging(args, logger=None,
     """ Update `logger` to use the settings in `args`
     
     Presumably, the logging options were added with `add_logging_options`.
-
     Parameters
     ----------
     args: argparse.Namespace
         A namespace with the arguments added by add_logging_options
-
     logger: typing.Optional[logging.Logger]
         The logger which will be updated. If `None` is given, then the default
         logger will be updated.
-
     format_str: str
         The logging format string. Please see the python logging documentation
         for examples and more description.
-
     Returns
     -------
     None, but the default (or given) logger is updated to take into account
@@ -332,5 +313,3 @@ def get_ipython_logger(logging_level='DEBUG', format_str='%(levelname)-8s : %(me
         h.setFormatter(formatter)
 
     return logger
-
-

@@ -32,7 +32,7 @@ install_requires = [
     'scipy',
     'seaborn',
     'six',
-    'sklearn',
+    'scikit-learn',
     'sklearn_pandas',
     'spur',
     'statsmodels',
